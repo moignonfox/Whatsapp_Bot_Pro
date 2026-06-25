@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversations — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Injection du thème AVANT le rendu pour éviter le flash -->
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ────────────────── MAIN CHAT LAYOUT ────────────────── */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            height: 100vh;
+            background: var(--bg);
+            margin-left: var(--sidebar-w);
+        }
+        @media (max-width: 768px) {
+            .chat-container { margin-left: 0 !important; }
+            .conv-panel { width: 100% !important; }
+            .chat-panel-mobile {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                z-index: 200;
+                display: none !important;
+            }
+            .chat-panel-mobile.active {
+                display: flex !important;
+            }
+            #mobile-back-btn { display: block !important; }
+            .empty-state { display: none !important; }
+        }
+
+        /* ── Left Panel: Conversation List ── */
+        .conv-panel {
+            width: 340px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .conv-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .conv-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .search-box input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px 10px 35px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box input:focus {
+            border-color: var(--green);
+        }
+
+        .conv-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .conv-item {
+            display: flex;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .conv-item:hover {
+            background: var(--card-hover);
+        }
+        .conv-item.active {
+            background: var(--card);
+            border-left-color: var(--green);
+        }
+        .conv-item-avatar {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .conv-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+        .conv-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conv-item-time {
+            font-size: 11px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+        .conv-item-preview {
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ── Right Panel: Chat Area ── */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .empty-state {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--muted);
+            z-index: 10;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .empty-state p {
+            font-size: 15px;
+        }
+
+        .chat-header {
+            height: 70px;
+            padding: 0 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .chat-header-avatar {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--green-bg);
+            color: var(--green);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .chat-header-text h3 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .chat-header-text p {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .mode-toggle {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .mode-toggle.ai {
+            background: var(--green-bg);
+            color: var(--green);
+            border-color: rgba(37,211,102,0.2);
+        }
+        .mode-toggle.human {
+            background: var(--amber-bg);
+            color: var(--amber);
+            border-color: rgba(240,180,41,0.2);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-bubble.user {
+            align-self: flex-start;
+            background: var(--card);
+            border-bottom-left-radius: 4px;
+        }
+        .message-bubble.assistant {
+            align-self: flex-end;
+            background: rgba(37,211,102,0.12);
+            border: 1px solid rgba(37,211,102,0.2);
+            border-bottom-right-radius: 4px;
+        }
+        .message-bubble.agent {
+            align-self: flex-end;
+            background: rgba(88,166,255,0.12);
+            border: 1px solid rgba(88,166,255,0.2);
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .msg-badge.bot { color: var(--green); }
+        .msg-badge.agent { color: var(--blue); }
+
+        .msg-text {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .msg-time {
+            font-size: 10px;
+            color: var(--muted);
+            align-self: flex-end;
+            margin-top: 6px;
+        }
+
+        .chat-input-area {
+            padding: 20px 24px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .chat-input-box {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-input-box textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .chat-input-box textarea:disabled {
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+        .send-btn {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            flex-shrink: 0;
+        }
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            background: var(--green-dim);
+        }
+        .send-btn:disabled {
+            background: var(--border);
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
+
+        /* Badge non-lu */
+        .unread-badge {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            min-width: 20px;
+            height: 20px;
+            background: var(--green, #25d366);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+        .conv-item { position: relative; }
+        .conv-item.has-unread .conv-item-preview {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .conv-item.has-unread .conv-item-name {
+            color: var(--green, #25d366);
+        }
+
+        /* Animation toast */
+        @keyframes slideInToast {
+            from { transform: translateX(110%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+{% include 'dashboard/_sidebar.html' %}
+
+
+<!-- ══════════ MAIN CHAT CONTAINER ══════════ -->
+<div class="chat-container">
+    
+    <!-- LEFT PANEL: CONVERSATIONS -->
+    <div class="conv-panel">
+        <div class="conv-header">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:15px;">
+                <button id="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 style="margin-bottom:0;">Conversations</h2>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="conv-search" placeholder="Rechercher un client ou un message...">
+            </div>
+        </div>
+        <div class="conv-list" id="conv-list">
+            {% for conv in conversations %}
+            <div class="conv-item" data-waid="{{ conv.wa_id }}" onclick="loadConversation('{{ conv.wa_id }}')">
+                <div class="conv-item-avatar"><i class="fas fa-user"></i></div>
+                <div class="conv-item-info">
+                    <div class="conv-item-top">
+                        <span class="conv-item-name">{{ conv.client_name }}</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            {% if unread_counts and unread_counts.get(conv.wa_id) %}
+                            <span style="font-size:10px;background:#F85149;color:#fff;padding:1px 6px;border-radius:10px;font-weight:700;">{{ unread_counts.get(conv.wa_id) }}</span>
+                            {% endif %}
+                            <span class="conv-item-time conv-time-format">{{ conv.last_timestamp }}</span>
+                        </div>
+                    </div>
+                    <div class="conv-item-preview">{{ conv.last_message[:50] }}{% if conv.last_message|length > 50 %}...{% endif %}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: CHAT AREA -->
+    <div class="chat-area" id="chat-area">
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state">
+            <i class="fas fa-comments"></i>
+            <p>Sélectionnez une conversation pour afficher l'historique</p>
+        </div>
+
+        <!-- Chat Content (Hidden initially) -->
+        <div id="chat-panel" class="chat-panel-mobile" style="display: none; flex-direction: column; height: 100%; width: 100%; background: var(--bg);">
+            
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <button id="mobile-back-btn" onclick="closeMobileChat()" style="display:none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; margin-right:10px;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="chat-header-avatar"><i class="fas fa-user"></i></div>
+                    <div class="chat-header-text">
+                        <h3 id="chat-client-name">Nom du client</h3>
+                        <p id="chat-client-waid">+123456789</p>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button id="manual-order-btn" class="mode-toggle" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" onclick="openManualOrderModal()">
+                        <i class="fas fa-plus"></i> Forçage Manuel
+                    </button>
+                    <button id="mode-toggle" class="mode-toggle ai" onclick="toggleMode()">
+                        <i class="fas fa-robot"></i> Mode IA
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be injected here via JS -->
+            </div>
+
+            <div class="chat-input-area">
+                <div class="chat-input-box">
+                    <textarea id="chat-input" rows="1" placeholder="Activez le mode humain pour répondre..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                </div>
+                <button id="send-btn" class="send-btn" disabled onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Forçage Manuel -->
+<div id="manualOrderModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--card); width:400px; padding:24px; border-radius:14px; border:1px solid var(--border); box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-bottom:15px; font-size:16px;">Créer une commande manuelle</h3>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;">Détails de la commande (ex: 2 Fufus + Poulet)</label>
+            <input type="text" id="mo-nature" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="Saisir la commande...">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;">Montant (Optionnel)</label>
+            <input type="number" id="mo-montant" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);" placeholder="0">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="closeManualOrderModal()" style="padding:8px 16px; border-radius:8px; background:var(--surface); color:var(--text); border:1px solid var(--border); cursor:pointer;">Annuler</button>
+            <button onclick="submitManualOrder()" style="padding:8px 16px; border-radius:8px; background:var(--green); color:#fff; border:none; font-weight:600; cursor:pointer;">Valider</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" style="display:none; position:fixed; bottom:20px; right:20px; background:var(--green); color:#fff; padding:12px 24px; border-radius:8px; font-weight:600; font-size:14px; z-index:1100; box-shadow:0 4px 12px rgba(37,211,102,0.3);">
+    Commande enregistrée avec succès !
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+    // Variables globales
+    const bizId = "{{ biz_id }}";
+    
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+    let currentWaId = null;
+    let isHumanMode = false;
+
+    // Formater les dates de la liste initiale
+    document.querySelectorAll('.conv-time-format').forEach(el => {
+        el.textContent = formatTime(el.textContent);
+    });
+
+    // ── SOCKET.IO CONNECTION ──
+    const socket = io();
+    socket.on('connect', () => {
+        socket.emit('rejoindre_room', {room: bizId});
+        console.log('Connecté au canal en temps réel:', bizId);
+    });
+
+    // Compteur de messages non-lus par conversation
+    const unreadCounts = {};
+
+    // Écoute des nouveaux messages (Webhook & Bot)
+    socket.on('nouveau_message', (data) => {
+        if (data.business_id !== bizId) return;
+
+        // Mettre à jour la liste (preview + remonter en haut)
+        updateConversationList(data);
+
+        if (data.wa_id === currentWaId) {
+            // Conversation ouverte → afficher la bulle directement
+            addMessageBubble(data.role, data.content, data.timestamp);
+        } else if (!currentWaId) {
+            // Aucune conversation ouverte → ouvrir automatiquement
+            loadConversation(data.wa_id);
+        } else {
+            // Autre conversation → badge non-lu + toast
+            unreadCounts[data.wa_id] = (unreadCounts[data.wa_id] || 0) + 1;
+            updateUnreadBadge(data.wa_id);
+            showMessageToast(data);
+        }
+    });
+
+    // ── LOGIQUE CHAT ──
+    function loadConversation(waId) {
+        currentWaId = waId;
+
+        // Effacer le badge non-lu
+        unreadCounts[waId] = 0;
+        updateUnreadBadge(waId);
+        
+        // Effacer la notification globale dans la sidebar
+        if (typeof window.clearMessagesForWaId === 'function') {
+            window.clearMessagesForWaId(waId);
+        }
+
+        // Mettre en surbrillance dans la liste
+        document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.querySelector(`.conv-item[data-waid="${waId}"]`);
+        if (activeItem) activeItem.classList.add('active');
+
+        // Charger l'historique via AJAX
+        fetch(`/admin/${bizId}/chat/${waId}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('chat-client-name').textContent = data.client_name;
+                document.getElementById('chat-client-waid').textContent = waId;
+
+                isHumanMode = data.is_human_mode;
+                updateModeUI();
+
+                const chatArea = document.getElementById('chat-messages');
+                chatArea.innerHTML = '';
+
+                data.messages.forEach(msg => {
+                    addMessageBubble(msg.role, msg.content, msg.timestamp);
+                });
+
+                document.getElementById('empty-state').style.display = 'none';
+                document.getElementById('chat-panel').style.display = 'flex';
+                document.getElementById('chat-panel').classList.add('active');
+
+                chatArea.scrollTop = chatArea.scrollHeight;
+            });
+    }
+
+    function closeMobileChat() {
+        document.getElementById('chat-panel').classList.remove('active');
+        // On mobile, the active style will just hide the panel, revealing the conv list again.
+    }
+
+    function addMessageBubble(role, content, timestamp) {
+        const chatArea = document.getElementById('chat-messages');
+        const bubble = document.createElement('div');
+        bubble.className = `message-bubble ${role}`;
+        
+        let badge = '';
+        if (role === 'assistant') badge = '<div class="msg-badge bot"><i class="fas fa-robot"></i> Bot AI</div>';
+        else if (role === 'agent') badge = '<div class="msg-badge agent"><i class="fas fa-user-tie"></i> Vous</div>';
+        
+        bubble.innerHTML = `
+            ${badge}
+            <div class="msg-text">${escapeHtml(content)}</div>
+            <div class="msg-time">${formatTime(timestamp)}</div>
+        `;
+        chatArea.appendChild(bubble);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text || !currentWaId || !isHumanMode) return;
+        
+        input.disabled = true; // Empêcher double soumission
+        
+        fetch(`/admin/${bizId}/chat/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({wa_id: currentWaId, text: text})
+        })
+        .then(r => r.json())
+        .then(data => {
+            input.disabled = false;
+            if (data.status === 'sent') {
+                input.value = '';
+                input.style.height = '';
+                input.focus();
+                // La bulle s'affichera via l'événement SocketIO
+            }
+        });
+    }
+
+    function toggleMode() {
+        if (!currentWaId) {
+            alert("Veuillez d'abord sélectionner une conversation.");
+            return;
+        }
+        const newMode = !isHumanMode;
+        fetch(`/admin/${bizId}/chat/toggle-mode`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({wa_id: currentWaId, activate: newMode})
+        })
+        .then(r => r.json())
+        .then(data => {
+            isHumanMode = data.is_human_mode;
+            updateModeUI();
+        });
+    }
+
+    function updateModeUI() {
+        const toggle = document.getElementById('mode-toggle');
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        if (isHumanMode) {
+            toggle.innerHTML = '<i class="fas fa-user-tie"></i> Mode Humain (Actif)';
+            toggle.className = 'mode-toggle human';
+            input.disabled = false;
+            input.placeholder = 'Tapez votre message pour le client...';
+            sendBtn.disabled = false;
+        } else {
+            toggle.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
+            toggle.className = 'mode-toggle ai';
+            input.disabled = true;
+            input.placeholder = 'Activez le mode humain pour prendre le relais et répondre...';
+            input.value = '';
+            input.style.height = '';
+            sendBtn.disabled = true;
+        }
+    }
+
+    function updateConversationList(data) {
+        const list = document.getElementById('conv-list');
+        let item = list.querySelector(`.conv-item[data-waid="${data.wa_id}"]`);
+
+        const previewText = data.content.substring(0, 50) + (data.content.length > 50 ? '...' : '');
+
+        if (item) {
+            item.querySelector('.conv-item-preview').textContent = previewText;
+            item.querySelector('.conv-item-time').textContent = formatTime(data.timestamp);
+            list.prepend(item);
+        } else {
+            const newItem = document.createElement('div');
+            newItem.className = 'conv-item';
+            newItem.setAttribute('data-waid', data.wa_id);
+            newItem.onclick = () => loadConversation(data.wa_id);
+            newItem.innerHTML = `
+                <div class="conv-item-avatar"><i class="fas fa-user"></i></div>
+                <div class="conv-item-info">
+                    <div class="conv-item-top">
+                        <span class="conv-item-name">${data.wa_id}</span>
+                        <span class="conv-item-time">${formatTime(data.timestamp)}</span>
+                    </div>
+                    <div class="conv-item-preview">${escapeHtml(previewText)}</div>
+                </div>
+                <span class="unread-badge" style="display:none"></span>
+            `;
+            list.prepend(newItem);
+        }
+    }
+
+    function updateUnreadBadge(waId) {
+        const item = document.querySelector(`.conv-item[data-waid="${waId}"]`);
+        if (!item) return;
+        let badge = item.querySelector('.unread-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'unread-badge';
+            item.appendChild(badge);
+        }
+        const count = unreadCounts[waId] || 0;
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : count;
+            badge.style.display = 'flex';
+            item.classList.add('has-unread');
+        } else {
+            badge.style.display = 'none';
+            item.classList.remove('has-unread');
+        }
+    }
+
+    function showMessageToast(data) {
+        const existing = document.getElementById('msg-toast');
+        if (existing) existing.remove();
+
+        const name = data.wa_id;
+        const preview = data.content.substring(0, 60) + (data.content.length > 60 ? '...' : '');
+
+        const toast = document.createElement('div');
+        toast.id = 'msg-toast';
+        toast.style.cssText = [
+            'position:fixed', 'top:20px', 'right:20px', 'z-index:9999',
+            'background:var(--surface, #1e2736)', 'border:1px solid var(--green, #25d366)',
+            'border-radius:12px', 'padding:14px 18px', 'max-width:320px',
+            'box-shadow:0 8px 30px rgba(0,0,0,0.4)', 'cursor:pointer',
+            'animation:slideInToast 0.3s ease', 'display:flex', 'align-items:flex-start', 'gap:12px'
+        ].join(';');
+        toast.innerHTML = `
+            <div style="width:38px;height:38px;border-radius:50%;background:var(--green,#25d366);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-comment-dots" style="color:#fff;font-size:16px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:13px;margin-bottom:3px;color:var(--text,#e0e6f0);">Nouveau message</div>
+                <div style="font-size:12px;color:var(--text-muted,#8892a4);font-weight:600;">+${escapeHtml(name)}</div>
+                <div style="font-size:12px;color:var(--text-muted,#8892a4);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(preview)}</div>
+            </div>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-muted,#8892a4);cursor:pointer;font-size:16px;padding:0;line-height:1;">×</button>
+        `;
+        toast.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            loadConversation(data.wa_id);
+            toast.remove();
+        });
+        document.body.appendChild(toast);
+        setTimeout(() => toast && toast.remove(), 6000);
+    }
+
+    // ── UTILITAIRES ──
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatTime(ts) {
+        if (ts === 'now') return new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+        if (!ts) return '';
+        try {
+            const d = new Date(ts);
+            // Si c'est aujourd'hui, afficher l'heure, sinon afficher la date
+            const today = new Date();
+            if (d.toDateString() === today.toDateString()) {
+                return d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+            }
+            return d.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
+        } catch { return ts; }
+    }
+
+    // Gestion du champ de texte
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('chat-input');
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+        
+        const searchInput = document.getElementById('conv-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                document.querySelectorAll('.conv-item').forEach(item => {
+                    const name = item.querySelector('.conv-item-name').textContent.toLowerCase();
+                    const preview = item.querySelector('.conv-item-preview').textContent.toLowerCase();
+                    item.style.display = (name.includes(query) || preview.includes(query)) ? 'flex' : 'none';
+                });
+            });
+        }
+
+        // Auto-sélectionner une conversation si 'wa_id' est présent dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoSelectWaId = urlParams.get('wa_id');
+        if (autoSelectWaId) {
+            selectConversation(autoSelectWaId);
+        }
+    });
+
+    // Modal and Manual Order Logic
+    function openManualOrderModal() {
+        if (!currentWaId) return;
+        document.getElementById('manualOrderModal').style.display = 'flex';
+        document.getElementById('mo-nature').value = '';
+        document.getElementById('mo-montant').value = '';
+    }
+
+    function closeManualOrderModal() {
+        document.getElementById('manualOrderModal').style.display = 'none';
+    }
+
+    async function submitManualOrder() {
+        if (!currentWaId) return;
+        const nature = document.getElementById('mo-nature').value.trim();
+        const montant = document.getElementById('mo-montant').value.trim();
+
+        if (!nature) {
+            alert('Veuillez saisir les détails de la commande.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/admin/${bizId}/chat/manual-order`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ wa_id: currentWaId, nature: nature, montant: montant })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                closeManualOrderModal();
+                showToast();
+            } else {
+                alert('Erreur: ' + (data.error || 'Inconnue'));
+            }
+        } catch (err) {
+            console.error('Erreur Manual Order:', err);
+        }
+    }
+
+    function showToast() {
+        const toast = document.getElementById('toast');
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+</script>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+</body>
+</html>

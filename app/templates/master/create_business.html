@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin — Configuration Business</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root,
+        [data-theme="dark"] {
+            --bg:            #0D1117;
+            --surface:       #161B27;
+            --card:          #1C2333;
+            --border:        #2A3347;
+            --green:         #25D366;
+            --green-dim:     #1aaa50;
+            --green-glow:    rgba(37,211,102,0.18);
+            --green-bg:      rgba(37,211,102,0.10);
+            --green-border:  rgba(37,211,102,0.25);
+            --text:          #F0F6FC;
+            --muted:         #8B949E;
+            --placeholder:   #4a5568;
+            --shadow:        0 24px 80px rgba(0,0,0,0.55);
+            --blob1-opacity: 0.35;
+            --blob2-opacity: 0.35;
+            --toggle-bg:     #2A3347;
+            --toggle-hover:  #354055;
+        }
+
+        [data-theme="light"] {
+            --bg:            #F0F4F8;
+            --surface:       #FFFFFF;
+            --card:          #FFFFFF;
+            --border:        #D1D9E0;
+            --green:         #1DA851;
+            --green-dim:     #178f44;
+            --green-glow:    rgba(29,168,81,0.18);
+            --green-bg:      rgba(29,168,81,0.08);
+            --green-border:  rgba(29,168,81,0.28);
+            --text:          #0D1117;
+            --muted:         #57606A;
+            --placeholder:   #A8B3BC;
+            --shadow:        0 24px 80px rgba(0,0,0,0.12);
+            --blob1-opacity: 0.18;
+            --blob2-opacity: 0.12;
+            --toggle-bg:     #E6EBF0;
+            --toggle-hover:  #D1D9E0;
+        }
+
+        body, .card, .field input, .field textarea, .btn-submit {
+            transition:
+                background 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease,
+                color 0.3s ease,
+                box-shadow 0.3s ease;
+        }
+
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+        }
+        .content {
+            padding: 40px 24px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            overflow-x: hidden;
+        }
+        
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .topbar-left h1 { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .btn-back-top {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .btn-back-top:hover { color: var(--text); }
+
+        /* ── Blobs ── */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .blob-1 {
+            width: 420px; height: 420px;
+            background: var(--green);
+            opacity: var(--blob1-opacity);
+            top: -140px; right: -100px;
+            animation: drift 9s ease-in-out infinite alternate;
+        }
+        .blob-2 {
+            width: 300px; height: 300px;
+            background: #1565c0;
+            opacity: var(--blob2-opacity);
+            bottom: -80px; left: -80px;
+            animation: drift 12s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes drift {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(30px,20px) scale(1.08); }
+        }
+
+        /* ── Toggle thème ── */
+        #theme-toggle {
+            position: fixed;
+            top: 18px; right: 18px;
+            z-index: 100;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--toggle-bg);
+            color: var(--muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s;
+            outline: none;
+        }
+        #theme-toggle:hover { background: var(--toggle-hover); color: var(--text); transform: scale(1.08); }
+        #theme-toggle:focus-visible { box-shadow: 0 0 0 3px var(--green-glow); }
+        #theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ── Layout ── */
+        .page {
+            width: 100%;
+            max-width: 720px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .master-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(248,81,73,0.10);
+            border: 1px solid rgba(248,81,73,0.28);
+            color: #F85149;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+        [data-theme="light"] .master-badge {
+            background: rgba(207,34,46,0.08);
+            border-color: rgba(207,34,46,0.25);
+            color: #CF222E;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 44px;
+            box-shadow: var(--shadow), 0 0 0 1px var(--border);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.4px;
+            margin-bottom: 4px;
+        }
+        .card-subtitle {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        /* ── Grille ── */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+        }
+        .full { grid-column: span 2; }
+
+        /* ── Section label ── */
+        .section-label {
+            grid-column: span 2;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Champs ── */
+        .field { display: flex; flex-direction: column; }
+        .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 7px;
+        }
+        .field input,
+        .field textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+            outline: none;
+        }
+        .field textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+        .field input::placeholder,
+        .field textarea::placeholder { color: var(--placeholder); }
+        .field input:focus,
+        .field textarea:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px var(--green-glow);
+        }
+
+        /* ── Bouton ── */
+        .btn-wrap { grid-column: span 2; margin-top: 12px; }
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--green);
+            color: #fff;
+            font-family: inherit;
+            font-size: 14.5px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.12s, box-shadow 0.2s;
+            letter-spacing: 0.2px;
+            box-shadow: 0 4px 20px var(--green-glow);
+        }
+        .btn-submit:hover { filter: brightness(1.1); box-shadow: 0 6px 28px var(--green-glow); transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+
+        /* ── Responsive ── */
+        /* ── Responsive ── */
+        @media (max-width: 680px) {
+            body { padding: 24px 16px; }
+            .card { padding: 28px 20px; }
+            .grid { grid-template-columns: 1fr; }
+            .section-label, .full, .btn-wrap { grid-column: span 1; }
+            #theme-toggle { top: 12px; right: 12px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .blob { animation: none; opacity: 1; }
+        }
+
+        /* ── Plan selector ── */
+        .plan-grid {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .plan-card {
+            position: relative;
+            cursor: pointer;
+        }
+        .plan-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0; height: 0;
+        }
+        .plan-label {
+            display: block;
+            padding: 16px 14px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+        .plan-card input:checked + .plan-label {
+            border-color: var(--plan-color, var(--green));
+            background: var(--plan-bg, var(--green-bg));
+            box-shadow: 0 0 0 3px var(--plan-glow, var(--green-glow));
+        }
+        .plan-label:hover {
+            border-color: var(--plan-color, var(--green));
+            background: var(--plan-bg, var(--green-bg));
+        }
+        .plan-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: var(--plan-color, var(--green));
+            color: #fff;
+        }
+        .plan-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .plan-features {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.7;
+            text-align: left;
+        }
+        .plan-features li {
+            list-style: none;
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        .plan-features li::before { content: '✓'; color: var(--plan-color, var(--green)); flex-shrink: 0; }
+
+        /* ── Employee list ── */
+        .employee-list {
+            grid-column: span 2;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .employee-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+        .emp-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(88,166,255,0.12);
+            border: 1px solid rgba(88,166,255,0.25);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            color: #58A6FF;
+            flex-shrink: 0;
+        }
+        .emp-info { flex: 1; }
+        .emp-name { font-weight: 600; font-size: 13px; color: var(--text); }
+        .emp-poste { font-size: 11.5px; color: var(--muted); }
+        .btn-del-emp {
+            background: none;
+            border: 1px solid rgba(248,81,73,0.25);
+            color: #F85149;
+            padding: 5px 10px;
+            border-radius: 7px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-del-emp:hover { background: rgba(248,81,73,0.12); }
+
+        .emp-add-grid {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .btn-add-emp {
+            padding: 12px 16px;
+            background: rgba(88,166,255,0.12);
+            border: 1px solid rgba(88,166,255,0.25);
+            color: #58A6FF;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .btn-add-emp:hover { background: rgba(88,166,255,0.22); }
+
+        @media (max-width: 680px) {
+            .plan-grid { grid-template-columns: 1fr; }
+            .emp-add-grid { grid-template-columns: 1fr 1fr; }
+            .btn-add-emp { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body>
+
+    {% set active_page = 'create_business' %}
+    {% include 'master/_sidebar.html' %}
+
+    <div class="main">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="{{ url_for('master.master_dashboard') }}" class="btn-back-top"><i class="fas fa-arrow-left"></i> Retour au Dashboard</a>
+            </div>
+            <div class="topbar-right">
+                <span class="master-badge">🔐 Accès Master</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+
+            <div class="page">
+                <!-- Card -->
+                <div class="card">
+                    <h1 class="card-title">{% if business %}✏️ Modifier le Business{% else %}🚀 Nouveau Business{% endif %}</h1>
+                    <p class="card-subtitle">{% if business %}Mettez à jour les paramètres du client.{% else %}Créez et déployez un nouveau business sur la plateforme MyBot.{% endif %}</p>
+
+            <form action="/master/save-business" method="POST" class="grid">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <!-- Accès Dashboard -->
+                <div class="section-label">🏢 Profil & Accès</div>
+
+                <div class="field full">
+                    <label>Secteur d'Activité</label>
+                    <select name="business_type" style="width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); outline: none;">
+                        {% for s in sectors %}
+                            <option value="{{ s.id }}" {% if business and business.business_type == s.id %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Offre / Plan d'Abonnement -->
+                <div class="section-label">💎 Offre Commerciale</div>
+
+                <div class="plan-grid">
+                    <!-- BASIC -->
+                    <label class="plan-card" style="--plan-color:#58A6FF; --plan-bg:rgba(88,166,255,0.08); --plan-glow:rgba(88,166,255,0.18);">
+                        <input type="radio" name="plan_abonnement" value="BASIC"
+                            {% if not business or business.plan_abonnement == 'BASIC' %}checked{% endif %}>
+                        <span class="plan-label">
+                            <span class="plan-badge" style="background:#58A6FF;">BASIC</span>
+                            <div class="plan-name">Starter</div>
+                            <ul class="plan-features">
+                                <li>Prise de RDV WhatsApp</li>
+                                <li>Confirmation automatique</li>
+                                <li>Dashboard simple</li>
+                            </ul>
+                        </span>
+                    </label>
+                    <!-- PRO -->
+                    <label class="plan-card" style="--plan-color:#25D366; --plan-bg:rgba(37,211,102,0.08); --plan-glow:rgba(37,211,102,0.18);">
+                        <input type="radio" name="plan_abonnement" value="PRO"
+                            {% if business and business.plan_abonnement == 'PRO' %}checked{% endif %}>
+                        <span class="plan-label">
+                            <span class="plan-badge" style="background:#25D366;">PRO</span>
+                            <div class="plan-name">Business</div>
+                            <ul class="plan-features">
+                                <li>Rappels automatiques</li>
+                                <li>Statistiques avancées</li>
+                                <li>Gestion clients</li>
+                                <li>Campagnes simples</li>
+                            </ul>
+                        </span>
+                    </label>
+                    <!-- PREMIUM -->
+                    <label class="plan-card" style="--plan-color:#F0B429; --plan-bg:rgba(240,180,41,0.08); --plan-glow:rgba(240,180,41,0.18);">
+                        <input type="radio" name="plan_abonnement" value="PREMIUM"
+                            {% if business and business.plan_abonnement == 'PREMIUM' %}checked{% endif %}>
+                        <span class="plan-label">
+                            <span class="plan-badge" style="background:#F0B429; color:#1a1a1a;">PREMIUM</span>
+                            <div class="plan-name">Automation + Cash</div>
+                            <ul class="plan-features">
+                                <li>Paiement intégré</li>
+                                <li>Marketing avancé</li>
+                                <li>Multi-employés</li>
+                                <li>CRM complet</li>
+                            </ul>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label>ID du Business</label>
+                    <input type="text" name="biz_id" placeholder="ex: fufu_express" value="{{ business.id if business else '' }}" {% if business %}readonly style="opacity:0.6; cursor:not-allowed;"{% endif %} required>
+                </div>
+                <div class="field">
+                    <label>Mot de passe Admin {% if business %}(Laisser vide pour conserver){% endif %}</label>
+                    <input type="password" name="password" placeholder="••••••••" {% if not business %}required{% endif %}>
+                </div>
+
+                <!-- API WhatsApp -->
+                <div class="section-label">📱 API WhatsApp (Meta)</div>
+
+                <div class="field full">
+                    <label>Nom de l'entreprise</label>
+                    <input type="text" name="nom" placeholder="ex: La Résidence du Gourmet" value="{{ business.nom if business else '' }}" required>
+                </div>
+                <div class="field">
+                    <label>Phone Number ID</label>
+                    <input type="text" name="phone_id" placeholder="ex: 123456789012345" value="{{ business.whatsapp_phone_id if business else '' }}" required>
+                </div>
+                <div class="field">
+                    <label>Access Token (Permanent)</label>
+                    <input type="text" name="token" placeholder="EAAxxxxxxx…" value="{{ business.token_wa if business else '' }}" required>
+                </div>
+
+                <!-- IA -->
+                <div class="section-label">🤖 Intelligence Artificielle</div>
+
+                <div class="field full">
+                    <label>Instructions du Bot (Prompt)</label>
+                    <textarea name="prompt" placeholder="Tu es un assistant pour l'établissement…">{{ business.prompt if business else '' }}</textarea>
+                </div>
+
+                <!-- Messages -->
+                <div class="section-label">💬 Messages Personnalisés</div>
+
+                <div class="field full">
+                    <label>Message de Confirmation ✅</label>
+                    <input type="text" name="msg_confirm" value="{{ business.msg_confirm if business else '' }}" placeholder="Votre commande est validée !">
+                </div>
+                <div class="field">
+                    <label>Message d'Annulation ❌</label>
+                    <input type="text" name="msg_cancel" value="{{ business.msg_cancel if business else '' }}" placeholder="Désolé, créneau indisponible.">
+                </div>
+                <div class="field">
+                    <label>Message de Prêt 🍲</label>
+                    <input type="text" name="msg_ready" value="{{ business.msg_ready if business else '' }}" placeholder="C'est prêt !">
+                </div>
+
+                <!-- Bouton -->
+                <div class="btn-wrap">
+                    <button type="submit" class="btn-submit">{% if business %}Enregistrer les modifications{% else %}Déployer le Business →{% endif %}</button>
+                </div>
+
+            </form>
+
+            {% if business %}
+            <!-- ── Section Employés (Multi-Employés / PREMIUM) ────────────────── -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+                <div class="section-label" style="margin-bottom: 16px;">👥 Équipe / Employés <span style="font-size:10px; background: rgba(240,180,41,0.15); color:#F0B429; border:1px solid rgba(240,180,41,0.3); padding:2px 8px; border-radius:4px; margin-left:8px;">PREMIUM</span></div>
+                <p style="font-size:12.5px; color: var(--muted); margin-bottom:16px; line-height:1.6;">Gérez l'équipe de ce business. Le bot les proposera dynamiquement aux clients lors d'une prise de RDV (coiffeurs, cuisiniers, photographes, éboueurs…)</p>
+
+                {% if employees %}
+                <div class="employee-list">
+                    {% for emp in employees %}
+                    <div class="employee-row">
+                        <div class="emp-avatar">👤</div>
+                        <div class="emp-info">
+                            <div class="emp-name">{{ emp.nom }}</div>
+                            <div class="emp-poste">{{ emp.poste or 'Aucun poste défini' }}</div>
+                        </div>
+                        <form action="{{ url_for('master.delete_employee', biz_id=business.id, emp_id=emp.id) }}" method="POST" style="margin:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-del-emp" onclick="return confirm('Supprimer {{ emp.nom }} ?')">🗑️ Supprimer</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center; padding: 20px; background: var(--surface); border: 1px dashed var(--border); border-radius:12px; color:var(--muted); font-size:13px; margin-bottom:16px;">
+                    Aucun employé enregistré pour ce business.
+                </div>
+                {% endif %}
+
+                <!-- Formulaire d'ajout d'un employé -->
+                <form action="{{ url_for('master.add_employee', biz_id=business.id) }}" method="POST" class="emp-add-grid" style="margin-top: 14px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="field" style="margin:0;">
+                        <input type="text" name="emp_nom" placeholder="Nom de l'employé" required style="width:100%; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:inherit; font-size:14px; outline:none;">
+                    </div>
+                    <div class="field" style="margin:0;">
+                        <input type="text" name="emp_poste" placeholder="Poste (ex: Coiffeur, Chef, Photographe…)" style="width:100%; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:inherit; font-size:14px; outline:none;">
+                    </div>
+                    <button type="submit" class="btn-add-emp">+ Ajouter</button>
+                </form>
+            </div>
+            {% endif %}
+
+        </div>
+
+            </div> <!-- /page -->
+        </div> <!-- /content -->
+    </div> <!-- /main -->
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

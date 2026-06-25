@@ -1,0 +1,171 @@
+/* ────────────────── BOUTON TOGGLE THEME ────────────────── */
+#theme-toggle {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--toggle-bg);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s, color 0.2s;
+    outline: none;
+    flex-shrink: 0;
+}
+#theme-toggle:hover {
+    background: var(--toggle-hover);
+    color: var(--text);
+    transform: scale(1.08);
+}
+#theme-toggle:focus-visible {
+    box-shadow: 0 0 0 3px var(--green-glow);
+}
+#theme-toggle svg {
+    width: 16px; height: 16px;
+    fill: currentColor;
+}
+
+/* Version flottante pour la page paramètres */
+#theme-toggle.floating {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 1000;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+}
+#theme-toggle.floating svg {
+    width: 18px; height: 18px;
+}
+
+/* ────────────────── SIDEBAR ────────────────── */
+.sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.sidebar.fixed {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+}
+
+.sidebar-logo {
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.logo-icon {
+    width: 34px; height: 34px;
+    background: var(--green);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px var(--green-glow);
+}
+.logo-icon svg { width: 20px; height: 20px; fill: #fff; }
+.logo-text { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+.logo-text span { color: var(--green); }
+
+.sidebar-biz {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+.biz-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.biz-avatar {
+    width: 32px; height: 32px;
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--green);
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.biz-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.biz-id-label { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+.nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted2);
+    padding: 12px 8px 6px;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--card-hover); color: var(--text); }
+.nav-item.active {
+    background: var(--green-bg);
+    color: var(--green);
+    border-color: rgba(37,211,102,0.18);
+}
+.nav-item i { width: 16px; text-align: center; font-size: 14px; }
+
+.sidebar-footer {
+    padding: 14px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.sidebar-close {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px;
+}
+.sidebar-close:hover { color: var(--text); }
+
+/* Responsive sidebar */
+/* Responsive sidebar */
+@media (max-width: 768px) {
+    .sidebar.fixed { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar.fixed.open { 
+        transform: translateX(0); 
+        box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+    }
+    .main { margin-left: 0 !important; }
+    #mobile-menu-btn { display: flex !important; }
+    .sidebar-close { display: block; }
+}

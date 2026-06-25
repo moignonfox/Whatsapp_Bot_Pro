@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historique des Commandes — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0; z-index: 100;
+        }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .page-title i { color: var(--green); }
+
+        .content {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .crm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .table-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: var(--surface);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 14px;
+            color: var(--text);
+            vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: var(--surface); }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11.5px; font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .badge-waiting   { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(240,180,41,0.2); }
+        .badge-confirmed { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(37,211,102,0.2); }
+        .badge-ready     { background: var(--blue-bg);   color: var(--blue);   border: 1px solid rgba(88,166,255,0.2); }
+        .badge-cancelled { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,81,73,0.2); }
+
+    </style>
+</head>
+<body>
+
+{% include 'dashboard/_sidebar.html' %}
+
+<div class="main">
+    <div class="topbar">
+        <div class="page-title">
+            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <i class="fas fa-calendar-check"></i> Historique (Commandes)
+        </div>
+        <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+            {% include 'dashboard/_notif_bell.html' %}
+            {% include 'dashboard/_theme_toggle.html' %}
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="crm-header">
+            <div>
+                <h2 style="font-size: 20px; font-weight: 600;">Registre des Commandes</h2>
+                <p style="color: var(--muted); font-size: 14px; margin-top: 5px;">Toutes les transactions passées et en cours.</p>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Heure</th>
+                        <th>Client</th>
+                        <th>Commande</th>
+                        <th>Montant</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in reservations|sort(attribute='timestamp', reverse=True) %}
+                    <tr>
+                        <td style="white-space:nowrap; color:var(--muted);">{{ res.timestamp[:16] }}</td>
+                        <td>
+                            <strong>{{ res.client_name }}</strong><br>
+                            <span style="font-size:12px; color:var(--muted);">{{ res.wa_id }}</span>
+                        </td>
+                        <td style="max-width:300px;">
+                            {{ res.details|replace('\n', '<br>')|safe }}
+                        </td>
+                        <td><strong>{{ "{:,.0f}".format(res.montant).replace(',', ' ') }}</strong> FCFA</td>
+                        <td>
+                            {% if res.statut == 'En attente' %}
+                                <span class="badge badge-waiting"><i class="fas fa-hourglass-half"></i> En attente</span>
+                            {% elif res.statut == 'Confirmé ✅' %}
+                                <span class="badge badge-confirmed"><i class="fas fa-check-circle"></i> Confirmé</span>
+                            {% elif res.statut == 'Prêt' or res.statut == 'Expédié' or res.statut == 'Livré' %}
+                                <span class="badge badge-ready"><i class="fas fa-box"></i> {{ res.statut }}</span>
+                            {% elif 'Annulé' in res.statut %}
+                                <span class="badge badge-cancelled"><i class="fas fa-times-circle"></i> Annulé</span>
+                            {% else %}
+                                <span class="badge badge-confirmed">{{ res.statut }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--muted);">
+                            <i class="fas fa-receipt" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i>
+                            <p>Aucune commande enregistrée pour le moment.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

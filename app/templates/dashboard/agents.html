@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Équipe IA — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0; z-index: 100;
+        }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .page-title i { color: var(--green); }
+
+        .content {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .agent-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-control:focus {
+            border-color: var(--green);
+            outline: none;
+        }
+        
+        .btn-submit {
+            background: var(--green);
+            color: #fff !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 12px var(--green-glow); }
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover { background: var(--border); }
+        .btn-danger {
+            background: transparent;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .btn-danger:hover { background: rgba(231,76,60,0.1); }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+
+        .checkbox-group {
+            display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(46,204,113,.15); color: #2ecc71; }
+        .badge-danger { background: rgba(231,76,60,.15); color: #e74c3c; }
+        
+        .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; }
+        .flash.success { background: rgba(46,204,113,.15); color: #2ecc71; border: 1px solid rgba(46,204,113,.3); }
+
+        @media(max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    {% set active_page = 'agents' %}
+    {% include "dashboard/_sidebar.html" %}
+
+    <div class="main">
+        <div class="topbar">
+            <div class="page-title">
+                <i class="fas fa-robot"></i> Équipe IA <span class="badge badge-success" style="background:#F0B429;color:#1a1a1a;margin-left:8px;">PREMIUM</span>
+            </div>
+            <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+                {% include "dashboard/_notif_bell.html" %}
+                {% include "dashboard/_theme_toggle.html" %}
+            </div>
+        </div>
+
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2 style="margin-top:0; font-size: 18px; margin-bottom: 8px;">Mode de Routage</h2>
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                    Choisissez comment vos clients interagissent avec vos agents.
+                </p>
+                <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="set_routing">
+                    <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+                        <label class="checkbox-group">
+                            <input type="radio" name="routing_mode" value="visible" {% if business.agent_routing_mode == 'visible' %}checked{% endif %}>
+                            <span><strong>Agents visibles</strong> (ex: "Bonjour, je suis Sarah, du support")</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="radio" name="routing_mode" value="invisible" {% if business.agent_routing_mode == 'invisible' %}checked{% endif %}>
+                            <span><strong>Orchestrateur invisible</strong> (Le client parle à un seul assistant sans savoir qu'il y a plusieurs agents derrière)</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-submit btn-small">Enregistrer</button>
+                </form>
+            </div>
+
+            <div class="grid-2">
+                <!-- Colonne Gauche : Liste -->
+                <div>
+                    <h2 style="margin-top:0; font-size: 18px; margin-bottom: 16px;">Vos Agents Actifs</h2>
+                    {% if not agents %}
+                        <p style="color: var(--text-secondary); font-size: 14px;">Aucun agent créé pour le moment. Créez-en un ou utilisez un template.</p>
+                    {% else %}
+                        {% for a in agents %}
+                            <div class="agent-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <h3 style="margin: 0; font-size: 16px;">{{ a.name }}</h3>
+                                    <span style="font-size: 12px; color: var(--green); font-weight: 600;">{{ a.role }}</span>
+                                </div>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                                    <strong>Mots-clés:</strong> {{ a.intent_keywords }}
+                                </p>
+                                
+                                <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;"><i class="fas fa-comment-dots" style="margin-right: 6px; color: var(--green);"></i>Messages traités</span>
+                                    <span style="font-size: 14px; font-weight: 700; color: var(--text);">{{ a.stats.messages_handled }}</span>
+                                </div>
+                                
+                                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                    {% if a.settings.can_propose_promo %}
+                                    <span class="badge badge-success">Promos</span>
+                                    {% endif %}
+                                    {% if a.settings.can_escalate %}
+                                    <span class="badge badge-danger">Escalade Humain</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="agent_id" value="{{ a.id }}">
+                                    <button type="submit" class="btn-danger btn-small" style="padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: 600;" onclick="return confirm('Désactiver cet agent ?')">Désactiver</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Colonne Droite : Formulaire -->
+                <div>
+                    <div class="card" style="margin-bottom: 0;">
+                        <h2 style="margin-top:0; font-size: 18px; margin-bottom: 16px;">Créer un Agent</h2>
+                        
+                        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+                            <label style="display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500;">Templates rapides :</label>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                {% for tpl in default_templates %}
+                                <button type="button" class="btn-outline btn-small" style="padding: 6px 12px; border-radius: 6px; cursor: pointer;" onclick="fillTemplate('{{ tpl.name }}', '{{ tpl.role }}', '{{ tpl.intent_keywords }}', '{{ tpl.system_prompt | replace('\n', '\\n') | replace('\'', '\\\'') }}', {{ 'true' if tpl.can_propose_promo else 'false' }}, {{ 'true' if tpl.can_escalate else 'false' }})">{{ tpl.name.split(' - ')[0] }} ({{ tpl.role }})</button>
+                                {% endfor %}
+                                <button type="button" class="btn-outline btn-small" style="padding: 6px 12px; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('agent_form').reset();">Réinitialiser</button>
+                            </div>
+                        </div>
+
+                        <form id="agent_form" method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="add">
+                            
+                            <div class="form-group">
+                                <label>Nom de l'agent</label>
+                                <input type="text" name="name" id="agent_name" class="form-control" required placeholder="Ex: Alex">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Rôle</label>
+                                <input type="text" name="role" id="agent_role" class="form-control" required placeholder="Ex: Support Client">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Mots-clés déclencheurs (Classifieur)</label>
+                                <input type="text" name="intent_keywords" id="agent_intent" class="form-control" required placeholder="Ex: problème, remboursement, aide">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Prompt Système (Personnalité & Règles)</label>
+                                <textarea name="system_prompt" id="agent_prompt" class="form-control" rows="4" required placeholder="Tu es un agent très amical..."></textarea>
+                            </div>
+
+                            <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label>Ton de réponse</label>
+                                    <select name="response_tone" id="agent_tone" class="form-control" onchange="updateTokensFromTone()">
+                                        <option value="concis">Concis (très court)</option>
+                                        <option value="standard" selected>Standard (équilibré)</option>
+                                        <option value="detaille">Détaillé (explicatif)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label>Longueur max (tokens)</label>
+                                    <input type="number" name="max_tokens" id="agent_tokens" class="form-control" min="50" max="800" value="200" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="can_propose_promo" id="agent_promo">
+                                    <span>Peut proposer des remises/codes promo</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 24px;">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="can_escalate" id="agent_escalate">
+                                    <span>Peut transférer la conversation à un humain</span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn-submit" style="width: 100%; margin-top: 10px;">Créer l'agent</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+function fillTemplate(name, role, intent, prompt, promo, escalate) {
+    document.getElementById('agent_name').value = name;
+    document.getElementById('agent_role').value = role;
+    document.getElementById('agent_intent').value = intent;
+    document.getElementById('agent_prompt').value = prompt;
+    document.getElementById('agent_promo').checked = promo;
+    document.getElementById('agent_escalate').checked = escalate;
+    document.getElementById('agent_tone').value = 'standard';
+    document.getElementById('agent_tokens').value = 200;
+}
+
+function updateTokensFromTone() {
+    const tone = document.getElementById('agent_tone').value;
+    const tokensInput = document.getElementById('agent_tokens');
+    if (tone === 'concis') {
+        tokensInput.value = 100;
+    } else if (tone === 'standard') {
+        tokensInput.value = 200;
+    } else if (tone === 'detaille') {
+        tokensInput.value = 350;
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Injection du thème AVANT le rendu -->
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0; z-index: 100;
+        }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .page-title i { color: var(--green); }
+
+        .content {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Header CRM */
+        .crm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+        .search-box i {
+            position: absolute;
+            left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--muted);
+        }
+        .search-box input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px 10px 38px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 2px var(--green-glow);
+        }
+
+        /* Tableau Clients */
+        .table-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: var(--surface);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-size: 14px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--row-hover); }
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .avatar {
+            width: 36px; height: 36px;
+            background: var(--green-bg);
+            color: var(--green);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 14px;
+        }
+        .client-name { font-weight: 600; }
+        .client-phone { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+        .last-msg {
+            color: var(--muted);
+            font-size: 13px;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-chat {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--blue-bg);
+            color: var(--blue);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: filter 0.2s;
+        }
+        .btn-chat:hover { filter: brightness(1.2); }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .empty-state i { font-size: 40px; margin-bottom: 16px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+{% include 'dashboard/_sidebar.html' %}
+
+<!-- ══════════ MAIN CONTENT ══════════ -->
+<main class="main">
+    
+    <header class="topbar">
+        <div class="page-title" style="display: flex; align-items: center; gap: 14px;">
+            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div><i class="fas fa-users"></i> Liste des Clients</div>
+        </div>
+        <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+            {% include "dashboard/_notif_bell.html" %}
+            <!-- Bouton Toggle Thème retiré -->
+        </div>
+    </header>
+
+    <div class="content">
+        <div class="crm-header">
+            <div>
+                <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 4px;">CRM Clients</h2>
+                <p style="color: var(--muted); font-size: 14px;">Gérez vos contacts et interagissez avec eux.</p>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Rechercher par nom ou numéro...">
+            </div>
+        </div>
+
+        <div class="table-card">
+            {% if clients %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Dernier Message</th>
+                        <th>Date du contact</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="clientsTableBody">
+                    {% for c in clients %}
+                    <tr class="client-row">
+                        <td>
+                            <div class="client-info">
+                                <div class="avatar">{{ c.client_name[:1]|upper }}</div>
+                                <div>
+                                    <div class="client-name">{{ c.client_name }}</div>
+                                    <div class="client-phone">{{ c.wa_id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="last-msg">
+                                {% if c.last_role == 'agent' %}
+                                    <i class="fas fa-user-tie" style="font-size:10px; margin-right:4px;"></i> Vous : 
+                                {% elif c.last_role == 'assistant' %}
+                                    <i class="fas fa-robot" style="font-size:10px; margin-right:4px;"></i> Bot : 
+                                {% endif %}
+                                {{ c.last_message }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="color: var(--muted); font-size: 13.5px;">{{ c.last_timestamp }}</div>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ c.wa_id }}" class="btn-chat">
+                                <i class="fas fa-comment-dots"></i> Chatter
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-users-slash"></i>
+                <h3>Aucun client pour le moment</h3>
+                <p>Les clients apparaîtront ici dès qu'ils vous enverront un message sur WhatsApp.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<script>
+    // Filtrage simple en JS
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('.client-row');
+        
+        rows.forEach(row => {
+            const name = row.querySelector('.client-name').textContent.toLowerCase();
+            const phone = row.querySelector('.client-phone').textContent.toLowerCase();
+            if (name.includes(term) || phone.includes(term)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

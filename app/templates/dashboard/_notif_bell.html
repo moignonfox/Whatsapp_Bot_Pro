@@ -1,0 +1,8 @@
+{#
+  _notif_bell.html — Bouton cloche notifications (à inclure dans chaque topbar-right)
+  Dépend du système Socket.IO de _sidebar.html (active_page != 'chat')
+#}
+<button id="notif-bell-btn" onclick="toggleNotifPanel()" aria-label="Notifications" title="Notifications">
+    <i class="fas fa-bell"></i>
+    <span id="notif-total-badge"></span>
+</button>

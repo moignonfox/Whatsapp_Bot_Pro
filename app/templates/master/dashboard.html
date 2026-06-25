@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+        /* Styles spécifiques au Master Dashboard */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .metric-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+
+        .metric-info h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1;
+            color: var(--text);
+        }
+
+        .metric-info p {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .header-card {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        
+        h2 { font-size: 18px; font-weight: 600; color: var(--text); }
+        
+        .btn {
+            background: var(--green); color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; transition: filter 0.2s;
+        }
+        .btn:hover { filter: brightness(1.1); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); }
+        td { padding: 16px 12px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+        tr:hover td { background: var(--row-hover); }
+        
+        .action-link { color: var(--green); text-decoration: none; font-size: 13px; font-weight: 600; }
+        .action-link:hover { text-decoration: underline; }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+        .topbar-left p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .content { padding: 28px; flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+            .content { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+{% set active_page = 'dashboard' %}
+{% include 'master/_sidebar.html' %}
+
+<div class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left" style="display: flex; align-items: center; gap: 14px;">
+            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; display:none; align-items:center; justify-content:center;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div>
+                <h1>Supervision Master</h1>
+                <p>Gestion globale de la plateforme</p>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <span style="font-size:11px;font-weight:600;background:rgba(248,81,73,0.10);border:1px solid rgba(248,81,73,0.28);color:#F85149;padding:4px 12px;border-radius:20px;">🔐 Accès Master</span>
+        </div>
+    </header>
+
+    <div class="content">
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon" style="background: rgba(88,166,255,0.1); color: #58A6FF;">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>{{ metrics.total_businesses }}</h3>
+                    <p>Sociétés Actives</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background: rgba(240,180,41,0.1); color: #F0B429;">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>{{ metrics.plan_premium }}</h3>
+                    <p>Abonnements Premium</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background: rgba(37,211,102,0.1); color: #25D366;">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>{{ metrics.plan_pro }}</h3>
+                    <p>Abonnements Pro</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background: var(--surface); color: var(--muted); border: 1px solid var(--border);">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>{{ metrics.plan_basic }}</h3>
+                    <p>Abonnements Basic</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Global Settings -->
+        <div class="card" style="margin-bottom: 32px;">
+            <div class="header-card">
+                <h2>⚙️ Paramètres Globaux & Quotas</h2>
+            </div>
+            <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
+                Définissez la longueur maximale du message WhatsApp entrant (Input) et les Quotas mensuels de messages IA.
+            </p>
+            <form method="POST" action="{{ url_for('master.save_limits') }}" style="display: flex; flex-direction: column; gap: 24px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Limites Input -->
+                <div>
+                    <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Longueurs Max Input (Caractères)</h3>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">BASIC</label>
+                            <input type="number" name="max_input_basic" value="{{ global_settings.get('max_input_basic', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PRO</label>
+                            <input type="number" name="max_input_pro" value="{{ global_settings.get('max_input_pro', '1000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PREMIUM</label>
+                            <input type="number" name="max_input_premium" value="{{ global_settings.get('max_input_premium', '3000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quotas Mensuels -->
+                <div>
+                    <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Quotas Mensuels (Nb Messages IA)</h3>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">BASIC</label>
+                            <input type="number" name="quota_messages_basic" value="{{ global_settings.get('quota_messages_basic', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PRO</label>
+                            <input type="number" name="quota_messages_pro" value="{{ global_settings.get('quota_messages_pro', '2000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PREMIUM</label>
+                            <input type="number" name="quota_messages_premium" value="{{ global_settings.get('quota_messages_premium', '10000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comportement au dépassement -->
+                <div>
+                    <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Comportement en cas de dépassement</h3>
+                    <div style="max-width: 300px;">
+                        <select name="overage_behavior" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                            <option value="FALLBACK" {% if global_settings.get('overage_behavior') == 'FALLBACK' %}selected{% endif %}>FALLBACK (Mode dégradé)</option>
+                            <option value="BLOCK" {% if global_settings.get('overage_behavior') == 'BLOCK' %}selected{% endif %}>BLOCK (Couper l'IA silencieusement)</option>
+                            <option value="OVERAGE" {% if global_settings.get('overage_behavior') == 'OVERAGE' %}selected{% endif %}>OVERAGE (Continuer et facturer en plus)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="width: 100%; margin-top: 8px;">
+                    <button type="submit" class="btn" style="border: none; cursor: pointer;">Sauvegarder les paramètres</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card: Businesses -->
+        <div class="card">
+            <div class="header-card">
+                <h2>🏢 Clients (Businesses)</h2>
+                <a href="{{ url_for('master.view_add_business') }}" class="btn">+ Ajouter un client</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Type</th>
+                        <th>Plan</th>
+                        <th>Tél Gérant</th>
+                        <th>Bot Demandé</th>
+                        <th>Conso IA (Mois)</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in businesses %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ b.nom }}</td>
+                        <td style="color: var(--muted); text-transform: capitalize;">{{ b.business_type }}</td>
+                        <td>
+                            {% if b.plan_abonnement == 'PREMIUM' %}
+                            <span style="background: rgba(240,180,41,0.1); color: #F0B429; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">PREMIUM</span>
+                            {% elif b.plan_abonnement == 'PRO' %}
+                            <span style="background: rgba(37,211,102,0.1); color: #25D366; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">PRO</span>
+                            {% else %}
+                            <span style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">BASIC</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 13px; color: var(--text);">
+                            {{ b.owner_phone or '—' }}
+                        </td>
+                        <td style="font-size: 13px;">
+                            {% if b.requested_bot_phone %}
+                                <div style="font-weight: 600; color: var(--text);">{{ b.requested_bot_phone }}</div>
+                                {% if not b.whatsapp_phone_id %}
+                                    <span style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 4px; display: inline-block;">En attente</span>
+                                {% else %}
+                                    <span style="background: rgba(37,211,102,0.1); color: #25D366; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 4px; display: inline-block;">Actif</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: var(--muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px; max-width: 150px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: {% if b.ai_usage_pct >= 100 %}#F85149{% elif b.ai_usage_pct >= 80 %}#F0B429{% else %}var(--green){% endif %};">
+                                    <span>{{ b.ai_usage }} / {{ b.ai_quota }} msg</span>
+                                    <span>{{ b.ai_usage_pct }}%</span>
+                                </div>
+                                <div style="height: 6px; width: 100%; background: var(--border); border-radius: 3px; overflow: hidden;">
+                                    <div style="height: 100%; width: {{ b.ai_usage_pct if b.ai_usage_pct <= 100 else 100 }}%; background: {% if b.ai_usage_pct >= 100 %}#F85149{% elif b.ai_usage_pct >= 80 %}#F0B429{% else %}var(--green){% endif %}; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" onchange="toggleBusiness('{{ b.id }}', this)" {% if b.is_active %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('master.view_edit_business', biz_id=b.id) }}" class="action-link">Modifier</a>
+                            &nbsp;|&nbsp;
+                            <a href="{{ url_for('dashboard.admin_dashboard', biz_id=b.id) }}" class="action-link" style="color:var(--muted);">Dashboard →</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Card: Sectors -->
+        <div class="card">
+            <div class="header-card">
+                <h2>🔧 Secteurs d'Activité</h2>
+                <a href="{{ url_for('master.view_add_sector') }}" class="btn">+ Créer un secteur</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Secteur</th>
+                        <th>Nom d'affichage</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sectors %}
+                    <tr>
+                        <td><code>{{ s.id }}</code></td>
+                        <td style="font-weight:600;">{{ s.name }}</td>
+                        <td>
+                            <a href="{{ url_for('master.view_edit_sector', sector_id=s.id) }}" class="action-link">Modifier le vocabulaire</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div> <!-- /content -->
+</div> <!-- /main -->
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+    <script>
+    function toggleBusiness(bizId, checkbox) {
+        const isActive = checkbox.checked ? 1 : 0;
+        fetch(`/master/toggle-business/${bizId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Erreur: ' + data.error);
+                checkbox.checked = !checkbox.checked; // revert
+            }
+        })
+        .catch(error => {
+            alert('Erreur réseau');
+            checkbox.checked = !checkbox.checked; // revert
+        });
+    }
+    </script>
+</body>
+</html>

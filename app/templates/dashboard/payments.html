@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiements — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <style>
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 0 28px; height: 60px; display: flex; align-items: center;
+            justify-content: space-between; position: sticky; top: 0; z-index: 100;
+        }
+        .topbar-left h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+        .topbar-left p { font-size: 12px; color: var(--muted); }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .topbar-btn {
+            width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border);
+            border-radius: 9px; display: flex; align-items: center; justify-content: center;
+            color: var(--muted); text-decoration: none; font-size: 15px;
+        }
+        .topbar-btn:hover { color: var(--text); }
+        .content { padding: 28px; flex: 1; }
+
+        .plan-hero {
+            background: linear-gradient(135deg, rgba(240,180,41,0.08) 0%, rgba(248,81,73,0.05) 100%);
+            border: 1px solid rgba(240,180,41,0.2);
+            border-radius: 16px; padding: 32px 36px; margin-bottom: 28px;
+            display: flex; align-items: center; gap: 24px;
+        }
+        .plan-hero-icon {
+            width: 60px; height: 60px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; flex-shrink: 0;
+        }
+        .plan-hero h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        .plan-hero p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px 22px; position: relative; overflow: hidden;
+        }
+        .stat-card::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background: var(--accent, var(--green));
+        }
+        .stat-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text); margin-top: 10px; letter-spacing: -1px; }
+        .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+        .section-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+        .section-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .section-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .section-title i { color: #F0B429; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted);
+            background: var(--surface); border-bottom: 1px solid var(--border);
+        }
+        tbody td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: var(--row-hover); }
+
+        .amount-tag {
+            font-weight: 700; color: #F0B429;
+            background: rgba(240,180,41,0.1); border: 1px solid rgba(240,180,41,0.2);
+            padding: 4px 10px; border-radius: 6px; font-size: 13px;
+        }
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; }
+        .badge-waiting   { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(240,180,41,0.2); }
+        .badge-confirmed { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(37,211,102,0.2); }
+        .badge-ready     { background: var(--blue-bg);   color: var(--blue);   border: 1px solid rgba(88,166,255,0.2); }
+        .badge-cancelled { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,81,73,0.2); }
+
+        .integration-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 24px;
+        }
+        .integration-card {
+            background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;
+            padding: 20px; text-align: center; opacity: 0.6;
+            transition: opacity 0.2s, border-color 0.2s;
+        }
+        .integration-card:hover { opacity: 0.85; border-color: var(--green); }
+        .integration-icon { font-size: 28px; margin-bottom: 8px; }
+        .integration-name { font-size: 13px; font-weight: 600; color: var(--text); }
+        .integration-status { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+        .empty-state i { font-size: 36px; margin-bottom: 12px; display: block; }
+
+        @media (max-width: 768px) { .main { margin-left: 0; } .content { padding: 16px; } .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+{% include 'dashboard/_sidebar.html' %}
+
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main">
+    <header class="topbar">
+        <div class="topbar-left" style="display:flex; align-items:center; gap:14px;">
+            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;display:none;" id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+            <div>
+                <h1>💳 Paiements & Revenus</h1>
+                <p>Suivi des transactions et intégrations de paiement</p>
+            </div>
+        </div>
+        <div class="topbar-right">
+            {% include 'dashboard/_notif_bell.html' %}
+            <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}" class="topbar-btn"><i class="fas fa-cog"></i></a>
+            <a href="{{ url_for('dashboard.logout') }}" class="topbar-btn"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </header>
+
+    <div class="content">
+
+        <!-- Hero PREMIUM -->
+        <div class="plan-hero">
+            <div class="plan-hero-icon" style="background:rgba(240,180,41,0.1); border:1px solid rgba(240,180,41,0.25);">💳</div>
+            <div>
+                <h2>Module Paiements — Plan PREMIUM ✨</h2>
+                <p>Suivez vos revenus, consultez l'historique des transactions et connectez vos passerelles de paiement (Orange Money, Wave, Stripe, PayPal…) directement depuis votre dashboard.</p>
+            </div>
+        </div>
+
+        <!-- Stats rapides -->
+        {% set ns = namespace(total_ca=0, paid_count=0) %}
+        {% for res in reservations if 'Annulé' not in res['statut'] %}
+            {% set ns.total_ca = ns.total_ca + (res['montant'] or 0) %}
+            {% if res['montant'] and res['montant'] > 0 %}
+                {% set ns.paid_count = ns.paid_count + 1 %}
+            {% endif %}
+        {% endfor %}
+        {% set total_ca = ns.total_ca %}
+        {% set paid_count = ns.paid_count %}
+        <div class="stats-grid">
+            <div class="stat-card" style="--accent:#F0B429;">
+                <div class="stat-label">Chiffre d'affaires total</div>
+                <div class="stat-value">{{ "{:,.0f}".format(total_ca) }}</div>
+                <div class="stat-sub">F CFA · toutes transactions</div>
+            </div>
+            <div class="stat-card" style="--accent:var(--green);">
+                <div class="stat-label">Transactions payées</div>
+                <div class="stat-value">{{ paid_count }}</div>
+                <div class="stat-sub">sur {{ reservations|length }} au total</div>
+            </div>
+            <div class="stat-card" style="--accent:var(--blue);">
+                <div class="stat-label">Ticket moyen</div>
+                <div class="stat-value">{{ "{:,.0f}".format(total_ca / paid_count if paid_count else 0) }}</div>
+                <div class="stat-sub">F CFA par transaction</div>
+            </div>
+        </div>
+
+        <!-- Tableau des transactions -->
+        <div class="section-card">
+            <div class="section-header">
+                <span class="section-title"><i class="fas fa-coins"></i> Historique des transactions</span>
+                <span style="font-size:12px; color:var(--muted);">{{ reservations|length }} entrée(s)</span>
+            </div>
+            <div class="table-wrap">
+                {% if reservations %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Détails</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in reservations %}
+                        <tr>
+                            <td style="font-weight:600;">{{ res['wa_id'] }}</td>
+                            <td style="color:var(--muted); font-size:13px;">{{ res['details'][:60] }}{% if res['details']|length > 60 %}…{% endif %}</td>
+                            <td>
+                                {% if res['montant'] and res['montant'] > 0 %}
+                                    <span class="amount-tag">{{ "{:,.0f}".format(res['montant']) }} FCFA</span>
+                                {% else %}
+                                    <span style="color:var(--muted); font-size:12px;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if res['statut'] == 'En attente' %}
+                                    <span class="badge badge-waiting"><i class="fas fa-hourglass-half"></i> En attente</span>
+                                {% elif res['statut'] == 'Confirmé ✅' %}
+                                    <span class="badge badge-confirmed"><i class="fas fa-check-circle"></i> Confirmé</span>
+                                {% elif res['statut'] == 'Prêt' or res['statut'] == 'Expédié' or res['statut'] == 'Livré' %}
+                                    <span class="badge badge-ready"><i class="fas fa-box"></i> {{ res['statut'] }}</span>
+                                {% elif 'Annulé' in res['statut'] %}
+                                    <span class="badge badge-cancelled"><i class="fas fa-times-circle"></i> Annulé</span>
+                                {% else %}
+                                    <span class="badge badge-confirmed">{{ res['statut'] }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-coins"></i>
+                    <p>Aucune transaction enregistrée.<br>Les paiements apparaîtront ici dès que le bot en capturera.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Intégrations de paiement -->
+        <div class="section-card">
+            <div class="section-header">
+                <span class="section-title"><i class="fas fa-plug"></i> Passerelles de Paiement</span>
+                <span style="font-size:12px; color:var(--muted);">Intégrations à venir</span>
+            </div>
+            <div class="integration-grid">
+                <div class="integration-card">
+                    <div class="integration-icon">🟠</div>
+                    <div class="integration-name">Orange Money</div>
+                    <div class="integration-status">Bientôt disponible</div>
+                </div>
+                <div class="integration-card">
+                    <div class="integration-icon">🌊</div>
+                    <div class="integration-name">Wave</div>
+                    <div class="integration-status">Bientôt disponible</div>
+                </div>
+                <div class="integration-card">
+                    <div class="integration-icon">💳</div>
+                    <div class="integration-name">Stripe</div>
+                    <div class="integration-status">Bientôt disponible</div>
+                </div>
+                <div class="integration-card">
+                    <div class="integration-icon">🅿️</div>
+                    <div class="integration-name">PayPal</div>
+                    <div class="integration-status">Bientôt disponible</div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

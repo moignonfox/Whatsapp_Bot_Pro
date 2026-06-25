@@ -1,0 +1,13 @@
+{#
+  _theme_toggle.html — Bouton toggle thème partagé.
+  Inclure juste avant </body> sur toutes les pages du dashboard.
+  Le script theme.js doit aussi être inclus.
+#}
+<button id="theme-toggle" aria-label="Changer de thème" title="Changer de thème">
+    <svg class="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-13a1 1 0 0 0 1-1V2a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1zm0 14a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm9-6h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zM3 12a1 1 0 0 0-1-1H1a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1zm15.364-7.05-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 17.657l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0-1.414-1.414zm12.728.707-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 6.343l-.707-.707A1 1 0 0 0 4.222 7.05l.707.707a1 1 0 0 0 1.414-1.414z"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-.95z"/>
+    </svg>
+</button>

@@ -1,0 +1,18 @@
+# === Fichiers sensibles ===
+.env
+
+# === Base de données ===
+data/*.db
+
+# === Python cache ===
+__pycache__/
+*.pyc
+
+# === Ancien code ===
+old/
+
+# === Environnement virtuel ===
+.venv/
+
+# === Flask instance ===
+instance/

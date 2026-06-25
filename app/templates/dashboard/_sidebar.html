@@ -1,0 +1,579 @@
+{#
+  _sidebar.html — Sidebar partagée pour toutes les pages du Dashboard.
+
+  Variables attendues (passées depuis les routes) :
+    - biz_id       : identifiant du business
+    - business     : objet business (business.nom)
+    - vocab        : dict vocabulaire du secteur
+    - plan         : 'BASIC' | 'PRO' | 'PREMIUM'
+    - active_page  : 'dashboard' | 'chat' | 'clients' | 'marketing' | 'payments' | 'settings'
+#}
+<aside class="sidebar fixed" id="sidebar">
+
+    {# ── Logo ── #}
+    <div class="sidebar-logo">
+        <div class="logo-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+        </div>
+        <span class="logo-text">My<span>Bot</span></span>
+        <button class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open')" aria-label="Fermer le menu">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    {# ── Identité business + badge plan ── #}
+    <div class="sidebar-biz">
+        <div class="biz-chip">
+            <div class="biz-avatar"><i class="fas fa-store"></i></div>
+            <div>
+                <div class="biz-name">{{ business.nom }}</div>
+                <div class="biz-id-label" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span>{{ biz_id }}</span>
+                    {% if plan == 'PREMIUM' %}
+                        <span style="font-size:9px;font-weight:700;background:#F0B429;color:#1a1a1a;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">PREMIUM</span>
+                    {% elif plan == 'PRO' %}
+                        <span style="font-size:9px;font-weight:700;background:#25D366;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">PRO</span>
+                    {% else %}
+                        <span style="font-size:9px;font-weight:700;background:#58A6FF;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">BASIC</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Navigation principale ── #}
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Principal</div>
+
+        <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}"
+           href="{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}">
+            <i class="fas fa-chart-pie"></i> Tableau de bord
+        </a>
+
+        <a class="nav-item {% if active_page == 'orders' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_orders', biz_id=biz_id) }}">
+            <i class="fas fa-calendar-check"></i> Historique (Commandes)
+        </a>
+
+        <a class="nav-item {% if active_page == 'catalog' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_catalog', biz_id=biz_id) }}">
+            <i class="fas fa-book-open"></i> Catalogue / Menu
+        </a>
+
+        <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}">
+            <i class="fas fa-comments"></i> Conversations
+            {% if global_unread_count and global_unread_count > 0 %}
+            <span style="font-size:10.5px;background:#F85149;color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
+            {% endif %}
+        </a>
+
+        <a class="nav-item {% if active_page == 'clients' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_clients', biz_id=biz_id) }}">
+            <i class="fas fa-users"></i> Clients
+        </a>
+
+        {# ── Section Croissance ── #}
+        <div class="nav-section-label">Croissance</div>
+
+        {% if plan in ['PRO', 'PREMIUM'] %}
+        <a class="nav-item {% if active_page == 'marketing' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_marketing', biz_id=biz_id) }}">
+            <i class="fas fa-bullhorn"></i> Marketing
+        </a>
+        {% else %}
+        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
+            <i class="fas fa-bullhorn"></i> Marketing
+            <span style="font-size:9px;background:rgba(88,166,255,.12);color:#58A6FF;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PRO+</span>
+        </div>
+        {% endif %}
+
+        {% if plan == 'PREMIUM' %}
+        <a class="nav-item {% if active_page == 'payments' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_payments', biz_id=biz_id) }}">
+            <i class="fas fa-credit-card"></i> Paiements
+        </a>
+        {% else %}
+        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
+            <i class="fas fa-credit-card"></i> Paiements
+            <span style="font-size:9px;background:rgba(240,180,41,.12);color:#F0B429;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PREMIUM</span>
+        </div>
+        {% endif %}
+
+        {# ── Configuration ── #}
+        <div class="nav-section-label">Configuration</div>
+
+        <a class="nav-item {% if active_page == 'settings' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}">
+            <i class="fas fa-cog"></i> Paramètres
+        </a>
+
+        {% if plan == 'PREMIUM' %}
+        <a class="nav-item {% if active_page == 'agents' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}">
+            <i class="fas fa-robot"></i> Équipe IA
+        </a>
+        {% else %}
+        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
+            <i class="fas fa-robot"></i> Équipe IA
+            <span style="font-size:9px;background:rgba(240,180,41,.12);color:#F0B429;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PREMIUM</span>
+        </div>
+        {% endif %}
+
+
+
+    </nav>
+
+    {# ── Footer ── #}
+    <div class="sidebar-footer">
+        <a class="nav-item" href="{{ url_for('dashboard.logout') }}">
+            <i class="fas fa-sign-out-alt"></i> Se déconnecter
+        </a>
+    </div>
+
+</aside>
+
+{# ══════════════════════════════════════════════════════════════
+   SYSTÈME DE NOTIFICATIONS GLOBAL — toutes les pages sauf /chat
+   ══════════════════════════════════════════════════════════════ #}
+{% if active_page != 'chat' %}
+
+{# ── Panneau de notifications (HTML) ── #}
+<div id="notif-overlay" onclick="closeNotifPanel()" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.35);"></div>
+<div id="notif-panel" style="
+    display:none; position:fixed; top:0; right:0; height:100vh; width:380px; max-width:95vw;
+    background:var(--surface,#1a2233); border-left:1px solid var(--border,#2d3748);
+    z-index:9999; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,0.4);
+    font-family:'Inter',sans-serif;
+">
+    <div style="padding:20px 20px 14px; border-bottom:1px solid var(--border,#2d3748); display:flex; align-items:center; justify-content:space-between;">
+        <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text,#e0e6f0);">Notifications</div>
+            <div id="notif-subtitle" style="font-size:12px;color:var(--muted,#8892a4);margin-top:2px;">Chargement...</div>
+        </div>
+        <button onclick="closeNotifPanel()" style="background:none;border:none;color:var(--muted,#8892a4);cursor:pointer;font-size:20px;padding:4px;border-radius:6px;" aria-label="Fermer">×</button>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border,#2d3748);">
+        <button class="notif-tab active" id="tab-all" onclick="switchTab('all')">Tout</button>
+        <button class="notif-tab" id="tab-orders" onclick="switchTab('orders')">
+            Commandes <span id="tab-orders-badge" style="display:none;background:#F85149;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px;margin-left:4px;"></span>
+        </button>
+        <button class="notif-tab" id="tab-messages" onclick="switchTab('messages')">
+            Messages <span id="tab-msgs-badge" style="display:none;background:#25d366;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px;margin-left:4px;"></span>
+        </button>
+    </div>
+    <div id="notif-list" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border,#2d3748);">
+        <button onclick="clearAllNotifications()" style="width:100%;padding:9px;background:none;border:1px solid var(--border,#2d3748);border-radius:8px;color:var(--muted,#8892a4);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">
+            <i class="fas fa-trash-alt" style="margin-right:6px;"></i>Tout effacer
+        </button>
+    </div>
+</div>
+
+{# ── Bouton cloche (injecté dynamiquement dans la topbar) ── #}
+<style>
+    @keyframes slideInGlobalToast {
+        from { transform: translateX(110%); opacity: 0; }
+        to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes notifPanelIn {
+        from { transform: translateX(100%); }
+        to   { transform: translateX(0); }
+    }
+    @keyframes bellRing {
+        0%,100%{ transform:rotate(0); }
+        20%    { transform:rotate(-20deg); }
+        40%    { transform:rotate(20deg); }
+        60%    { transform:rotate(-10deg); }
+        80%    { transform:rotate(10deg); }
+    }
+    .notif-tab {
+        flex:1; padding:10px 0; background:none; border:none;
+        color:var(--muted,#8892a4); font-size:12px; font-weight:600;
+        cursor:pointer; font-family:'Inter',sans-serif;
+        border-bottom:2px solid transparent; transition:all .2s;
+    }
+    .notif-tab.active { color:var(--text,#e0e6f0); border-bottom-color:var(--green,#25d366); }
+    .notif-item {
+        padding:14px 16px; border-bottom:1px solid var(--border,#2d3748);
+        cursor:pointer; transition:background .15s;
+    }
+    .notif-item:hover { background:var(--card,#232c3d); }
+    .notif-item.order { border-left:3px solid #F0B429; }
+    .notif-item.message { border-left:3px solid #25d366; }
+    .notif-item .notif-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+    .notif-item .notif-icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .notif-item .notif-icon.order { background:rgba(240,180,41,.15); color:#F0B429; }
+    .notif-item .notif-icon.message { background:rgba(37,211,102,.12); color:#25d366; }
+    .notif-item .notif-title { font-size:12px; font-weight:700; color:var(--text,#e0e6f0); }
+    .notif-item .notif-time { font-size:11px; color:var(--muted,#8892a4); margin-left:auto; }
+    .notif-item .notif-body { font-size:12px; color:var(--muted,#8892a4); margin-left:40px; line-height:1.4; }
+    .notif-item .notif-actions { display:flex; gap:8px; margin-left:40px; margin-top:8px; }
+    .notif-btn { padding:5px 12px; border-radius:6px; border:none; font-size:11px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
+    .notif-btn-confirm { background:rgba(37,211,102,.15); color:#25d366; }
+    .notif-btn-confirm:hover { background:#25d366; color:#fff; }
+    .notif-btn-cancel  { background:rgba(248,81,73,.12); color:#F85149; }
+    .notif-btn-cancel:hover  { background:#F85149; color:#fff; }
+    #notif-bell-btn {
+        position:relative; width:36px; height:36px; background:var(--card,#232c3d);
+        border:1px solid var(--border,#2d3748); border-radius:9px;
+        display:flex; align-items:center; justify-content:center;
+        color:var(--muted,#8892a4); cursor:pointer;
+        font-size:15px; transition:color .2s, background .2s; flex-shrink:0;
+    }
+    #notif-bell-btn:hover { color:var(--text,#e0e6f0); background:var(--card-hover,#2a3548); }
+    #notif-bell-btn.ringing i { animation:bellRing 0.6s ease; }
+    #notif-total-badge {
+        position:absolute; top:-5px; right:-5px;
+        min-width:18px; height:18px; background:#F85149; color:#fff;
+        border-radius:9px; font-size:10px; font-weight:700;
+        display:none; align-items:center; justify-content:center; padding:0 4px;
+    }
+    #global-notif-msg-badge {
+        display:inline-flex; align-items:center; justify-content:center;
+        min-width:20px; height:20px; background:#25d366; color:#fff;
+        border-radius:10px; font-size:11px; font-weight:700; padding:0 5px; margin-left:auto;
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+(function() {
+    'use strict';
+    const bizId     = "{{ biz_id }}";
+    const chatUrl   = "{{ url_for('dashboard.chat_inbox',    biz_id=biz_id) }}";
+    const dashUrl   = "{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}";
+    const csrfToken = "{{ csrf_token() }}";
+
+    // ── État des notifications ──
+    let notifications = [];   // [{type:'order'|'message', data, time, read}]
+    let unreadOrders   = 0;
+    let unreadMessages = 0;
+    let currentTab     = 'all';
+    let panelOpen      = false;
+    
+    // ── Persistance (localStorage) ──
+    const LS_KEY = 'mybot_notifs_' + bizId;
+    function saveState() {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+            notifications, unreadOrders, unreadMessages
+        }));
+    }
+    function loadState() {
+        const saved = localStorage.getItem(LS_KEY);
+        if (saved) {
+            try {
+                const s = JSON.parse(saved);
+                notifications = s.notifications || [];
+                unreadOrders = s.unreadOrders || 0;
+                unreadMessages = s.unreadMessages || 0;
+            } catch(e) {}
+        }
+    }
+    loadState(); // Charger au démarrage
+
+    // ── Utilitaires ──
+    function esc(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+    function now()  { return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+
+    // ── Bouton cloche : injecté via le HTML statique de chaque page ──
+    // (le bouton #notif-bell-btn est défini directement dans les templates)
+
+    function updateBellBadge() {
+        const total = unreadOrders + unreadMessages;
+        const badge = document.getElementById('notif-total-badge');
+        if (!badge) return;
+        if (total > 0) {
+            badge.textContent = total > 99 ? '99+' : total;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+        // Badge sur le lien "Conversations" de la sidebar
+        const chatLink = document.querySelector('a[href="'+chatUrl+'"]');
+        if (chatLink) {
+            let mb = document.getElementById('global-notif-msg-badge');
+            if (unreadMessages > 0) {
+                if (!mb) {
+                    mb = document.createElement('span');
+                    mb.id = 'global-notif-msg-badge';
+                    chatLink.appendChild(mb);
+                }
+                mb.textContent = unreadMessages > 99 ? '99+' : unreadMessages;
+                mb.style.display = 'inline-flex';
+            } else if (mb) {
+                mb.style.display = 'none';
+            }
+        }
+        // Onglets du panneau
+        const obadge = document.getElementById('tab-orders-badge');
+        const mbadge = document.getElementById('tab-msgs-badge');
+        if (obadge) { obadge.textContent = unreadOrders;   obadge.style.display = unreadOrders   > 0 ? 'inline' : 'none'; }
+        if (mbadge) { mbadge.textContent = unreadMessages; mbadge.style.display = unreadMessages > 0 ? 'inline' : 'none'; }
+        // Sous-titre du panneau
+        const sub = document.getElementById('notif-subtitle');
+        if (sub) sub.textContent = notifications.length === 0 ? 'Aucune notification' : `${notifications.length} notification${notifications.length>1?'s':''}`;
+    }
+
+    function ringBell() {
+        const btn = document.getElementById('notif-bell-btn');
+        if (!btn) return;
+        btn.classList.add('ringing');
+        setTimeout(() => btn.classList.remove('ringing'), 700);
+    }
+
+    // ── Panneau ──
+    window.toggleNotifPanel = function() {
+        panelOpen ? closeNotifPanel() : openNotifPanel();
+    };
+    window.closeNotifPanel = function() {
+        const panel   = document.getElementById('notif-panel');
+        const overlay = document.getElementById('notif-overlay');
+        if (panel)   panel.style.display   = 'none';
+        if (overlay) overlay.style.display = 'none';
+        panelOpen = false;
+    };
+    function openNotifPanel() {
+        const panel   = document.getElementById('notif-panel');
+        const overlay = document.getElementById('notif-overlay');
+        if (panel) {
+            panel.style.display    = 'flex';
+            panel.style.animation  = 'notifPanelIn 0.28s cubic-bezier(.22,.68,0,1.2)';
+        }
+        if (overlay) overlay.style.display = 'block';
+        panelOpen = true;
+        renderNotifList();
+    }
+
+    window.switchTab = function(tab) {
+        currentTab = tab;
+        ['all','orders','messages'].forEach(t => {
+            document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+        });
+        renderNotifList();
+    };
+
+    function renderNotifList() {
+        const list = document.getElementById('notif-list');
+        if (!list) return;
+        const filtered = currentTab === 'all' ? notifications
+            : notifications.filter(n => n.type === (currentTab==='orders'?'order':'message'));
+        if (filtered.length === 0) {
+            list.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--muted,#8892a4);">
+                <i class="fas fa-bell-slash" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                Aucune notification
+            </div>`;
+            return;
+        }
+        list.innerHTML = filtered.slice().reverse().map((n,i) => buildNotifItem(n, filtered.length-1-i)).join('');
+    }
+
+    function buildNotifItem(n, realIdx) {
+        if (n.type === 'order') {
+            const d = n.data;
+            const isPending = d.statut === 'En attente';
+            const actions = isPending ? `
+                <div class="notif-actions">
+                    <button class="notif-btn notif-btn-confirm" onclick="actionOrder(${d.res_id||'null'},'confirm',this)">
+                        <i class="fas fa-check"></i> Confirmer
+                    </button>
+                    <button class="notif-btn notif-btn-cancel" onclick="actionOrder(${d.res_id||'null'},'cancel',this)">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                </div>` : `<div class="notif-actions"><span style="font-size:11px;color:var(--muted,#8892a4);margin-left:0;">${esc(d.statut||'')}</span></div>`;
+            const prio = d.priorite === 'Haute'
+                ? `<span style="font-size:10px;background:#F85149;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;">URGENT</span>` : '';
+            return `<div class="notif-item order" onclick="openNotification('${n.id}', '${dashUrl}', 'order')">
+                <div class="notif-header">
+                    <div class="notif-icon order"><i class="fas fa-shopping-bag" style="font-size:13px;"></i></div>
+                    <span class="notif-title">Nouvelle commande ${prio}</span>
+                    <span class="notif-time">${n.time}</span>
+                </div>
+                <div class="notif-body">+${esc(d.wa_id)} · ${esc((d.details||'').substring(0,80))}</div>
+                ${actions}
+            </div>`;
+        } else {
+            const d = n.data;
+            return `<div class="notif-item message" onclick="openNotification('${n.id}', '${chatUrl}?wa_id=${encodeURIComponent(d.wa_id)}', 'message')">
+                <div class="notif-header">
+                    <div class="notif-icon message"><i class="fas fa-comment-dots" style="font-size:13px;"></i></div>
+                    <span class="notif-title">Message reçu</span>
+                    <span class="notif-time">${n.time}</span>
+                </div>
+                <div class="notif-body">+${esc(d.wa_id)} · ${esc((d.content||'').substring(0,80))}</div>
+            </div>`;
+        }
+    }
+
+    // ── Navigation depuis le panneau ──
+    window.openNotification = function(id, destUrl, type) {
+        // Supprimer la notification de la liste
+        const idx = notifications.findIndex(n => n.id === id);
+        if (idx !== -1) {
+            notifications.splice(idx, 1);
+            if (type === 'order' && unreadOrders > 0) unreadOrders--;
+            if (type === 'message' && unreadMessages > 0) unreadMessages--;
+            saveState();
+        }
+        window.location.href = destUrl;
+    };
+
+    window.clearMessagesForWaId = function(wa_id) {
+        let changed = false;
+        notifications = notifications.filter(n => {
+            if (n.data && n.data.wa_id === wa_id) {
+                if (n.type === 'message' && unreadMessages > 0) unreadMessages--;
+                if (n.type === 'order' && unreadOrders > 0) unreadOrders--;
+                changed = true;
+                return false; // On supprime
+            }
+            return true;
+        });
+        if (changed) {
+            saveState();
+            updateBellBadge();
+            if (panelOpen) renderNotifList();
+        }
+    };
+
+    // ── Actions directes depuis le panneau ──
+    window.actionOrder = function(resId, action, btn) {
+        if (!resId) return;
+        event.stopPropagation();
+        btn.disabled = true;
+        btn.textContent = '...';
+        const url = `/${action}/${resId}`;
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.status === 'ok') {
+                // Mettre à jour le statut dans la liste locale
+                const n = notifications.find(n => n.data && n.data.res_id === resId);
+                if (n) {
+                    n.data.statut = resp.statut;
+                    if (unreadOrders > 0) unreadOrders--; // Action effectuée, on diminue le compteur
+                }
+                saveState();
+                updateBellBadge();
+                renderNotifList();
+                
+                // Si la page actuelle affiche la liste des commandes, on la rafraîchit pour éviter les doublons d'action
+                if (document.querySelector('.btn-confirm') || document.querySelector('.btn-cancel')) {
+                    window.location.reload();
+                }
+            }
+        })
+        .catch(() => { btn.disabled = false; btn.textContent = action === 'confirm' ? 'Confirmer' : 'Annuler'; });
+    };
+
+    window.clearAllNotifications = function() {
+        notifications.length = 0;
+        unreadOrders = 0;
+        unreadMessages = 0;
+        saveState();
+        updateBellBadge();
+        renderNotifList();
+    };
+
+    // ── Toast flottant ──
+    function showToast(type, data) {
+        const existing = document.getElementById('global-notif-toast');
+        if (existing) existing.remove();
+
+        const isOrder   = type === 'order';
+        const color     = isOrder ? '#F0B429' : '#25d366';
+        const iconClass = isOrder ? 'fa-shopping-bag' : 'fa-comment-dots';
+        const title     = isOrder ? '🛒 Nouvelle commande' : '💬 Nouveau message';
+        const body      = isOrder
+            ? `+${data.wa_id} · ${(data.details||'').substring(0,60)}`
+            : `+${data.wa_id} · ${(data.content||'').substring(0,60)}`;
+        const dest = isOrder ? dashUrl : chatUrl + '?wa_id=' + encodeURIComponent(data.wa_id);
+
+        const toast = document.createElement('div');
+        toast.id = 'global-notif-toast';
+        toast.style.cssText = [
+            'position:fixed','bottom:24px','right:24px','z-index:99999',
+            'background:var(--surface,#1a2233)',`border:1.5px solid ${color}`,
+            'border-radius:14px','padding:14px 16px','max-width:340px','min-width:260px',
+            'box-shadow:0 10px 40px rgba(0,0,0,0.5)',
+            'cursor:pointer','display:flex','align-items:flex-start','gap:12px',
+            'animation:slideInGlobalToast 0.35s cubic-bezier(.22,.68,0,1.2)'
+        ].join(';');
+        toast.innerHTML = `
+            <div style="width:40px;height:40px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid ${color};">
+                <i class="fas ${iconClass}" style="color:${color};font-size:16px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:var(--text,#e0e6f0);margin-bottom:3px;">${esc(title)}</div>
+                <div style="font-size:12px;color:var(--muted,#8892a4);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(body)}</div>
+                <div style="font-size:11px;color:${color};margin-top:6px;font-weight:600;">
+                    <i class="fas fa-arrow-right" style="font-size:9px;margin-right:3px;"></i>${isOrder ? 'Voir le tableau de bord' : 'Voir la conversation'}
+                </div>
+            </div>
+            <button id="global-notif-toast-close" style="background:none;border:none;color:var(--muted,#8892a4);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;">×</button>
+        `;
+        toast.addEventListener('click', function(e) {
+            if (e.target.id === 'global-notif-toast-close') { toast.remove(); return; }
+            window.location.href = dest;
+        });
+        document.body.appendChild(toast);
+        setTimeout(() => toast && toast.remove(), 8000);
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBellBadge();
+    });
+    if (document.readyState !== 'loading') {
+        updateBellBadge();
+    }
+
+    const socket = io();
+    socket.on('connect', function() {
+        socket.emit('rejoindre_room', { room: bizId });
+    });
+
+    // Message client entrant
+    socket.on('nouveau_message', function(data) {
+        if (data.business_id !== bizId) return;
+        if (data.role !== 'user') return;
+        unreadMessages++;
+        const notifId = Date.now().toString() + Math.random().toString(36).substring(2);
+        notifications.unshift({ id: notifId, type:'message', data, time:now(), read:false }); // Ajout au début
+        if (notifications.length > 50) notifications.length = 50; // Limite
+        saveState();
+        updateBellBadge();
+        ringBell();
+        showToast('message', data);
+        if (panelOpen) renderNotifList();
+    });
+
+    // Nouvelle commande/réservation
+    socket.on('nouvelle_commande', function(data) {
+        if (data.business_id !== bizId) return;
+        unreadOrders++;
+        const notifId = Date.now().toString() + Math.random().toString(36).substring(2);
+        notifications.unshift({ id: notifId, type:'order', data, time:now(), read:false }); // Ajout au début
+        if (notifications.length > 50) notifications.length = 50; // Limite
+        saveState();
+        updateBellBadge();
+        ringBell();
+        showToast('order', data);
+        if (panelOpen) renderNotifList();
+    });
+
+    // Mise à jour de statut (depuis un autre onglet ou depuis le dashboard)
+    socket.on('statut_commande', function(data) {
+        if (data.business_id !== bizId) return;
+        const n = notifications.find(n => n.type==='order' && n.data && n.data.res_id === data.res_id);
+        if (n) { n.data.statut = data.statut; if (panelOpen) renderNotifList(); }
+    });
+
+})();
+</script>
+{% endif %}
+

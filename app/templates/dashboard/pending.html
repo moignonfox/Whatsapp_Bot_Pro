@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>En attente d'activation — MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root, [data-theme="dark"] {
+            --bg: #0D1117; --surface: #161B27; --card: #1C2333; --border: #2A3347;
+            --green: #25D366; --text: #F0F6FC; --muted: #8B949E; --error: #F85149;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+        }
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            background: rgba(37,211,102,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        p {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        .highlight {
+            color: var(--green);
+            font-weight: 600;
+        }
+        .form-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+        }
+        .form-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .alert strong { color: #ef4444; }
+        .field { margin-bottom: 20px; }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--muted);
+        }
+        .field input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .field input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(37,211,102,0.15);
+        }
+        .btn-submit {
+            width: 100%;
+            background: var(--green);
+            color: #000;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            background: #20b858;
+        }
+        .flash-msg {
+            background: rgba(37,211,102,0.1);
+            color: var(--green);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .logout-link {
+            display: inline-block;
+            margin-top: 24px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .logout-link:hover {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="icon-container">
+            ⏳
+        </div>
+        
+        <h1>En attente d'activation</h1>
+        <p>Votre compte est créé ! Un de nos experts va vous contacter sur WhatsApp au <span class="highlight">{{ business.owner_phone }}</span> pour finaliser la configuration (Onboarding Conciergerie).</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-msg">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-section">
+            <div class="form-title">Gagnez du temps</div>
+            
+            <div class="alert">
+                <strong>🚨 Attention :</strong> Le numéro de téléphone que vous soumettez ici pour le bot ne doit pas être actuellement actif sur une application WhatsApp normale ou WhatsApp Business. Il doit être vierge.
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field">
+                    <label>Votre numéro personnel (pour vous contacter)</label>
+                    <input type="text" name="owner_phone" value="{{ business.owner_phone or '' }}" placeholder="ex: +33612345678" required>
+                </div>
+                
+                <div class="field">
+                    <label>Numéro de téléphone WhatsApp vierge (Bot)</label>
+                    <input type="text" name="requested_bot_phone" value="{{ business.requested_bot_phone or '' }}" placeholder="ex: +33600000000">
+                </div>
+                <button type="submit" class="btn-submit">Enregistrer les informations</button>
+            </form>
+        </div>
+
+        <a href="{{ url_for('dashboard.logout') }}" class="logout-link">← Se déconnecter</a>
+    </div>
+
+</body>
+</html>

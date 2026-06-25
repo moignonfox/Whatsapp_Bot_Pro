@@ -1,0 +1,105 @@
+/* ══════════════════════════════════════════════
+   TOKENS — Dark (défaut)
+══════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+    --bg:           #0D1117;
+    --surface:      #161B27;
+    --card:         #1C2333;
+    --card-hover:   #212d42;
+    --border:       #2A3347;
+    --border-light: #232d3f;
+    --green:        #25D366;
+    --green-dim:    #1aaa50;
+    --green-glow:   rgba(37,211,102,0.15);
+    --green-bg:     rgba(37,211,102,0.08);
+    --green-border: rgba(37,211,102,0.25);
+    --text:         #F0F6FC;
+    --muted:        #8B949E;
+    --muted2:       #4a5568;
+    --error:        #F85149;
+    --red:          #F85149;
+    --red-bg:       rgba(248,81,73,0.10);
+    --amber:        #f0b429;
+    --amber-bg:     rgba(240,180,41,0.10);
+    --blue:         #58a6ff;
+    --blue-bg:      rgba(88,166,255,0.10);
+    --sidebar-w:    240px;
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.35);
+    --shadow:       0 24px 80px rgba(0,0,0,0.55);
+    --row-hover:    rgba(255,255,255,0.02);
+    --toggle-bg:    #2A3347;
+    --toggle-hover: #354055;
+    --placeholder:  #4a5568;
+    --blob1-opacity: 0.35;
+    --blob2-opacity: 0.35;
+    /* Chart.js colors */
+    --chart-grid:   rgba(42,51,71,0.7);
+    --chart-tick:   #8B949E;
+    --chart-tooltip-bg:     #1C2333;
+    --chart-tooltip-border: #2A3347;
+    --chart-tooltip-title:  #F0F6FC;
+    --chart-tooltip-body:   #8B949E;
+    --chart-point-border:   #1C2333;
+}
+
+/* ══════════════════════════════════════════════
+   TOKENS — Light
+══════════════════════════════════════════════ */
+[data-theme="light"] {
+    --bg:           #F0F4F8;
+    --surface:      #FFFFFF;
+    --card:         #FFFFFF;
+    --card-hover:   #F6F8FA;
+    --border:       #D1D9E0;
+    --border-light: #E2E8EF;
+    --green:        #1DA851;
+    --green-dim:    #178f44;
+    --green-glow:   rgba(29,168,81,0.18);
+    --green-bg:     rgba(29,168,81,0.08);
+    --green-border: rgba(29,168,81,0.28);
+    --text:         #0D1117;
+    --muted:        #57606A;
+    --muted2:       #A8B3BC;
+    --error:        #CF222E;
+    --red:          #CF222E;
+    --red-bg:       rgba(207,34,46,0.08);
+    --amber:        #B08800;
+    --amber-bg:     rgba(176,136,0,0.08);
+    --blue:         #0969DA;
+    --blue-bg:      rgba(9,105,218,0.08);
+    --sidebar-w:    240px;
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.08);
+    --shadow:       0 24px 80px rgba(0,0,0,0.12);
+    --row-hover:    rgba(0,0,0,0.025);
+    --toggle-bg:    #E6EBF0;
+    --toggle-hover: #D1D9E0;
+    --placeholder:  #A8B3BC;
+    --blob1-opacity: 0.18;
+    --blob2-opacity: 0.12;
+    /* Chart.js colors */
+    --chart-grid:   rgba(200,210,220,0.7);
+    --chart-tick:   #57606A;
+    --chart-tooltip-bg:     #FFFFFF;
+    --chart-tooltip-border: #D1D9E0;
+    --chart-tooltip-title:  #0D1117;
+    --chart-tooltip-body:   #57606A;
+    --chart-point-border:   #FFFFFF;
+}
+
+/* ══════════════════════════════════════════════
+   Base & Transitions
+══════════════════════════════════════════════ */
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
