@@ -73,6 +73,25 @@
     }
   });
 
+  // -- Script global de Responsivité ---------------------------------------
+  function applyResponsiveFixes() {
+    // Rend tous les tableaux "scrollables" horizontalement sur mobile
+    document.querySelectorAll('table').forEach(table => {
+      if (!table.parentElement.classList.contains('table-container') && !table.parentElement.classList.contains('table-responsive')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-container';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyResponsiveFixes);
+  } else {
+    applyResponsiveFixes();
+  }
+
   // Expose globalement pour usage optionnel depuis d'autres scripts
   window.MybotTheme = { toggle: toggleTheme, apply: applyTheme };
 })();
