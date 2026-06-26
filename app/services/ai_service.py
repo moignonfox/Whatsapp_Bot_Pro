@@ -191,13 +191,20 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     # Vérifier si le client a déjà une commande en attente
     pending_order_str = ""
     last_res = order_repo.get_last_for_user(wa_id)
-    if last_res and last_res['statut'] == 'En attente':
-        pending_order_str = (
-            f"⚠️ ATTENTION : Le client a DÉJÀ une commande EN ATTENTE dans le système ({last_res['details']}).\n"
-            "Tu NE DOIS SOUS AUCUN PRÉTEXTE générer un nouveau tag [RESERVATION:...].\n"
-            "S'il demande à confirmer ou modifier, dis-lui que sa commande est déjà enregistrée "
-            "et qu'il doit attendre qu'un conseiller la valide.\n"
-        )
+    if last_res:
+        if last_res['statut'] == 'En attente':
+            pending_order_str = (
+                f"⚠️ ATTENTION : Le client a DÉJÀ une commande EN ATTENTE dans le système ({last_res['details']}).\n"
+                "Tu NE DOIS SOUS AUCUN PRÉTEXTE générer un nouveau tag [RESERVATION:...].\n"
+                "S'il demande à confirmer ou modifier, dis-lui que sa commande est déjà enregistrée "
+                "et qu'il doit attendre qu'un conseiller la valide.\n"
+            )
+        elif last_res['statut'] in ['Confirmé ✅', 'Prêt']:
+            pending_order_str = (
+                f"ℹ️ INFO : Le client a une commande récente ayant le statut '{last_res['statut']}' ({last_res['details']}).\n"
+                "Ne génère PAS un nouveau tag [RESERVATION:...] pour cette même commande. "
+                "Génère un nouveau tag uniquement si le client demande explicitement à passer une NOUVELLE commande complètement différente.\n"
+            )
 
     # Tags techniques obligatoires
     system_rules = (
@@ -207,7 +214,7 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         "- Si le client valide/passe une commande (ET qu'il n'en a pas déjà une en attente), inclus : "
         "[RESERVATION: résumé | MONTANT: chiffre | PRIORITE: Normale/Haute]\n"
         "ATTENTION: Quand tu ajoutes le tag [RESERVATION:...], tu NE DOIS PAS dire au client que sa commande est 'confirmée'. "
-        "Dis-lui qu'elle est 'enregistrée et en attente de validation par le restaurant'. Seul le gérant peut confirmer.\n"
+        "Dis-lui qu'elle est 'enregistrée et en attente de validation par notre équipe'. Seul un humain peut la confirmer définitivement.\n"
         f"{catalog_str}"
     )
 

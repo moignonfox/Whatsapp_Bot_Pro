@@ -369,8 +369,41 @@
                     <input type="text" name="msg_ready" value="{{ business.msg_ready }}" placeholder="ex: Votre commande est prête !">
                 </div>
 
+                <!-- Section : Affichage et Audio -->
+                <div class="section-label">Préférences d'Affichage & Audio</div>
 
+                <div class="field">
+                    <label>Son pour les Nouveaux Messages 💬</label>
+                    <select id="notif-sound-message" style="width:100%; padding:12px; border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;">
+                        <option value="ding_ding">Standard (Ding-Ding)</option>
+                        <option value="pop">Pop Doux</option>
+                        <option value="chime">Carillon Zen</option>
+                        <option value="success">Magique (Succès)</option>
+                        <option value="alert">Alerte (Bip Bip Bip)</option>
+                    </select>
+                </div>
 
+                <div class="field">
+                    <label>Son pour les Nouvelles Commandes 🛒</label>
+                    <select id="notif-sound-order" style="width:100%; padding:12px; border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;">
+                        <option value="success">Magique (Succès)</option>
+                        <option value="ding_ding">Standard (Ding-Ding)</option>
+                        <option value="pop">Pop Doux</option>
+                        <option value="chime">Carillon Zen</option>
+                        <option value="alert">Alerte (Bip Bip Bip)</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Volume des notifications sonores</label>
+                    <div style="display:flex; align-items:center; gap:12px; background:var(--surface); padding:10px 16px; border-radius:10px; border:1px solid var(--border);">
+                        <i class="fas fa-volume-down" style="color:var(--muted)"></i>
+                        <input type="range" id="notif-volume-slider" min="0" max="1" step="0.05" value="0.3" style="flex:1; cursor:pointer;">
+                        <i class="fas fa-volume-up" style="color:var(--text)"></i>
+                        <span id="notif-volume-val" style="font-size:12px; font-weight:bold; width:45px; text-align:right; color:var(--text);">30%</span>
+                    </div>
+                    <p style="font-size:11px; color:var(--muted); margin-top:6px;">Ajuste le volume du son joué à la réception d'un nouveau message ou commande. (Sera sauvegardé pour cet appareil).</p>
+                </div>
                 <!-- Section : Sécurité -->
                 <div class="section-label">Sécurité</div>
 
@@ -389,5 +422,99 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const volSlider = document.getElementById('notif-volume-slider');
+            const volVal = document.getElementById('notif-volume-val');
+            const bizId = "{{ biz_id }}";
+            
+            const LS_VOL_KEY = 'notif_volume_' + bizId;
+            let savedVol = localStorage.getItem(LS_VOL_KEY);
+            if (savedVol !== null) {
+                volSlider.value = parseFloat(savedVol);
+            } else {
+                volSlider.value = 0.3; // Default
+            }
+            
+            function updateVolText() {
+                volVal.textContent = Math.round(volSlider.value * 100) + '%';
+            }
+            updateVolText();
+            
+            volSlider.addEventListener('input', function() {
+                updateVolText();
+                localStorage.setItem(LS_VOL_KEY, volSlider.value);
+            });
+            
+            const selMsg = document.getElementById('notif-sound-message');
+            const selOrder = document.getElementById('notif-sound-order');
+            
+            const LS_SND_MSG_KEY = 'notif_snd_msg_' + bizId;
+            const LS_SND_ORD_KEY = 'notif_snd_ord_' + bizId;
+            
+            selMsg.value = localStorage.getItem(LS_SND_MSG_KEY) || 'ding_ding';
+            selOrder.value = localStorage.getItem(LS_SND_ORD_KEY) || 'success';
+            
+            selMsg.addEventListener('change', function() {
+                localStorage.setItem(LS_SND_MSG_KEY, this.value);
+                playAudioPreset(this.value, parseFloat(volSlider.value));
+            });
+            
+            selOrder.addEventListener('change', function() {
+                localStorage.setItem(LS_SND_ORD_KEY, this.value);
+                playAudioPreset(this.value, parseFloat(volSlider.value));
+            });
+
+            function playAudioPreset(preset, v) {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    const ctx = new AudioContext();
+                    if (ctx.state === 'suspended') ctx.resume();
+                    
+                    const playTone = (type, freq, time, duration, vol, slideFreq) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, time);
+                        if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, time + duration);
+                        gain.gain.setValueAtTime(0, time);
+                        gain.gain.linearRampToValueAtTime(vol, time + Math.min(0.02, duration/2));
+                        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(time);
+                        osc.stop(time + duration);
+                    };
+                    
+                    const t = ctx.currentTime;
+                    if (preset === 'pop') {
+                        playTone('sine', 800, t, 0.1, v, 300);
+                    } else if (preset === 'chime') {
+                        playTone('sine', 659.25, t, 0.4, v); // E5
+                        playTone('sine', 880, t + 0.15, 0.4, v); // A5
+                        playTone('sine', 1108.73, t + 0.3, 0.6, v); // C#6
+                    } else if (preset === 'success') {
+                        playTone('triangle', 523.25, t, 0.2, v); // C5
+                        playTone('triangle', 659.25, t + 0.1, 0.2, v); // E5
+                        playTone('triangle', 783.99, t + 0.2, 0.2, v); // G5
+                        playTone('triangle', 1046.50, t + 0.3, 0.5, v); // C6
+                    } else if (preset === 'alert') {
+                        playTone('square', 880, t, 0.1, v*0.5);
+                        playTone('square', 880, t + 0.2, 0.1, v*0.5);
+                        playTone('square', 880, t + 0.4, 0.1, v*0.5);
+                    } else { // ding_ding
+                        playTone('sine', 880, t, 0.3, v);
+                        playTone('sine', 1108.73, t + 0.1, 0.3, v);
+                    }
+                } catch(e) {}
+            }
+            
+            volSlider.addEventListener('change', function() {
+                // Jouer le son test au relâchement du clic (son des messages par défaut)
+                playAudioPreset(selMsg.value, parseFloat(volSlider.value));
+            });
+        });
+    </script>
 </body>
 </html>

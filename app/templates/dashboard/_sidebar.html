@@ -316,7 +316,71 @@
         if (sub) sub.textContent = notifications.length === 0 ? 'Aucune notification' : `${notifications.length} notification${notifications.length>1?'s':''}`;
     }
 
-    function ringBell() {
+    window.playNotificationSound = function(type, testVol) {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            if (ctx.state === 'suspended') ctx.resume();
+            
+            let vol = 0.3; // Default
+            if (testVol !== undefined) {
+                vol = testVol;
+            } else {
+                const savedVol = localStorage.getItem('notif_volume_' + bizId);
+                if (savedVol !== null) vol = parseFloat(savedVol);
+            }
+            vol = Math.max(0, Math.min(vol, 1));
+            
+            let preset = 'ding_ding';
+            if (type === 'message') {
+                preset = localStorage.getItem('notif_snd_msg_' + bizId) || 'ding_ding';
+            } else if (type === 'order') {
+                preset = localStorage.getItem('notif_snd_ord_' + bizId) || 'success';
+            }
+            
+            const playTone = (oscType, freq, time, duration, v, slideFreq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = oscType;
+                osc.frequency.setValueAtTime(freq, time);
+                if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, time + duration);
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(v, time + Math.min(0.02, duration/2));
+                gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(time);
+                osc.stop(time + duration);
+            };
+            
+            const t = ctx.currentTime;
+            if (preset === 'pop') {
+                playTone('sine', 800, t, 0.1, vol, 300);
+            } else if (preset === 'chime') {
+                playTone('sine', 659.25, t, 0.4, vol); // E5
+                playTone('sine', 880, t + 0.15, 0.4, vol); // A5
+                playTone('sine', 1108.73, t + 0.3, 0.6, vol); // C#6
+            } else if (preset === 'success') {
+                playTone('triangle', 523.25, t, 0.2, vol); // C5
+                playTone('triangle', 659.25, t + 0.1, 0.2, vol); // E5
+                playTone('triangle', 783.99, t + 0.2, 0.2, vol); // G5
+                playTone('triangle', 1046.50, t + 0.3, 0.5, vol); // C6
+            } else if (preset === 'alert') {
+                playTone('square', 880, t, 0.1, vol*0.5);
+                playTone('square', 880, t + 0.2, 0.1, vol*0.5);
+                playTone('square', 880, t + 0.4, 0.1, vol*0.5);
+            } else { // ding_ding
+                playTone('sine', 880, t, 0.3, vol);
+                playTone('sine', 1108.73, t + 0.1, 0.3, vol);
+            }
+        } catch (e) {
+            console.log("Audio play failed:", e);
+        }
+    };
+
+    function ringBell(type) {
+        window.playNotificationSound(type);
         const btn = document.getElementById('notif-bell-btn');
         if (!btn) return;
         btn.classList.add('ringing');
@@ -547,7 +611,7 @@
         if (notifications.length > 50) notifications.length = 50; // Limite
         saveState();
         updateBellBadge();
-        ringBell();
+        ringBell('message');
         showToast('message', data);
         if (panelOpen) renderNotifList();
     });
@@ -561,7 +625,7 @@
         if (notifications.length > 50) notifications.length = 50; // Limite
         saveState();
         updateBellBadge();
-        ringBell();
+        ringBell('order');
         showToast('order', data);
         if (panelOpen) renderNotifList();
     });
