@@ -104,7 +104,11 @@
         .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
         .empty-state i { font-size: 36px; margin-bottom: 12px; display: block; }
 
-        @media (max-width: 768px) { .main { margin-left: 0; } .content { padding: 16px; } .stat-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { 
+            .main { margin-left: 0; } 
+            .content { padding: 16px; } 
+            /* On supprime .stat-grid { grid-template-columns: 1fr; } pour laisser layout.css gérer l'affichage sur 2 colonnes (ou on l'enlève carrément) */
+        }
     </style>
 </head>
 <body>

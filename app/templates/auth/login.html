@@ -427,10 +427,24 @@
 
         /* ── Responsive ── */
         @media (max-width: 680px) {
+            body { padding: 0; background: var(--surface); }
+            .page { 
+                max-width: 100%; 
+                min-height: 100vh; 
+                border-radius: 0; 
+                box-shadow: none; 
+                border: none; 
+                margin: 0; 
+            }
             .panel-left { display: none; }
-            .panel-right { width: 100%; padding: 40px 28px; }
-            .page { max-width: 440px; }
-            #theme-toggle { top: 12px; right: 12px; }
+            .panel-right { 
+                width: 100%; 
+                padding: 40px 24px; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center; 
+            }
+            #theme-toggle { top: 16px; right: 16px; background: var(--bg); }
         }
 
         /* ── Reduced motion ── */

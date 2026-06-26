@@ -245,6 +245,22 @@
             text-align: center; padding: 60px 20px; color: var(--muted);
             background: var(--card); border: 1px dashed var(--border); border-radius: 12px;
         }
+
+        /* ── MOBILE CSS ── */
+        @media (max-width: 768px) {
+            .crm-header { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 16px; 
+            }
+            .add-btn { 
+                justify-content: center; 
+                width: 100%; 
+            }
+            .product-grid { 
+                grid-template-columns: 1fr; /* Annule le minmax pour éviter le débordement horizontal */
+            }
+        }
     </style>
 </head>
 <body>

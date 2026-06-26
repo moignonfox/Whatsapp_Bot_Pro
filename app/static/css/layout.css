@@ -204,15 +204,20 @@
     
     .sidebar-close { display: block; }
     
-    /* Titres et textes */
+    /* Effet "Dézoom" global pour un rendu plus dense et parfait sur mobile */
+    html, body {
+        zoom: 0.85; 
+        font-size: 13px !important; 
+    }
+    
     .page-title h1, .topbar-left h1 {
-        font-size: 15px !important;
+        font-size: 14px !important;
         white-space: normal;
         line-height: 1.3;
     }
     
     .content-area {
-        padding: 16px !important;
+        padding: 12px !important;
     }
 
     /* Grilles de statistiques */
@@ -220,21 +225,118 @@
         grid-template-columns: 1fr 1fr !important;
     }
 
-    /* Tableaux responsives */
+    /* Tableaux transformés en cartes (Mobile-First, sans scroll horizontal) */
     .table-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -16px;
-        padding: 0 16px;
+        overflow-x: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
-    table {
-        min-width: 600px; /* Force un scroll horizontal plutôt que d'écraser les colonnes */
+    table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
     }
+    thead tr {
+        display: none;
+    }
+    table tr {
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--card);
+        padding: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    table td {
+        border: none !important;
+        padding: 10px 12px !important;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 12.5px !important;
+    }
+    table td:not(:last-child) {
+        border-bottom: 1px dashed var(--border-light) !important;
+    }
+    /* En-tête de la carte (première cellule) */
+    table td:first-child {
+        background: rgba(0,0,0,0.02);
+        border-bottom: 1px solid var(--border) !important;
+        font-size: 13.5px !important;
+        font-weight: 600;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+    }
+    /* Pied de la carte (dernière cellule - actions) */
+    table td:last-child {
+        background: rgba(0,0,0,0.015);
+        border-top: 1px solid var(--border-light) !important;
+        border-bottom: none !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        justify-content: space-between;
+    }
+    [data-theme="dark"] table td:first-child { background: rgba(255,255,255,0.02); }
+    [data-theme="dark"] table td:last-child { background: rgba(255,255,255,0.015); }
+
+    .actions { 
+        width: 100%; 
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 8px; 
+        justify-content: space-between;
+    }
+    
+    /* Réduction globale des textes et boutons */
+    .btn-act { 
+        flex: 1; 
+        justify-content: center; 
+        padding: 7px 10px !important; 
+        font-size: 11.5px !important; 
+    }
+    .badge, .priority-tag { 
+        font-size: 10px !important; 
+        padding: 3px 6px !important; 
+    }
+    .section-title { 
+        font-size: 12px !important; 
+    }
+    .stat-label { 
+        font-size: 10px !important; 
+    }
+    
+    /* Bannières / Hero */
+    .plan-hero {
+        flex-direction: column !important;
+        text-align: center !important;
+        padding: 20px 16px !important;
+        gap: 12px !important;
+    }
+    .plan-hero h2 { font-size: 16px !important; }
+    .plan-hero p { font-size: 12px !important; }
 }
 
 @media (max-width: 480px) {
+    /* Maintient 2 colonnes mais réduit la taille du texte et padding */
     .stat-grid {
-        grid-template-columns: 1fr !important; /* 1 colonne sur tout petit écran */
+        grid-template-columns: 1fr 1fr !important;
+    }
+    .stat-card {
+        padding: 12px !important;
+        gap: 8px !important;
+    }
+    .stat-icon-wrap {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+    .stat-value {
+        font-size: 18px !important;
+    }
+    .stat-label {
+        font-size: 9.5px !important;
     }
     
     .topbar-right {
@@ -244,11 +346,7 @@
     }
     
     /* Réduction des paddings sur les cartes */
-    .card, .section-card, .stat-card {
+    .card, .section-card {
         padding: 16px !important;
-    }
-    
-    .stat-value {
-        font-size: 24px !important;
     }
 }

@@ -159,7 +159,12 @@
         }
         .btn-campaign:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-        @media (max-width: 768px) { .main { margin-left: 0; } .content { padding: 16px; } }
+        @media (max-width: 768px) { 
+            .main { margin-left: 0; } 
+            .content { padding: 16px; } 
+            .features-grid { grid-template-columns: 1fr; } 
+            .delay-notice { flex-direction: column; text-align: left; }
+        }
     </style>
 </head>
 <body>
