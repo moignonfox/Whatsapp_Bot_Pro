@@ -51,9 +51,11 @@ def generate_daily_report_for_business(biz_id: str, owner_phone: str, biz_nom: s
     details_list = []
 
     for order in orders:
-        if order['statut'] not in ['Annulé', 'En attente']:
-            revenus += order['montant'] or 0
+        statut = order['statut'] or ''
+        if statut != 'En attente' and 'Annulé' not in statut:
             commandes_validees += 1
+            if statut.startswith('Prêt') or statut.startswith('Livré'):
+                revenus += order['montant'] or 0
             if order['details']:
                 details_list.append(order['details'])
 

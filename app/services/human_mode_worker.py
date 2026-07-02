@@ -41,16 +41,22 @@ def check_human_mode_timeouts():
                     continue
                     
                 try:
-                    # Parse timestamp (gère l'isoformat)
+                    # Parse timestamp
                     start_time = datetime.fromisoformat(timestamp_str)
                     
+                    # Si la date est naive, on lui assigne UTC pour éviter les crashs
+                    if start_time.tzinfo is None:
+                        start_time = start_time.replace(tzinfo=timezone.utc)
+                        
                     # Rendre la main si dépassé
                     if now - start_time > timedelta(minutes=TIMEOUT_MINUTES):
                         expired_was.append(wa_id)
                 except Exception as e:
                     logger.error(f"[HUMAN_MODE_WORKER] Erreur parsing date pour {wa_id}: {e}")
-                    # En cas de doute, on expire
-                    expired_was.append(wa_id)
+                    # En cas d'erreur de parsing (ex: vieux format invalide), on réinitialise le timer 
+                    # au lieu d'expirer brusquement la conversation.
+                    modes[wa_id] = now.isoformat()
+                    has_changes = True
                     
             if expired_was:
                 for wa_id in expired_was:

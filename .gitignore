@@ -16,3 +16,5 @@ old/
 
 # === Flask instance ===
 instance/
+
+firebase-adminsdk.json

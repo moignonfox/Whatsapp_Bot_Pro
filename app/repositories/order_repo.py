@@ -11,26 +11,64 @@ from typing import Optional, Tuple, List, Dict, Any
 from app.models.schema import get_db_path
 
 
+def get_date_condition(period: str) -> str:
+    """Retourne la condition SQL pour filtrer la période."""
+    if period == 'today':
+        return "date(created_at, 'localtime') = date('now', 'localtime')"
+    elif period == 'week':
+        return "created_at >= date('now', '-7 days')"
+    elif period == 'month':
+        return "created_at >= date('now', 'start of month')"
+    elif period == 'semester':
+        return "created_at >= date('now', '-6 months')"
+    elif period == 'year':
+        return "created_at >= date('now', 'start of year')"
+    return "1=1" # 'all'
+
+
 def save_reservation(
     biz_id: str,
     wa_id: str,
     details: str,
     priorite: str,
     montant: int = 0,
+    date_heure_debut: str = None,
+    employee_id: int = None
 ) -> int:
     """Crée une nouvelle réservation avec le statut 'En attente'. Retourne l'ID créé."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
         """INSERT INTO reservations
-           (business_id, wa_id, details, priorite, statut, montant, created_at)
-           VALUES (?, ?, ?, ?, 'En attente', ?, CURRENT_TIMESTAMP)""",
-        (biz_id, wa_id, details, priorite, montant),
+           (business_id, wa_id, details, priorite, statut, montant, created_at, date_heure_debut, employee_id)
+           VALUES (?, ?, ?, ?, 'En attente', ?, CURRENT_TIMESTAMP, ?, ?)""",
+        (biz_id, wa_id, details, priorite, montant, date_heure_debut, employee_id),
     )
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return new_id
+
+
+def update_reservation(
+    res_id: int,
+    details: str,
+    priorite: str,
+    montant: int = 0,
+    date_heure_debut: str = None,
+    employee_id: int = None
+) -> None:
+    """Met à jour une réservation existante."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        """UPDATE reservations
+           SET details = ?, priorite = ?, montant = ?, date_heure_debut = ?, employee_id = ?
+           WHERE id = ?""",
+        (details, priorite, montant, date_heure_debut, employee_id, res_id),
+    )
+    conn.commit()
+    conn.close()
 
 
 def get_all_reservations() -> List[sqlite3.Row]:
@@ -79,13 +117,17 @@ def get_last_for_user(wa_id: str) -> Optional[sqlite3.Row]:
     return row
 
 
-def get_by_business(biz_id: str) -> List[sqlite3.Row]:
-    """Renvoie toutes les réservations d'un business donné."""
+def get_by_business(biz_id: str, period: str = 'today') -> List[sqlite3.Row]:
+    """Renvoie toutes les réservations d'un business donné avec les infos client."""
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM reservations WHERE business_id = ? ORDER BY timestamp DESC",
+        f'''SELECT r.*, c.nom as client_name 
+           FROM reservations r 
+           LEFT JOIN clients c ON r.wa_id = c.wa_id AND r.business_id = c.business_id
+           WHERE r.business_id = ? AND {get_date_condition(period)}
+           ORDER BY r.timestamp DESC''',
         (biz_id,),
     )
     rows = cursor.fetchall()
@@ -93,7 +135,7 @@ def get_by_business(biz_id: str) -> List[sqlite3.Row]:
     return rows
 
 
-def get_stats(biz_id: str) -> Dict[str, Any]:
+def get_stats(biz_id: str, period: str = 'today') -> Dict[str, Any]:
     """
     Calcule les statistiques clés d'un business.
 
@@ -106,19 +148,19 @@ def get_stats(biz_id: str) -> Dict[str, Any]:
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT SUM(montant) FROM reservations WHERE business_id = ? AND statut NOT LIKE 'Annulé%'",
+        f"SELECT SUM(montant) FROM reservations WHERE business_id = ? AND (statut LIKE 'Prêt%' OR statut LIKE 'Livré%') AND {get_date_condition(period)}",
         (biz_id,),
     )
     ca = cursor.fetchone()[0] or 0
 
     cursor.execute(
-        "SELECT COUNT(*) FROM reservations WHERE business_id = ?",
+        f"SELECT COUNT(*) FROM reservations WHERE business_id = ? AND {get_date_condition(period)}",
         (biz_id,),
     )
     total = cursor.fetchone()[0]
 
     cursor.execute(
-        "SELECT COUNT(*) FROM reservations WHERE business_id = ? AND statut LIKE 'Annulé%'",
+        f"SELECT COUNT(*) FROM reservations WHERE business_id = ? AND statut LIKE 'Annulé%' AND {get_date_condition(period)}",
         (biz_id,),
     )
     annulations = cursor.fetchone()[0]
@@ -129,7 +171,7 @@ def get_stats(biz_id: str) -> Dict[str, Any]:
     return {"ca": ca, "total": total, "taux_annul": taux_annul}
 
 
-def get_peak_hour(biz_id: str) -> str:
+def get_peak_hour(biz_id: str, period: str = 'today') -> str:
     """
     Calcule l'heure de pointe dynamique (heure avec le plus de réservations).
     Retourne une chaîne formatée, ex: '14h–15h'.
@@ -138,9 +180,9 @@ def get_peak_hour(biz_id: str) -> str:
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT strftime('%H', created_at) as hour, COUNT(*) as cnt 
+        f"""SELECT strftime('%H', created_at) as hour, COUNT(*) as cnt 
            FROM reservations 
-           WHERE business_id = ? 
+           WHERE business_id = ? AND {get_date_condition(period)}
            GROUP BY hour 
            ORDER BY cnt DESC 
            LIMIT 1""",
@@ -156,18 +198,25 @@ def get_peak_hour(biz_id: str) -> str:
     return "N/A"
 
 
-def get_daily_activity(biz_id: str) -> Tuple[List[str], List[int]]:
+def get_daily_activity(biz_id: str, period: str = 'today') -> Tuple[List[str], List[int]]:
     """
-    Activité quotidienne des 7 derniers jours pour un business.
+    Activité quotidienne (ou horaire/mensuelle) pour un business.
 
     Retourne un tuple (labels, values) prêt pour un graphique.
     """
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
+    
+    format_date = "'%d/%m'"
+    if period == 'today':
+        format_date = "'%H:00'"
+    elif period in ('semester', 'year', 'all'):
+        format_date = "'%m/%Y'"
+        
     cursor.execute(
-        """SELECT strftime('%d/%m', created_at) as jour, COUNT(*)
+        f"""SELECT strftime({format_date}, created_at) as jour, COUNT(*)
            FROM reservations
-           WHERE business_id = ? AND created_at >= date('now', '-7 days')
+           WHERE business_id = ? AND {get_date_condition(period)}
            GROUP BY jour
            ORDER BY created_at ASC""",
         (biz_id,),
@@ -202,3 +251,35 @@ def get_res_info(res_id: int) -> Optional[sqlite3.Row]:
     row = cursor.fetchone()
     conn.close()
     return row
+
+
+def get_upcoming_reminders() -> List[sqlite3.Row]:
+    """Récupère les réservations prévues dans moins de 65 minutes et dont le rappel n'a pas encore été envoyé."""
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    # On prend les réservations Confirmées (ou dont le statut ne commence pas par Annulé ou En attente)
+    # entre maintenant et dans 65 minutes.
+    cursor.execute("""
+        SELECT r.id, r.wa_id, r.business_id, r.details, r.date_heure_debut, 
+               b.whatsapp_phone_id, b.token_wa, b.phone as manager_phone
+        FROM reservations r
+        JOIN businesses b ON r.business_id = b.id
+        WHERE r.statut NOT LIKE 'Annulé%' 
+          AND r.statut NOT LIKE 'En attente%'
+          AND r.date_heure_debut IS NOT NULL
+          AND r.rappel_envoye = 0
+          AND r.date_heure_debut >= datetime('now')
+          AND r.date_heure_debut <= datetime('now', '+65 minutes')
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def mark_reminder_sent(res_id: int):
+    """Marque une réservation comme ayant reçu son rappel."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("UPDATE reservations SET rappel_envoye = 1 WHERE id = ?", (res_id,))
+    conn.commit()
+    conn.close()

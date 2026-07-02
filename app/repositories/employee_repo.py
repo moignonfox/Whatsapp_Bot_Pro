@@ -36,13 +36,13 @@ def get_by_id(employee_id: int) -> Optional[sqlite3.Row]:
     return row
 
 
-def add(business_id: str, nom: str, poste: str) -> int:
+def add(business_id: str, nom: str, poste: str, horaires_json: str = None) -> int:
     """Ajoute un nouvel employé et retourne son id."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO employees (business_id, nom, poste, actif) VALUES (?, ?, ?, 1)",
-        (business_id, nom, poste),
+        "INSERT INTO employees (business_id, nom, poste, actif, horaires_json) VALUES (?, ?, ?, 1, ?)",
+        (business_id, nom, poste, horaires_json),
     )
     new_id = cursor.lastrowid
     conn.commit()
@@ -50,13 +50,13 @@ def add(business_id: str, nom: str, poste: str) -> int:
     return new_id
 
 
-def update(employee_id: int, nom: str, poste: str) -> None:
-    """Met à jour le nom et le poste d'un employé."""
+def update(employee_id: int, nom: str, poste: str, horaires_json: str = None) -> None:
+    """Met à jour le nom, le poste et les horaires d'un employé."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE employees SET nom = ?, poste = ? WHERE id = ?",
-        (nom, poste, employee_id),
+        "UPDATE employees SET nom = ?, poste = ?, horaires_json = ? WHERE id = ?",
+        (nom, poste, horaires_json, employee_id),
     )
     conn.commit()
     conn.close()

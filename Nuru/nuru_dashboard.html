@@ -1,0 +1,197 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: transparent; }
+  .phone { width: 360px; margin: 0 auto; background: #f5f5f5; border-radius: 36px; overflow: hidden; border: 2px solid #ddd; min-height: 720px; display: flex; flex-direction: column; }
+  .status-bar { background: #075E54; color: white; padding: 10px 20px 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+  .header { background: #075E54; color: white; padding: 12px 16px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 18px; font-weight: 500; }
+  .header-sub { font-size: 11px; opacity: 0.8; margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #25D366; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: white; }
+  .content { flex: 1; overflow-y: auto; background: #f0f2f5; }
+  .greeting-bar { background: #128C7E; color: white; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .greeting-text { font-size: 13px; opacity: 0.9; }
+  .greeting-date { font-size: 11px; opacity: 0.7; }
+  .section { padding: 12px 12px 0; }
+  .section-label { font-size: 11px; font-weight: 500; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding-left: 2px; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { background: white; border-radius: 12px; padding: 12px 14px; }
+  .stat-icon { font-size: 16px; margin-bottom: 6px; }
+  .stat-label { font-size: 10px; color: #777; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+  .stat-value { font-size: 22px; font-weight: 600; margin: 2px 0; }
+  .stat-delta { font-size: 10px; display: flex; align-items: center; gap: 3px; }
+  .delta-up { color: #25D366; }
+  .delta-down { color: #e74c3c; }
+  .stat-teal { color: #075E54; }
+  .stat-green { color: #25D366; }
+  .stat-amber { color: #f39c12; }
+  .stat-blue { color: #2980b9; }
+  .ai-card { background: white; border-radius: 12px; padding: 12px 14px; margin: 8px 12px 0; display: flex; align-items: center; gap: 12px; }
+  .ai-badge { background: #075E54; color: white; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .ai-info { flex: 1; }
+  .ai-info-title { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+  .ai-info-sub { font-size: 11px; color: #888; margin-top: 2px; }
+  .ai-number { font-size: 20px; font-weight: 600; color: #075E54; }
+  .quick-actions { display: flex; gap: 8px; padding: 8px 12px 0; }
+  .qa-btn { flex: 1; background: white; border-radius: 12px; padding: 10px 8px; text-align: center; border: none; cursor: pointer; }
+  .qa-btn-icon { font-size: 18px; margin-bottom: 4px; }
+  .qa-btn-label { font-size: 10px; color: #555; font-weight: 500; }
+  .activity-card { background: white; border-radius: 12px; margin: 8px 12px 0; overflow: hidden; }
+  .activity-header { padding: 10px 14px; border-bottom: 0.5px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+  .activity-title { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+  .activity-see-all { font-size: 11px; color: #25D366; font-weight: 500; cursor: pointer; }
+  .activity-row { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid #f5f5f5; }
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: #25D366; }
+  .dot-amber { background: #f39c12; }
+  .dot-blue { background: #2980b9; }
+  .activity-row-info { flex: 1; }
+  .activity-row-name { font-size: 12px; font-weight: 500; color: #1a1a1a; }
+  .activity-row-detail { font-size: 11px; color: #888; }
+  .activity-row-amount { font-size: 12px; font-weight: 600; color: #075E54; }
+  .bottom-nav { background: white; border-top: 0.5px solid #ddd; display: flex; padding: 6px 0 10px; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+  .nav-icon { font-size: 20px; color: #aaa; }
+  .nav-icon.active { color: #25D366; }
+  .nav-label { font-size: 9px; color: #aaa; font-weight: 500; }
+  .nav-label.active { color: #25D366; }
+  .badge { background: #e74c3c; color: white; border-radius: 10px; font-size: 9px; padding: 1px 5px; position: relative; top: -6px; left: -6px; font-weight: 500; }
+  .sub-pill { display: inline-flex; align-items: center; gap: 4px; background: #E8F5E9; border-radius: 20px; padding: 3px 8px; font-size: 10px; color: #075E54; font-weight: 500; }
+  .sub-dot { width: 5px; height: 5px; border-radius: 50%; background: #25D366; }
+  .spacer { height: 12px; }
+</style>
+
+<div class="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>&#9679;&#9679;&#9679; 4G 87%</span>
+  </div>
+  <div class="header">
+    <div>
+      <div class="header-title">Nuru Bot Pro</div>
+      <div class="header-sub">Tableau de bord</div>
+    </div>
+    <div class="header-right">
+      <span class="sub-pill"><span class="sub-dot"></span>PRO actif</span>
+      <div class="avatar">KD</div>
+    </div>
+  </div>
+  <div class="greeting-bar">
+    <span class="greeting-text">Bonjour, Kofi 👋 Voici votre résumé du jour</span>
+    <span class="greeting-date">Lun 29 juin</span>
+  </div>
+
+  <div class="content">
+    <div class="section" style="padding-top:14px">
+      <div class="section-label">Aujourd'hui</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Chiffre d'affaires</div>
+          <div class="stat-value stat-teal">87 500 F</div>
+          <div class="stat-delta delta-up"><i class="ti ti-trending-up" style="font-size:12px"></i> +12% vs hier</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Commandes</div>
+          <div class="stat-value stat-green">24</div>
+          <div class="stat-delta delta-up"><i class="ti ti-trending-up" style="font-size:12px"></i> 3 en attente</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Plat du jour</div>
+          <div class="stat-value" style="font-size:15px; font-weight:600; color:#333; padding-top:4px">Riz yassa</div>
+          <div class="stat-delta" style="color:#888">× 9 vendus</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Msgs clients</div>
+          <div class="stat-value stat-blue">143</div>
+          <div class="stat-delta" style="color:#888"><i class="ti ti-robot" style="font-size:11px; color:#25D366"></i> 98% IA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div>
+        <div class="ai-badge">🤖 IA active</div>
+      </div>
+      <div class="ai-info">
+        <div class="ai-info-title">Bot en ligne depuis 6h</div>
+        <div class="ai-info-sub">Aucune intervention manuelle</div>
+      </div>
+      <div class="ai-number">100%</div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="qa-btn">
+        <div class="qa-btn-icon"><i class="ti ti-plus" style="font-size:20px; color:#075E54"></i></div>
+        <div class="qa-btn-label">Commande</div>
+      </button>
+      <button class="qa-btn">
+        <div class="qa-btn-icon"><i class="ti ti-tools-kitchen-2" style="font-size:20px; color:#075E54"></i></div>
+        <div class="qa-btn-label">Menu</div>
+      </button>
+      <button class="qa-btn">
+        <div class="qa-btn-icon"><i class="ti ti-speakerphone" style="font-size:20px; color:#075E54"></i></div>
+        <div class="qa-btn-label">Campagne</div>
+      </button>
+      <button class="qa-btn">
+        <div class="qa-btn-icon"><i class="ti ti-chart-line" style="font-size:20px; color:#075E54"></i></div>
+        <div class="qa-btn-label">Stats</div>
+      </button>
+    </div>
+
+    <div class="section" style="padding-top:12px">
+      <div class="section-label">Dernières commandes</div>
+    </div>
+    <div class="activity-card">
+      <div class="activity-header">
+        <span class="activity-title">Activité récente</span>
+        <span class="activity-see-all">Voir tout</span>
+      </div>
+      <div class="activity-row">
+        <div class="activity-dot dot-green"></div>
+        <div class="activity-row-info">
+          <div class="activity-row-name">Aminata K.</div>
+          <div class="activity-row-detail">Yassa + Boisson · Livraison</div>
+        </div>
+        <div class="activity-row-amount">3 500 F</div>
+      </div>
+      <div class="activity-row">
+        <div class="activity-dot dot-amber"></div>
+        <div class="activity-row-info">
+          <div class="activity-row-name">Mawuli T.</div>
+          <div class="activity-row-detail">2× Thiéboudienne · En prépa</div>
+        </div>
+        <div class="activity-row-amount">6 000 F</div>
+      </div>
+      <div class="activity-row" style="border-bottom:none">
+        <div class="activity-dot dot-blue"></div>
+        <div class="activity-row-info">
+          <div class="activity-row-name">Efo S.</div>
+          <div class="activity-row-detail">Poulet braisé · Sur place</div>
+        </div>
+        <div class="activity-row-amount">4 500 F</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item">
+      <i class="ti ti-home nav-icon active" aria-hidden="true"></i>
+      <span class="nav-label active">Accueil</span>
+    </div>
+    <div class="nav-item">
+      <i class="ti ti-shopping-bag nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Commandes</span>
+      <span class="badge">3</span>
+    </div>
+    <div class="nav-item">
+      <i class="ti ti-message-2 nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Messages</span>
+    </div>
+    <div class="nav-item">
+      <i class="ti ti-settings nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Réglages</span>
+    </div>
+  </div>
+</div>

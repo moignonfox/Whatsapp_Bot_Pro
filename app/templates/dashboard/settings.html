@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paramètres — {{ business.nom }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Injection du thème AVANT le rendu pour éviter le flash -->
     <script>
@@ -37,12 +38,8 @@
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            position: relative;
+            color: var(--text);
+            margin: 0;
             overflow-x: hidden;
         }
 
@@ -77,40 +74,12 @@
         .page {
             width: 100%;
             max-width: 640px;
+            margin: 0 auto;
             position: relative;
             z-index: 1;
         }
 
-        /* ── Logo header ── */
-        .page-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logo-icon {
-            width: 38px; height: 38px;
-            background: var(--green);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 0 18px var(--green-glow);
-        }
-        .logo-icon svg { width: 22px; height: 22px; fill: #fff; }
-        .logo-text {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.4px;
-        }
-        .logo-text span { color: var(--green); }
+        /* CSS pour l'en-tête (supprimé car conflit avec le sidebar) */
 
         .back-link {
             display: inline-flex;
@@ -267,6 +236,59 @@
             #theme-toggle { top: 12px; right: 12px; }
         }
 
+        /* ────────────────── MAIN ────────────────── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .topbar-btn {
+            width: 36px; height: 36px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 15px;
+            transition: color 0.2s, background 0.2s;
+        }
+        .topbar-btn:hover { color: var(--text); background: var(--card-hover); }
+
+        .content {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
         /* ── Reduced motion ── */
         @media (prefers-reduced-motion: reduce) {
             .blob, .badge .dot { animation: none; opacity: 1; transform: none; }
@@ -275,37 +297,32 @@
 </head>
 <body>
 
-    <button id="theme-toggle" class="floating" aria-label="Passer en mode clair">
-        <svg class="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block">
-            <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-13a1 1 0 0 0 1-1V2a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1zm0 14a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm9-6h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zM3 12a1 1 0 0 0-1-1H1a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1zm15.364-7.05-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 17.657l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0-1.414-1.414zm12.728.707-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 6.343l-.707-.707A1 1 0 0 0 4.222 7.05l.707.707a1 1 0 0 0 1.414-1.414z"/>
-        </svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none">
-            <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-.95z"/>
-        </svg>
-    </button>
+    <!-- theme-toggle moved to topbar -->
 
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
 
-    <div class="page">
+{% include 'dashboard/_sidebar.html' %}
 
-        <!-- Header -->
-        <div class="page-header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                </div>
-                <span class="logo-text">My<span>Bot</span> SaaS</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 16px;">
-                {% include "dashboard/_notif_bell.html" %}
-                <a href="{{ url_for('dashboard.admin_dashboard', biz_id=business.id) }}" class="back-link">
-                    ← Retour au Dashboard
-                </a>
-            </div>
+<!-- ══════════ MAIN ══════════ -->
+<div class="main">
+    
+    <!-- Topbar (identique aux autres pages) -->
+    <header class="topbar">
+        <div class="topbar-left" style="display: flex; align-items: center; gap: 14px;">
+            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="display: none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-cog" style="color:var(--green);"></i> Paramètres</h1>
         </div>
+        <div class="topbar-right">
+            {% include 'dashboard/_notif_bell.html' %}
+            {% include 'dashboard/_theme_toggle.html' %}
+        </div>
+    </header>
+
+    <div class="content">
+        <div class="page">
 
         <!-- Card principale -->
         <div class="card">
@@ -335,6 +352,22 @@
                             <i class="fas fa-paper-plane"></i> Tester l'envoi du rapport maintenant
                         </a>
                     </div>
+                </div>
+
+                <div class="section-label" style="margin-top: 24px;">Agenda & Rendez-vous</div>
+                <div class="field">
+                    <label>Tampon entre deux réservations (Minutes) ⏳</label>
+                    <input type="number" name="buffer_minutes" value="{{ business['buffer_minutes'] or 0 }}" placeholder="ex: 15 (Pause nettoyage/préparation)">
+                </div>
+
+                <div class="field">
+                    <label>Horaires d'ouverture de l'établissement</label>
+                    <div id="schedule-builder" style="background: var(--surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+                        <!-- généré par JS -->
+                    </div>
+                    <!-- On va injecter JSON brut ici pour que JS puisse le lire au chargement -->
+                    <textarea id="raw_horaires_json" style="display:none;">{{ business['horaires_json'] or '{}' }}</textarea>
+                    <textarea name="horaires_json" id="emp_horaires" style="display:none;"></textarea>
                 </div>
 
                 <div class="field">
@@ -514,7 +547,135 @@
                 // Jouer le son test au relâchement du clic (son des messages par défaut)
                 playAudioPreset(selMsg.value, parseFloat(volSlider.value));
             });
+            
+            // --- Logique du Builder d'horaires ---
+            const jours = [
+                { id: 'lun', label: 'Lundi' },
+                { id: 'mar', label: 'Mardi' },
+                { id: 'mer', label: 'Mercredi' },
+                { id: 'jeu', label: 'Jeudi' },
+                { id: 'ven', label: 'Vendredi' },
+                { id: 'sam', label: 'Samedi' },
+                { id: 'dim', label: 'Dimanche' }
+            ];
+
+            function buildScheduleUI(targetId, hiddenInputId) {
+                const container = document.getElementById(targetId);
+                if (!container) return;
+                container.innerHTML = '';
+                
+                jours.forEach(j => {
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.alignItems = 'center';
+                    row.style.justifyContent = 'space-between';
+                    row.style.marginBottom = '12px';
+                    row.style.borderBottom = '1px solid var(--border-light)';
+                    row.style.paddingBottom = '12px';
+                    
+                    row.innerHTML = `
+                        <div style="width: 120px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin:0;">
+                                <input type="checkbox" id="check_${j.id}" checked style="accent-color: var(--green); width:18px; height:18px;">
+                                <span style="font-weight: 500;">${j.label}</span>
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="time" id="start_${j.id}" value="09:00" class="form-control" style="width: auto; padding: 6px 12px;">
+                            <span style="color: var(--muted);">à</span>
+                            <input type="time" id="end_${j.id}" value="18:00" class="form-control" style="width: auto; padding: 6px 12px;">
+                        </div>
+                    `;
+                    
+                    const checkbox = row.querySelector(`#check_${j.id}`);
+                    const startInput = row.querySelector(`#start_${j.id}`);
+                    const endInput = row.querySelector(`#end_${j.id}`);
+                    
+                    const updateValues = () => {
+                        updateScheduleJSON(hiddenInputId);
+                    };
+
+                    checkbox.addEventListener('change', function() {
+                        startInput.disabled = !this.checked;
+                        endInput.disabled = !this.checked;
+                        if(!this.checked) {
+                            startInput.style.opacity = '0.4';
+                            endInput.style.opacity = '0.4';
+                        } else {
+                            startInput.style.opacity = '1';
+                            endInput.style.opacity = '1';
+                        }
+                        updateValues();
+                    });
+
+                    startInput.addEventListener('change', updateValues);
+                    endInput.addEventListener('change', updateValues);
+                    
+                    container.appendChild(row);
+                });
+                
+                // Remove last border
+                if(container.lastChild) {
+                    container.lastChild.style.borderBottom = 'none';
+                    container.lastChild.style.paddingBottom = '0';
+                    container.lastChild.style.marginBottom = '0';
+                }
+            }
+
+            function updateScheduleJSON(hiddenInputId) {
+                const data = {};
+                jours.forEach(j => {
+                    const checked = document.getElementById(`check_${j.id}`).checked;
+                    if(checked) {
+                        const start = document.getElementById(`start_${j.id}`).value || "09:00";
+                        const end = document.getElementById(`end_${j.id}`).value || "18:00";
+                        data[j.id] = [start, end];
+                    } else {
+                        data[j.id] = [];
+                    }
+                });
+                document.getElementById(hiddenInputId).value = JSON.stringify(data);
+            }
+
+            function loadScheduleIntoUI(jsonStr, hiddenInputId) {
+                try {
+                    const data = JSON.parse(jsonStr || '{}');
+                    jours.forEach(j => {
+                        const checkbox = document.getElementById(`check_${j.id}`);
+                        const startInput = document.getElementById(`start_${j.id}`);
+                        const endInput = document.getElementById(`end_${j.id}`);
+                        
+                        if(data[j.id] && data[j.id].length >= 2) {
+                            checkbox.checked = true;
+                            startInput.value = data[j.id][0];
+                            endInput.value = data[j.id][1];
+                        } else {
+                            checkbox.checked = false;
+                        }
+                        // Trigger visual update
+                        checkbox.dispatchEvent(new Event('change'));
+                    });
+                    updateScheduleJSON(hiddenInputId);
+                } catch(e) {
+                    console.error("Invalid JSON schedule:", e);
+                }
+            }
+
+            // Init builder
+            if(document.getElementById('schedule-builder')) {
+                buildScheduleUI('schedule-builder', 'emp_horaires');
+                const rawJson = document.getElementById('raw_horaires_json').value;
+                loadScheduleIntoUI(rawJson, 'emp_horaires');
+            }
+
         });
     </script>
+        </div>
+    </div> <!-- /content -->
+</div> <!-- /main -->
+
+<!-- Fichier JS partagé (toggle + persistance) -->
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
 </body>
 </html>

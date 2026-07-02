@@ -4,6 +4,7 @@ from app.services.report_service import generate_all_daily_reports
 from app.services.marketing_worker import process_campaign_queue
 from app.services.drip_service import process_daily_drip_campaigns
 from app.services.human_mode_worker import check_human_mode_timeouts
+from app.services.reminder_worker import check_and_send_reminders
 
 # Configuration du logging pour le scheduler
 logging.getLogger('apscheduler').setLevel(logging.INFO)
@@ -24,6 +25,10 @@ def start_scheduler():
     # Worker de timeout du Mode Humain
     # S'exécute toutes les minutes
     scheduler.add_job(func=check_human_mode_timeouts, trigger="interval", minutes=1)
+
+    # Worker de rappel de RDV WhatsApp (client + gérant)
+    # S'exécute toutes les minutes
+    scheduler.add_job(func=check_and_send_reminders, trigger="interval", minutes=1)
     
     scheduler.start()
     logging.info("APScheduler démarré : Le rapport quotidien sera envoyé à 19h00.")

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Visuel — {{ biz_id }} — MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <!-- FullCalendar CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <style>
+        body { background: var(--bg); color: var(--text); }
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0; z-index: 100;
+        }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .page-title i { color: var(--green); }
+
+        .content {
+            padding: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Classes responsive */
+        .desktop-only { display: block; }
+        .mobile-only { display: none; }
+        
+        @media (max-width: 768px) {
+            .desktop-only { display: none !important; }
+            .mobile-only { display: block !important; }
+            .content { padding: 12px; }
+        }
+
+        /* -------------------------------------
+           Premium FullCalendar CSS (Desktop)
+           ------------------------------------- */
+        #calendar {
+            background: var(--surface);
+            color: var(--text);
+            min-height: 700px;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15); /* Premium shadow */
+            border: 1px solid var(--border);
+        }
+        
+        /* Modern Toolbar */
+        .fc .fc-toolbar.fc-header-toolbar {
+            margin-bottom: 24px;
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: var(--text);
+        }
+        
+        /* Button styling */
+        .fc-button-primary {
+            background-color: var(--card) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+            border-radius: 8px !important;
+            text-transform: capitalize !important;
+            font-weight: 500 !important;
+            padding: 8px 16px !important;
+            transition: all 0.2s ease;
+            box-shadow: none !important;
+        }
+        .fc-button-primary:hover {
+            background-color: var(--card-hover) !important;
+            border-color: var(--border-light) !important;
+        }
+        .fc-button-primary:not(:disabled):active,
+        .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: var(--green) !important;
+            border-color: var(--green) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px var(--green-glow) !important;
+        }
+        
+        /* Grid and borders */
+        .fc-theme-standard td, .fc-theme-standard th {
+            border-color: var(--border) !important;
+        }
+        .fc-theme-standard .fc-scrollgrid {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border) !important;
+        }
+        
+        /* Today highlight */
+        .fc .fc-day-today {
+            background: var(--card) !important;
+        }
+        
+        /* Event styling */
+        .fc-v-event {
+            background-color: var(--green-bg) !important;
+            border: none !important;
+            border-left: 4px solid var(--green) !important;
+            border-radius: 6px !important;
+            padding: 2px 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .fc-v-event:hover {
+            transform: scale(1.02);
+            z-index: 10 !important;
+        }
+        .fc-v-event .fc-event-title {
+            color: var(--green);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .fc-v-event .fc-event-time {
+            color: var(--green);
+            opacity: 0.8;
+            font-size: 0.75rem;
+            margin-bottom: 2px;
+        }
+        
+        /* Axis & Header Text */
+        .fc-col-header-cell-cushion {
+            padding: 12px 4px !important;
+            font-weight: 600 !important;
+            color: var(--muted) !important;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        .fc-timegrid-slot-label-cushion {
+            color: var(--muted) !important;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .fc, .fc a { color: var(--text); text-decoration: none; }
+        
+        /* -------------------------------------
+           Custom Mobile Agenda CSS 
+           ------------------------------------- */
+        #mobile-agenda {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 16px;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .mobile-agenda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .mobile-agenda-header button {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .mobile-agenda-header button:active {
+            background: var(--border);
+        }
+        .mobile-hour-row {
+            display: flex;
+            min-height: 64px;
+            border-bottom: 1px dashed var(--border-light);
+            position: relative;
+        }
+        .mobile-hour-row:last-child {
+            border-bottom: none;
+        }
+        .mobile-hour-label {
+            width: 55px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: right;
+            padding-right: 12px;
+            padding-top: 10px;
+            border-right: 2px solid var(--border);
+            font-weight: 500;
+        }
+        .mobile-hour-content {
+            flex: 1;
+            padding: 5px 10px;
+            position: relative;
+        }
+        .mobile-event-card {
+            background: var(--green-bg);
+            border-left: 4px solid var(--green);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .mobile-event-title {
+            font-weight: 600;
+            color: var(--green);
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .mobile-event-time {
+            font-size: 12px;
+            color: var(--green);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'dashboard/_sidebar.html' %}
+
+    <div class="main">
+        <div class="topbar">
+            <div class="page-title">
+                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; margin-right:10px;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <i class="fas fa-calendar-alt"></i> Agenda Virtuel
+            </div>
+            <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+                {% include 'dashboard/_notif_bell.html' %}
+                {% include 'dashboard/_theme_toggle.html' %}
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- FullCalendar classique pour grand écran (Design Premium) -->
+            <div id="calendar" class="desktop-only"></div>
+            
+            <!-- Agenda 100% sur-mesure pour mobile (Uniquement Quotidien) -->
+            <div id="mobile-agenda" class="mobile-only">
+                <div class="mobile-agenda-header">
+                    <button onclick="changeMobileDay(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <div id="mobile-agenda-date" style="font-weight: 600; font-size: 16px; text-transform: capitalize;">Aujourd'hui</div>
+                    <button onclick="changeMobileDay(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div id="mobile-timeline-container">
+                    <!-- Les heures et RDVs s'afficheront ici -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script>
+    // ---------------------------------------------------------
+    // 1. Logique Agenda Mobile Sur-Mesure (Jour uniquement)
+    // ---------------------------------------------------------
+    var mobileCurrentDate = new Date();
+    var allEvents = [];
+    
+    function formatMobileDate(date) {
+        var options = { weekday: 'long', day: 'numeric', month: 'long' };
+        return date.toLocaleDateString('fr-FR', options);
+    }
+    
+    function renderMobileAgenda() {
+        document.getElementById('mobile-agenda-date').innerText = formatMobileDate(mobileCurrentDate);
+        
+        var container = document.getElementById('mobile-timeline-container');
+        container.innerHTML = '';
+        
+        var startOfDay = new Date(mobileCurrentDate);
+        startOfDay.setHours(0,0,0,0);
+        var endOfDay = new Date(mobileCurrentDate);
+        endOfDay.setHours(23,59,59,999);
+        
+        var dayEvents = allEvents.filter(function(e) {
+            var eDate = new Date(e.start);
+            return eDate >= startOfDay && eDate <= endOfDay;
+        });
+        
+        for(var h = 6; h <= 22; h++) {
+            var row = document.createElement('div');
+            row.className = 'mobile-hour-row';
+            
+            var label = document.createElement('div');
+            label.className = 'mobile-hour-label';
+            label.innerText = (h < 10 ? '0'+h : h) + 'h00';
+            row.appendChild(label);
+            
+            var content = document.createElement('div');
+            content.className = 'mobile-hour-content';
+            
+            var hourEvents = dayEvents.filter(function(e) {
+                return new Date(e.start).getHours() === h;
+            });
+            
+            hourEvents.forEach(function(e) {
+                var dDate = new Date(e.start);
+                var min = dDate.getMinutes();
+                var timeStr = (h < 10 ? '0'+h : h) + ':' + (min < 10 ? '0'+min : min);
+                
+                var card = document.createElement('div');
+                card.className = 'mobile-event-card';
+                card.innerHTML = '<div class="mobile-event-title">' + e.title + '</div>' +
+                                 '<div class="mobile-event-time"><i class="fas fa-clock"></i> ' + timeStr + ' - ' + (e.extendedProps.statut || '') + '</div>';
+                content.appendChild(card);
+            });
+            
+            row.appendChild(content);
+            container.appendChild(row);
+        }
+    }
+    
+    function changeMobileDay(delta) {
+        mobileCurrentDate.setDate(mobileCurrentDate.getDate() + delta);
+        renderMobileAgenda();
+    }
+
+    // ---------------------------------------------------------
+    // 2. Initialisation Globale (FullCalendar Desktop)
+    // ---------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Initialiser FullCalendar (affiché uniquement sur Bureau)
+        var calendarEl = document.getElementById('calendar');
+        if (calendarEl && window.innerWidth >= 768) {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                locale: 'fr',
+                slotMinTime: '06:00:00',
+                slotMaxTime: '22:00:00',
+                expandRows: true, // Force les lignes à prendre toute la hauteur
+                events: '/api/agenda/events/{{ biz_id }}',
+                eventClick: function(info) {
+                    alert('Réservation : ' + info.event.title + '\nStatut : ' + info.event.extendedProps.statut);
+                }
+            });
+            calendar.render();
+        }
+        
+        // Charger les données de l'API manuellement pour l'agenda mobile natif
+        fetch('/api/agenda/events/{{ biz_id }}')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                allEvents = data;
+                renderMobileAgenda();
+            })
+            .catch(function(err) {
+                console.error("Erreur de chargement des réservations", err);
+            });
+    });
+</script>
+</body>
+</html>

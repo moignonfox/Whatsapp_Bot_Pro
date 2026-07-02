@@ -20,6 +20,8 @@ class Config:
     VERIFY_TOKEN: str = os.getenv('VERIFY_TOKEN', '')
     MASTER_PASSWORD_HASH: str = os.getenv('MASTER_PASSWORD_HASH', '')
     SECRET_KEY: str = os.getenv('SECRET_KEY', 'change-me')
+    JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY', 'fallback-jwt-secret-key-change-me')
+    JWT_ACCESS_TOKEN_EXPIRES = 604800  # 7 jours en secondes
     DB_PATH: str = 'data/bot_memory.db'
 
 

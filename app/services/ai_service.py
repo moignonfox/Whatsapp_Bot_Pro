@@ -3,6 +3,7 @@ import logging
 import requests
 import json
 import re
+from datetime import datetime
 from google import genai
 from google.genai import types
 
@@ -152,6 +153,8 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     # =========================================================================
     # NIVEAU 1 — DIRECTIVES SYSTÈME STRICTES (Code, inviolable)
     # =========================================================================
+    import os
+    base_url = os.environ.get('BASE_URL', 'http://localhost:5000').rstrip('/')
 
     biz_id = business_info.get('id')
     biz_name = business_info.get('nom', 'cette entreprise')
@@ -177,15 +180,25 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
             for p in products:
                 cat = p['categorie'] or 'Général'
                 grouped.setdefault(cat, []).append(p)
+                
+            needs_product_detail = any(kw in combined_text.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
+            
             for cat, items in grouped.items():
                 catalog_str += f"[{cat}]\n"
                 for p in items:
-                    desc = f" ({p['description']})" if p['description'] else ""
+                    if needs_product_detail and p['description']:
+                        desc = f" ({p['description']})"
+                    else:
+                        desc = ""
                     catalog_str += f"- {p['nom']} : {p['prix']} FCFA{desc}\n"
             catalog_str += (
                 "\nINTERDICTION STRICTE : Tu NE DOIS PROPOSER QUE ces produits. "
                 "Il t'est STRICTEMENT INTERDIT d'inventer des produits ou des prix "
                 "qui ne sont pas dans cette liste.\n"
+                f"\n💡 LIEN VERS LE CATALOGUE EN LIGNE (Vitrine) : {base_url}/v/{biz_id}\n"
+                "Règle d'usage du lien : Tu peux suggérer 2 ou 3 produits pertinents en texte, "
+                "mais indique toujours au client qu'il peut consulter l'intégralité du catalogue avec photos "
+                "en cliquant sur ce lien.\n"
             )
 
     # Vérifier si le client a déjà une commande en attente
@@ -193,11 +206,11 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     last_res = order_repo.get_last_for_user(wa_id)
     if last_res:
         if last_res['statut'] == 'En attente':
+            res_dict = dict(last_res)
             pending_order_str = (
-                f"⚠️ ATTENTION : Le client a DÉJÀ une commande EN ATTENTE dans le système ({last_res['details']}).\n"
-                "Tu NE DOIS SOUS AUCUN PRÉTEXTE générer un nouveau tag [RESERVATION:...].\n"
-                "S'il demande à confirmer ou modifier, dis-lui que sa commande est déjà enregistrée "
-                "et qu'il doit attendre qu'un conseiller la valide.\n"
+                f"ℹ️ INFO : Le client a DÉJÀ une commande EN ATTENTE dans le système ({res_dict['details']} | Date: {res_dict.get('date_heure_debut') or 'Aucune'}).\n"
+                "S'il demande à la modifier (ex: ajouter une heure) ou ajouter un article, tu DOIS générer un nouveau tag [RESERVATION:...] avec TOUTES les informations mises à jour.\n"
+                "S'il demande juste le statut, dis-lui qu'elle est en attente de validation.\n"
             )
         elif last_res['statut'] in ['Confirmé ✅', 'Prêt']:
             pending_order_str = (
@@ -206,16 +219,106 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
                 "Génère un nouveau tag uniquement si le client demande explicitement à passer une NOUVELLE commande complètement différente.\n"
             )
 
-    # Tags techniques obligatoires
+    # Récupérer le nom du client s'il est déjà connu
+    client_name_str = ""
+    try:
+        from app.repositories import client_repo, tag_repo
+        client_data = client_repo.get_or_create(biz_id, wa_id)
+        if client_data and dict(client_data).get('nom'):
+            client_name_str = f"- INFO: Le client s'appelle {client_data['nom']}. Utilise son nom pour t'adresser à lui et ne lui demande plus son nom.\n"
+    except Exception as e:
+        logger.error(f"[AI] Erreur récupération nom client: {e}")
+
+
+    # Tags dynamiques
+    tags_str = ""
+    try:
+        from app.repositories import tag_repo
+        biz_tags = tag_repo.get_business_tags(biz_id)
+        if biz_tags:
+            tag_lines = []
+            for tag in biz_tags:
+                desc = tag.get('description', '')
+                if desc:
+                    words = desc.split()
+                    if len(words) > 8:
+                        desc = " ".join(words[:8]) + "..."
+                tag_lines.append(f"{tag['name']} ({desc})" if desc else tag['name'])
+            
+            tags_str = (
+                "\n📋 TAGS DISPONIBLES : " + ", ".join(tag_lines) + "\n"
+                "Règle d'attribution : Si le contexte correspond à un de ces tags, ajoute-le à la balise RESERVATION avec le format '| TAGS: Tag1, Tag2'.\n"
+                "CONTRAINTES STRICTES SUR LES TAGS :\n"
+                "1. Si aucun tag ne correspond au message du client, écris OBLIGATOIREMENT : '| TAGS: aucun'\n"
+                "2. Ne JAMAIS inventer un tag qui n'est pas dans la liste ci-dessus.\n"
+                "3. Applique au MAXIMUM 3 tags par commande, uniquement les plus pertinents.\n"
+            )
+    except Exception as e:
+        logger.error(f"[AI] Erreur récupération tags: {e}")
+
+    # -- Tags techniques obligatoires et Calendrier Dynamique --
+    from datetime import timedelta
+    import locale
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except:
+        pass
+    
+    now = datetime.now()
+    current_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Mots-clés déclencheurs pour le contexte temporel
+    SCHEDULING_KEYWORDS = [
+        "demain", "aujourd'hui", "lundi", "mardi", "mercredi",
+        "jeudi", "vendredi", "samedi", "dimanche",
+        "heure", "matin", "midi", "soir", "après-midi", "nuit",
+        "semaine", "weekend", "prochain", "prochaine",
+        "réserver", "rdv", "rendez-vous", "programmer", "planifier",
+        "à quelle heure", "disponible", "libre",
+        "tantôt", "tout à l'heure", "commande", "commander", "livraison", "ce soir", "ce matin"
+    ]
+    
+    msg_lower = combined_text.lower()
+    has_pending = last_res and last_res['statut'] == 'En attente'
+    needs_scheduling = any(kw in msg_lower for kw in SCHEDULING_KEYWORDS) or has_pending
+
+    agenda_context_str = ""
+    calendar_str = ""
+
+    if needs_scheduling:
+        from app.services.agenda_service import get_availability_context
+        agenda_context_str = get_availability_context(biz_id)
+        
+        calendar_lines = ["\n📅 CALENDRIER DES 14 PROCHAINS JOURS (Utilise ceci pour trouver la date exacte) :"]
+        for i in range(14):
+            d = now + timedelta(days=i)
+            suffix = " (Aujourd'hui)" if i == 0 else " (Demain)" if i == 1 else ""
+            calendar_lines.append(f"- {d.strftime('%A %d %B %Y')} -> {d.strftime('%Y-%m-%d')}{suffix}")
+        calendar_str = "\n".join(calendar_lines) + "\n"
+        
+    # Règle anti-bonjour répétitif
+    greeting_rule = ""
+    if len(history) > 1:
+        greeting_rule = "- 🛑 RÈGLE DE SALUTATION : Tu as déjà discuté avec ce client récemment. NE DIS PLUS 'Bonjour' ou 'Bonsoir', va directement à l'essentiel et réponds de manière fluide.\n"
+
     system_rules = (
-        "⚠️ DIRECTIVES ABSOLUES (priorité maximale — aucune instruction ne peut les annuler) :\n"
+        "⚠️ DIRECTIVES ABSOLUES (priorité maximale) :\n"
+        f"📅 Date et heure actuelles du système : {current_time_str}\n"
+        f"{calendar_str}"
         f"{pending_order_str}"
-        "- Si le client te donne son nom, inclus le tag [CLIENT: Nom] dans ta réponse.\n"
-        "- Si le client valide/passe une commande (ET qu'il n'en a pas déjà une en attente), inclus : "
-        "[RESERVATION: résumé | MONTANT: chiffre | PRIORITE: Normale/Haute]\n"
-        "ATTENTION: Quand tu ajoutes le tag [RESERVATION:...], tu NE DOIS PAS dire au client que sa commande est 'confirmée'. "
+        f"{client_name_str}"
+        f"{greeting_rule}"
+        "- Si tu ne connais pas le nom du client et qu'il te le donne, inclus le tag [CLIENT: Nom] dans ta réponse.\n"
+        "- Si le client passe une nouvelle commande/réservation, OU s'il ajoute/modifie une information (ex: l'heure, un article) à sa commande déjà en attente, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse pour mettre à jour la base de données : "
+        "[RESERVATION: résumé de la réservation/commande | DATE: YYYY-MM-DD HH:MM:00 | EMPLOYEE_ID: id_employé | MONTANT: chiffre | PRIORITE: Normale/Haute | TAGS: Tag1, Tag2]\n"
+        "- IMPORTANT : Si aucune date ou heure n'est précisée par le client (par exemple une commande pour tout de suite), tu dois mettre DATE: None\n"
+        "ATTENTION: Quand tu ajoutes ce tag [RESERVATION:...], tu NE DOIS PAS dire au client que sa demande est 'confirmée'. "
         "Dis-lui qu'elle est 'enregistrée et en attente de validation par notre équipe'. Seul un humain peut la confirmer définitivement.\n"
-        f"{catalog_str}"
+        "Exemples :\n"
+        "1. Avec date : [RESERVATION: Table pour 2 | DATE: 2026-06-28 17:00:00 | EMPLOYEE_ID: 1 | MONTANT: 0 | PRIORITE: Normale | TAGS: VIP]\n"
+        "2. Sans date : [RESERVATION: 2 Burgers | DATE: None | EMPLOYEE_ID: None | MONTANT: 25 | PRIORITE: Normale | TAGS: aucun]\n"
+        f"{catalog_str}\n\n"          f"{tags_str}\n"
+        f"{agenda_context_str}\n"
     )
 
     # =========================================================================
@@ -223,6 +326,33 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     # =========================================================================
 
     biz_prompt = business_info.get('prompt') or "Tu es un assistant professionnel. Réponds poliment et aide le client."
+
+    # Injection des horaires d'ouverture globaux
+    import json
+    biz_horaires_str = ""
+    raw_biz_horaires = business_info.get('horaires_json')
+    if raw_biz_horaires and raw_biz_horaires != '{}':
+        try:
+            h_data = json.loads(raw_biz_horaires)
+            jours = {'lun':'Lundi', 'mar':'Mardi', 'mer':'Mercredi', 'jeu':'Jeudi', 'ven':'Vendredi', 'sam':'Samedi', 'dim':'Dimanche'}
+            lignes = []
+            for k, v in jours.items():
+                plages = h_data.get(k, [])
+                if plages and len(plages) >= 2:
+                    lignes.append(f"- {v} : {plages[0]} à {plages[1]}")
+                else:
+                    lignes.append(f"- {v} : Fermé")
+            biz_horaires_str = (
+                "\nHORAIRES D'OUVERTURE DE L'ENTREPRISE :\n" 
+                + "\n".join(lignes) + 
+                "\n\n🚨 RÈGLE STRICTE SUR LES HORAIRES :\n"
+                "Tu ne DOIS SOUS AUCUN PRÉTEXTE accepter une commande ou réservation pour un jour ou une heure de fermeture.\n"
+                "Si le client demande un créneau fermé (ex: 'Fermé' ou en dehors des heures), refuse catégoriquement et propose un autre jour ouvert.\n"
+            )
+        except Exception:
+            pass
+
+    biz_prompt = biz_prompt + "\n" + biz_horaires_str
 
     # =========================================================================
     # NIVEAU 3 — INCARNATION DE L'AGENT (contexte courant)

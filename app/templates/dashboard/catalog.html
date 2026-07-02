@@ -100,7 +100,7 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
             box-shadow: var(--shadow-sm);
@@ -121,23 +121,29 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
+            margin-bottom: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
         .product-name {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
             color: var(--text);
             margin: 0;
-            line-height: 1.3;
+            line-height: 1.4;
+            flex: 1;
         }
         .product-price {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--green);
-            white-space: nowrap;
-            background: rgba(37,211,102,0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            background: rgba(91, 106, 240, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            white-space: normal;
+            word-break: break-word;
+            text-align: right;
+            flex-shrink: 0;
         }
 
         .product-desc {
@@ -146,6 +152,7 @@
             margin-bottom: 20px;
             flex-grow: 1;
             line-height: 1.5;
+            word-wrap: break-word;
         }
 
         .product-footer {
@@ -193,6 +200,25 @@
             transform: translateX(18px);
         }
 
+        .edit-btn {
+            color: var(--brand, #5b6af0);
+            background: rgba(91,106,240,0.1);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+        .edit-btn:hover {
+            background: var(--brand, #5b6af0);
+            color: white;
+        }
+        
         .delete-btn {
             color: #ff4444;
             background: rgba(255,68,68,0.1);
@@ -303,11 +329,17 @@
                 <div class="product-grid">
                     {% for product in items %}
                     <div class="product-card {% if not product.disponible %}inactive{% endif %}">
+                        {% if product.image_url %}
+                        <div style="width: 100%; height: 160px; border-radius: 10px; overflow: hidden; margin-bottom: 12px; flex-shrink: 0;">
+                            <img src="{{ product.image_url }}" alt="{{ product.nom }}" style="width:100%; height:100%; object-fit:cover;">
+                        </div>
+                        {% endif %}
                         <div class="product-header">
-                            <h3 class="product-name">{{ product.nom }}</h3>
-                            <div class="product-price">{{ "{:,.0f}".format(product.prix).replace(',', ' ') }} F</div>
+                            <h3 class="product-name" style="word-break: break-word; padding-right: 8px;">{{ product.nom }}</h3>
+                            <div class="product-price" style="flex-shrink: 0;">{{ "{:,.0f}".format(product.prix).replace(',', ' ') }} F</div>
                         </div>
                         <div class="product-desc">
+                            <p style="margin-bottom: 5px;"><i class="fas fa-clock" style="color:var(--muted); font-size:12px;"></i> <span style="font-size:12px; color:var(--muted);">{{ product.duree_minutes }} min</span></p>
                             {{ product.description if product.description else "Aucune description fournie pour l'IA." }}
                         </div>
                         
@@ -316,15 +348,36 @@
                                class="toggle-container {% if product.disponible %}active{% endif %}"
                                title="Rendre disponible ou masquer à l'IA">
                                 <div class="toggle-switch"></div>
-                                <span>{% if product.disponible %}Disponible{% else %}Épuisé{% endif %}</span>
+                                <span>{% if product.disponible %}Dispo (IA){% else %}Épuisé{% endif %}</span>
                             </a>
                             
-                            <a href="{{ url_for('dashboard.delete_catalog_product', biz_id=biz_id, product_id=product.id) }}" 
-                               class="delete-btn" 
-                               onclick="return confirm('Supprimer définitivement ce produit ?')"
-                               title="Supprimer">
-                                <i class="fas fa-trash"></i>
+                            <a href="{{ url_for('dashboard.toggle_catalog_visibility', biz_id=biz_id, product_id=product.id) }}" 
+                               class="toggle-container {% if product.is_visible %}active{% endif %}"
+                               title="Afficher ou masquer sur la Vitrine">
+                                <div class="toggle-switch"></div>
+                                <span>{% if product.is_visible %}Vitrine{% else %}Caché{% endif %}</span>
                             </a>
+                            
+                            <div style="display: flex; gap: 8px;">
+                                <button class="edit-btn" 
+                                   data-id="{{ product.id }}"
+                                   data-nom="{{ product.nom }}"
+                                   data-categorie="{{ product.categorie }}"
+                                   data-prix="{{ product.prix }}"
+                                   data-duree="{{ product.duree_minutes }}"
+                                   data-description="{{ product.description if product.description else '' }}"
+                                   data-visible="{{ 'true' if product.is_visible else 'false' }}"
+                                   onclick="openEditModalFromBtn(this)"
+                                   title="Éditer">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <a href="{{ url_for('dashboard.delete_catalog_product', biz_id=biz_id, product_id=product.id) }}" 
+                                   class="delete-btn" 
+                                   onclick="return confirm('Supprimer définitivement ce produit ?')"
+                                   title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
@@ -349,7 +402,7 @@
 <div id="addModal" class="modal">
     <div class="modal-content">
         <div class="modal-title">Nouveau Produit</div>
-        <form action="{{ url_for('dashboard.add_catalog_product', biz_id=biz_id) }}" method="POST">
+        <form action="{{ url_for('dashboard.add_catalog_product', biz_id=biz_id) }}" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -373,11 +426,26 @@
                     <label>Prix (FCFA)</label>
                     <input type="number" name="prix" required placeholder="0">
                 </div>
+                <div style="flex: 1;">
+                    <label>Durée (min)</label>
+                    <input type="number" name="duree_minutes" required placeholder="Ex: 30" value="30">
+                </div>
             </div>
 
             <div class="form-group">
                 <label>Description pour l'IA (Argumentaire de vente)</label>
                 <textarea name="description" rows="3" placeholder="Décrivez le produit pour que l'IA puisse le vendre efficacement..."></textarea>
+            </div>
+            
+            <div class="form-group" style="display: flex; gap: 15px; align-items: center; margin-top: 10px;">
+                <div style="flex: 1;">
+                    <label>Photo du produit (Optionnel)</label>
+                    <input type="file" name="image" accept="image/*" style="padding: 6px;">
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="is_visible" id="is_visible" checked style="width:auto; transform: scale(1.2);">
+                    <label for="is_visible" style="margin:0; cursor:pointer;">Visible sur la vitrine Web</label>
+                </div>
             </div>
             
             <div class="modal-actions">
@@ -388,6 +456,80 @@
     </div>
 </div>
 
+<!-- Modal Edition Produit -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">Éditer Produit</div>
+        <form id="editForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label>Nom du produit / service</label>
+                <input type="text" name="nom" id="edit_nom" required>
+            </div>
+            
+            <div class="form-group" style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label>Catégorie</label>
+                    <input type="text" name="categorie" id="edit_categorie" list="category-list">
+                </div>
+                <div style="flex: 1;">
+                    <label>Prix (FCFA)</label>
+                    <input type="number" name="prix" id="edit_prix" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Durée (min)</label>
+                    <input type="number" name="duree_minutes" id="edit_duree" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Description pour l'IA</label>
+                <textarea name="description" id="edit_description" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group" style="display: flex; gap: 15px; align-items: center; margin-top: 10px;">
+                <div style="flex: 1;">
+                    <label>Photo du produit (Optionnel)</label>
+                    <input type="file" name="image" accept="image/*" style="padding: 6px;">
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="is_visible" id="edit_is_visible" style="width:auto; transform: scale(1.2);">
+                    <label for="edit_is_visible" style="margin:0; cursor:pointer;">Visible sur la vitrine Web</label>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('editModal').style.display='none'">Annuler</button>
+                <button type="submit" class="btn-submit">Sauvegarder</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModalFromBtn(btn) {
+    var id = btn.getAttribute('data-id');
+    var nom = btn.getAttribute('data-nom');
+    var categorie = btn.getAttribute('data-categorie');
+    var prix = btn.getAttribute('data-prix');
+    var duree = btn.getAttribute('data-duree');
+    var description = btn.getAttribute('data-description');
+    var is_visible = btn.getAttribute('data-visible') === 'true';
+
+    document.getElementById('edit_nom').value = nom;
+    document.getElementById('edit_categorie').value = categorie;
+    document.getElementById('edit_prix').value = prix;
+    document.getElementById('edit_duree').value = duree;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_is_visible').checked = is_visible;
+    
+    // Set form action
+    document.getElementById('editForm').action = "/admin/{{ biz_id }}/catalog/edit/" + id;
+    
+    document.getElementById('editModal').style.display = 'flex';
+}
+</script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

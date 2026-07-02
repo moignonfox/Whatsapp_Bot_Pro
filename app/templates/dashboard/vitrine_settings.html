@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitrine Web — {{ biz_id }} · MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar { height: 70px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 100; }
+        .page-title { font-size: 18px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .page-title i { color: var(--brand, #5b6af0); }
+
+        .content { padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; display: flex; gap: 40px; }
+
+        .settings-panel { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px; box-shadow: var(--shadow-sm); }
+        .preview-panel { width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; align-items: center; position: sticky; top: 100px; height: 600px; }
+        
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+        .form-group input[type="color"] { width: 60px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; }
+        .form-group input[type="file"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+        
+        .btn-submit { background: var(--green); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s; }
+        .btn-submit:hover { background: var(--green-dim); }
+
+        /* Preview styles */
+        .preview-header { width: 100%; height: 60px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
+        .preview-logo { height: 30px; max-width: 100px; object-fit: contain; }
+        .preview-logo-placeholder { font-weight: 700; font-size: 16px; color: var(--text); }
+        
+        .preview-hero { width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; transition: background-color 0.3s; }
+        .preview-body { padding: 20px; width: 100%; flex: 1; background: var(--bg); }
+        .preview-card { background: var(--card); border-radius: 12px; height: 80px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .preview-btn { width: 100%; padding: 10px; border-radius: 100px; color: white; text-align: center; font-weight: 600; margin-top: 10px; transition: background-color 0.3s; border: none;}
+
+        .public-link { display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(91,106,240,0.1); border-radius: 8px; margin-bottom: 24px; color: var(--text); border: 1px solid rgba(91,106,240,0.2); }
+        .public-link input { flex: 1; background: transparent; border: none; color: var(--text); font-family: monospace; font-size: 14px; outline: none; }
+        .public-link button { background: var(--brand, #5b6af0); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+        @media (max-width: 900px) {
+            .content { flex-direction: column; }
+            .preview-panel { width: 100%; position: static; height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'dashboard/_sidebar.html' %}
+
+<div class="main">
+    <div class="topbar">
+        <div class="page-title">
+            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <i class="fas fa-globe"></i> Personnalisation Vitrine
+        </div>
+        <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+            {% include 'dashboard/_notif_bell.html' %}
+            {% include 'dashboard/_theme_toggle.html' %}
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="settings-panel">
+            <h2 style="margin-bottom: 10px; color: var(--text);">Apparence de votre site web</h2>
+            <p style="color: var(--muted); margin-bottom: 30px;">Personnalisez la vitrine que vos clients verront lorsqu'ils cliqueront sur le lien envoyé par le bot.</p>
+
+            <div class="public-link">
+                <i class="fas fa-link" style="color: var(--brand, #5b6af0);"></i>
+                <input type="text" readonly value="{{ request.host_url }}v/{{ biz_id }}" id="vitrineLink">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('vitrineLink').value); this.innerText='Copié!'; setTimeout(()=>this.innerText='Copier', 2000);">Copier</button>
+                <a href="/v/{{ biz_id }}" target="_blank" style="color: var(--brand, #5b6af0); text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fas fa-external-link-alt"></i> Ouvrir</a>
+            </div>
+
+            <form action="{{ url_for('dashboard.vitrine_settings', biz_id=biz_id) }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label>Couleur principale (Marque)</label>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <input type="color" name="vitrine_color" id="colorPicker" value="{{ business.vitrine_color or '#5b6af0' }}">
+                        <span id="colorHex" style="font-family: monospace; color: var(--muted);">{{ business.vitrine_color or '#5b6af0' }}</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Logo de l'entreprise</label>
+                    {% if business.vitrine_logo_url %}
+                    <div style="margin-bottom: 10px;">
+                        <img src="{{ business.vitrine_logo_url }}" alt="Logo" style="max-height: 50px; border-radius: 8px; border: 1px solid var(--border);">
+                    </div>
+                    {% endif %}
+                    <input type="file" name="logo" id="logoInput" accept="image/*">
+                    <small style="color: var(--muted); display: block; margin-top: 5px;">Format recommandé: PNG transparent, max 2MB.</small>
+                </div>
+
+                <button type="submit" class="btn-submit">Sauvegarder les modifications</button>
+            </form>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="preview-panel">
+            <div class="preview-header">
+                {% if business.vitrine_logo_url %}
+                <img src="{{ business.vitrine_logo_url }}" class="preview-logo" id="previewLogoImg" style="display: block;">
+                <div class="preview-logo-placeholder" id="previewLogoText" style="display: none;">{{ business.nom }}</div>
+                {% else %}
+                <img src="" class="preview-logo" id="previewLogoImg" style="display: none;">
+                <div class="preview-logo-placeholder" id="previewLogoText" style="display: block;">{{ business.nom }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="preview-hero" id="previewHero" style="background-color: {{ business.vitrine_color or '#5b6af0' }};">
+                Bienvenue !
+            </div>
+            
+            <div class="preview-body">
+                <div class="preview-card"></div>
+                <div class="preview-card" style="opacity: 0.6;"></div>
+                <div class="preview-btn" id="previewBtn" style="background-color: {{ business.vitrine_color or '#5b6af0' }};">Commander sur WhatsApp</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live preview logic
+    const colorPicker = document.getElementById('colorPicker');
+    const colorHex = document.getElementById('colorHex');
+    const previewHero = document.getElementById('previewHero');
+    const previewBtn = document.getElementById('previewBtn');
+    const logoInput = document.getElementById('logoInput');
+    const previewLogoImg = document.getElementById('previewLogoImg');
+    const previewLogoText = document.getElementById('previewLogoText');
+
+    colorPicker.addEventListener('input', function(e) {
+        const color = e.target.value;
+        colorHex.textContent = color;
+        previewHero.style.backgroundColor = color;
+        previewBtn.style.backgroundColor = color;
+    });
+
+    logoInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewLogoImg.src = e.target.result;
+                previewLogoImg.style.display = 'block';
+                previewLogoText.style.display = 'none';
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+</script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

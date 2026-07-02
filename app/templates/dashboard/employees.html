@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Équipe et Horaires — {{ biz_id }} — MyBot SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+      (function(){
+        var t = localStorage.getItem('mybot-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <style>
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0; z-index: 100;
+        }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .page-title i { color: var(--green); }
+
+        .content {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .agent-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-control:focus {
+            border-color: var(--green);
+            outline: none;
+        }
+        
+        .btn-submit {
+            background: var(--green);
+            color: #fff !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 12px var(--green-glow); }
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover { background: var(--border); }
+        .btn-danger {
+            background: transparent;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .btn-danger:hover { background: rgba(231,76,60,0.1); }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+
+        .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; }
+        .flash.success { background: rgba(46,204,113,.15); color: #2ecc71; border: 1px solid rgba(46,204,113,.3); }
+
+        @media(max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    {% set active_page = 'employees' %}
+    {% include "dashboard/_sidebar.html" %}
+
+    <div class="main">
+        <div class="topbar">
+            <div class="page-title">
+                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <i class="fas fa-user-friends"></i> Équipe et Horaires
+            </div>
+            <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+                {% include "dashboard/_notif_bell.html" %}
+                {% include "dashboard/_theme_toggle.html" %}
+            </div>
+        </div>
+
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="grid-2">
+                <!-- Colonne Gauche : Liste -->
+                <div>
+                    <h2 style="margin-top:0; font-size: 18px; margin-bottom: 16px;">Membres de l'équipe</h2>
+                    {% if not employees %}
+                        <p style="color: var(--text-secondary); font-size: 14px;">Aucun employé ajouté pour le moment. Ajoutez-en un pour gérer ses horaires.</p>
+                    {% else %}
+                        {% for emp in employees %}
+                            <div class="agent-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <h3 style="margin: 0; font-size: 16px;">{{ emp.nom }}</h3>
+                                    <span style="font-size: 12px; color: var(--green); font-weight: 600;">{{ emp.poste }}</span>
+                                </div>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                                    <strong>Horaires (JSON):</strong><br>
+                                    <pre style="background: var(--bg); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin-top: 4px;">{{ emp.horaires_json or '{}' }}</pre>
+                                </p>
+                                
+                                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                                    <button type="button" class="btn-outline btn-small" onclick="editEmployee('{{ emp.id }}', '{{ emp.nom | replace('\'', '\\\'') }}', '{{ emp.poste | replace('\'', '\\\'') }}', '{{ emp.horaires_json | replace('\n', '\\n') | replace('\'', '\\\'') }}')">Modifier</button>
+                                    
+                                    <form method="POST" action="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}" style="margin: 0;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="employee_id" value="{{ emp.id }}">
+                                        <button type="submit" class="btn-danger btn-small" onclick="return confirm('Supprimer cet employé ?')">Supprimer</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Colonne Droite : Formulaire -->
+                <div>
+                    <div class="card" style="margin-bottom: 0;">
+                        <h2 id="form-title" style="margin-top:0; font-size: 18px; margin-bottom: 16px;">Ajouter un Employé</h2>
+
+                        <form id="employee_form" method="POST" action="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" id="form-action" value="add">
+                            <input type="hidden" name="employee_id" id="employee_id" value="">
+                            
+                            <div class="form-group">
+                                <label>Nom de l'employé</label>
+                                <input type="text" name="nom" id="emp_nom" class="form-control" required placeholder="Ex: Jean Dupont">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Poste / Rôle</label>
+                                <input type="text" name="poste" id="emp_poste" class="form-control" required placeholder="Ex: Coiffeur">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Horaires d'ouverture</label>
+                                <div id="schedule-builder" style="background: var(--surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+                                    <!-- généré par JS -->
+                                </div>
+                                <textarea name="horaires_json" id="emp_horaires" style="display:none;"></textarea>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-top: 24px;">
+                                <button type="submit" id="submit-btn" class="btn-submit" style="flex: 1;">Ajouter l'employé</button>
+                                <button type="button" id="cancel-btn" class="btn-outline" style="display: none; padding: 10px 20px; border-radius: 8px;" onclick="resetForm()">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const jours = [
+    { id: 'lun', label: 'Lundi' },
+    { id: 'mar', label: 'Mardi' },
+    { id: 'mer', label: 'Mercredi' },
+    { id: 'jeu', label: 'Jeudi' },
+    { id: 'ven', label: 'Vendredi' },
+    { id: 'sam', label: 'Samedi' },
+    { id: 'dim', label: 'Dimanche' }
+];
+
+function buildScheduleUI(targetId, hiddenInputId) {
+    const container = document.getElementById(targetId);
+    container.innerHTML = '';
+    
+    jours.forEach(j => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.marginBottom = '12px';
+        row.style.borderBottom = '1px solid var(--border-light)';
+        row.style.paddingBottom = '12px';
+        
+        row.innerHTML = `
+            <div style="width: 120px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin:0;">
+                    <input type="checkbox" id="check_${j.id}" onchange="updateScheduleJSON('${hiddenInputId}')" checked style="accent-color: var(--green); width:18px; height:18px;">
+                    <span style="font-weight: 500;">${j.label}</span>
+                </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="time" id="start_${j.id}" value="09:00" class="form-control" style="width: auto; padding: 6px 12px;" onchange="updateScheduleJSON('${hiddenInputId}')">
+                <span style="color: var(--muted);">à</span>
+                <input type="time" id="end_${j.id}" value="18:00" class="form-control" style="width: auto; padding: 6px 12px;" onchange="updateScheduleJSON('${hiddenInputId}')">
+            </div>
+        `;
+        
+        const checkbox = row.querySelector(`#check_${j.id}`);
+        const startInput = row.querySelector(`#start_${j.id}`);
+        const endInput = row.querySelector(`#end_${j.id}`);
+        
+        checkbox.addEventListener('change', function() {
+            startInput.disabled = !this.checked;
+            endInput.disabled = !this.checked;
+            if(!this.checked) {
+                startInput.style.opacity = '0.4';
+                endInput.style.opacity = '0.4';
+            } else {
+                startInput.style.opacity = '1';
+                endInput.style.opacity = '1';
+            }
+        });
+        
+        container.appendChild(row);
+    });
+    // Remove last border
+    container.lastChild.style.borderBottom = 'none';
+    container.lastChild.style.paddingBottom = '0';
+    container.lastChild.style.marginBottom = '0';
+}
+
+function updateScheduleJSON(hiddenInputId) {
+    const data = {};
+    jours.forEach(j => {
+        const checked = document.getElementById(`check_${j.id}`).checked;
+        if(checked) {
+            const start = document.getElementById(`start_${j.id}`).value || "09:00";
+            const end = document.getElementById(`end_${j.id}`).value || "18:00";
+            data[j.id] = [start, end];
+        } else {
+            data[j.id] = [];
+        }
+    });
+    document.getElementById(hiddenInputId).value = JSON.stringify(data);
+}
+
+function loadScheduleIntoUI(jsonStr, hiddenInputId) {
+    try {
+        const data = JSON.parse(jsonStr);
+        jours.forEach(j => {
+            const checkbox = document.getElementById(`check_${j.id}`);
+            const startInput = document.getElementById(`start_${j.id}`);
+            const endInput = document.getElementById(`end_${j.id}`);
+            
+            if(data[j.id] && data[j.id].length >= 2) {
+                checkbox.checked = true;
+                startInput.value = data[j.id][0];
+                endInput.value = data[j.id][1];
+            } else {
+                checkbox.checked = false;
+            }
+            // Trigger visual update
+            checkbox.dispatchEvent(new Event('change'));
+        });
+        updateScheduleJSON(hiddenInputId);
+    } catch(e) {
+        console.error("Invalid JSON schedule:", e);
+    }
+}
+
+// Initialiser l'UI au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    buildScheduleUI('schedule-builder', 'emp_horaires');
+    const defaultJson = '{"lun":["09:00","18:00"], "mar":["09:00","18:00"], "mer":["09:00","18:00"], "jeu":["09:00","18:00"], "ven":["09:00","18:00"], "sam":["09:00","14:00"], "dim":[]}';
+    loadScheduleIntoUI(defaultJson, 'emp_horaires');
+});
+
+function editEmployee(id, nom, poste, horaires_json) {
+    document.getElementById('form-title').innerText = "Modifier l'employé";
+    document.getElementById('form-action').value = "edit";
+    document.getElementById('employee_id').value = id;
+    
+    document.getElementById('emp_nom').value = nom;
+    document.getElementById('emp_poste').value = poste;
+    
+    let jsonToLoad = horaires_json && horaires_json !== 'None' ? horaires_json : '{"lun":["09:00","18:00"], "mar":["09:00","18:00"], "mer":["09:00","18:00"], "jeu":["09:00","18:00"], "ven":["09:00","18:00"], "sam":["09:00","14:00"], "dim":[]}';
+    loadScheduleIntoUI(jsonToLoad, 'emp_horaires');
+    
+    document.getElementById('submit-btn').innerText = "Enregistrer les modifications";
+    document.getElementById('cancel-btn').style.display = "block";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+    document.getElementById('form-title').innerText = "Ajouter un Employé";
+    document.getElementById('form-action').value = "add";
+    document.getElementById('employee_id').value = "";
+    
+    document.getElementById('employee_form').reset();
+    const defaultJson = '{"lun":["09:00","18:00"], "mar":["09:00","18:00"], "mer":["09:00","18:00"], "jeu":["09:00","18:00"], "ven":["09:00","18:00"], "sam":["09:00","14:00"], "dim":[]}';
+    loadScheduleIntoUI(defaultJson, 'emp_horaires');
+    
+    document.getElementById('submit-btn').innerText = "Ajouter l'employé";
+    document.getElementById('cancel-btn').style.display = "none";
+}
+</script>
+</body>
+</html>

@@ -17,10 +17,11 @@ def extract_and_save_client_name(reply, wa_id, biz_id):
         
         # Mise à jour via le repository CRM
         client_repo.update_name(biz_id, wa_id, nouveau_nom)
-        
-        # On nettoie la réponse pour que le client ne voie pas le tag
-        reply = reply.replace(f"[CLIENT: {nouveau_nom}]", "").strip()
     except Exception as e:
         print(f"Erreur capture nom : {e}")
+    
+    # On nettoie la réponse avec regex pour être robuste
+    import re
+    reply = re.sub(r'\[CLIENT:.*?\]', '', reply).strip()
     
     return reply

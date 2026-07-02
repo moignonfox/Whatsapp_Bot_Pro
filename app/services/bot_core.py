@@ -191,7 +191,7 @@ def process_debounced_messages(wa_id, business, phone_id):
         human_handoff_triggered = False
         
         # A. Déclencheur Déterministe (Mots-clés)
-        trigger_pattern = r'\b(humain|conseiller|responsable|manager|quelqu\'un de vrai|parler à quelqu\'un)\b'
+        trigger_pattern = r'\b(humain|conseiller|responsable|manager|quelqu\'un de vrai|parler à quelqu\'un|employé|patron|gérant|vrai personne|service client|assistance humaine)\b'
         import re
         if re.search(trigger_pattern, combined_text, re.IGNORECASE):
             human_handoff_triggered = True
@@ -237,7 +237,7 @@ def process_debounced_messages(wa_id, business, phone_id):
                         logger.debug("[FALLBACK IA] Alerte déjà envoyée, ignorée.")
                     else:
                         details_secours = f"⚠️ IA INDISPONIBLE - Nouveau message client reçu (voir conversation)"
-                        order_repo.save_reservation(biz_id, wa_id, details_secours, priorite="Haute")
+                        new_id = order_repo.save_reservation(biz_id, wa_id, details_secours, priorite="Haute")
                         logger.info("[FALLBACK IA] Réservation de secours créée.")
                         
                         # Message de secours
@@ -253,6 +253,17 @@ def process_debounced_messages(wa_id, business, phone_id):
                             socketio.emit('nouveau_message', {
                                 'business_id': biz_id, 'wa_id': wa_id, 'content': fallback_msg,
                                 'role': 'assistant', 'timestamp': 'now'
+                            }, room=biz_id)
+                            
+                            # Notifier le dashboard pour la nouvelle commande (IA indisponible)
+                            socketio.emit('nouvelle_commande', {
+                                'business_id': biz_id,
+                                'res_id': new_id,
+                                'wa_id': wa_id,
+                                'details': details_secours,
+                                'statut': 'En attente',
+                                'priorite': 'Haute',
+                                'timestamp': 'now'
                             }, room=biz_id)
                         except Exception as ws_err:
                             logger.warning("[FALLBACK IA] Erreur SocketIO: %s", ws_err)
@@ -313,6 +324,8 @@ def process_debounced_messages(wa_id, business, phone_id):
                     'business_id': biz_id, 'wa_id': wa_id, 'content': final_msg,
                     'role': 'assistant', 'timestamp': 'now'
                 }, room=biz_id)
+                
+                logger.info("[HANDOFF] Transfert envoyé (aucune fausse commande créée).")
             except Exception as ws_err:
                 logger.warning(f"[HANDOFF] Erreur SocketIO: {ws_err}")
                 

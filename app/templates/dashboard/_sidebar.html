@@ -1,3 +1,24 @@
+
+<!-- Global Flashes -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px;">
+      {% for category, message in messages %}
+        <div class="toast-flash" style="background: {{ '#25d366' if category == 'success' else '#F0B429' if category == 'warning' else '#FF4B4B' }}; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 500; font-size: 14px; animation: slideInGlobalToast 0.3s ease-out forwards;" onclick="this.remove()">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.toast-flash').forEach(el => {
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 300);
+        });
+      }, 5000);
+    </script>
+  {% endif %}
+{% endwith %}
 {#
   _sidebar.html — Sidebar partagée pour toutes les pages du Dashboard.
 
@@ -8,6 +29,10 @@
     - plan         : 'BASIC' | 'PRO' | 'PREMIUM'
     - active_page  : 'dashboard' | 'chat' | 'clients' | 'marketing' | 'payments' | 'settings'
 #}
+{# Sidebar safe defaults — prevents UndefinedError if a route forgets to pass these #}
+{% set biz_id = biz_id if biz_id is defined else '' %}
+{% set active_page = active_page if active_page is defined else '' %}
+{% set plan = plan if plan is defined else 'BASIC' %}
 <aside class="sidebar fixed" id="sidebar">
 
     {# ── Logo ── #}
@@ -57,15 +82,25 @@
             <i class="fas fa-calendar-check"></i> Historique (Commandes)
         </a>
 
+        <a class="nav-item {% if active_page == 'agenda' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_agenda', biz_id=biz_id) }}">
+            <i class="fas fa-calendar-alt"></i> Agenda Visuel
+        </a>
+
         <a class="nav-item {% if active_page == 'catalog' %}active{% endif %}"
            href="{{ url_for('dashboard.business_catalog', biz_id=biz_id) }}">
             <i class="fas fa-book-open"></i> Catalogue / Menu
         </a>
 
-        <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}">
+        <a class="nav-item {% if active_page == 'vitrine' %}active{% endif %}"
+           href="{{ url_for('dashboard.vitrine_settings', biz_id=biz_id) }}">
+            <i class="fas fa-globe"></i> Vitrine Web
+        </a>
+
+        <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}" id="nav-chat-link">
             <i class="fas fa-comments"></i> Conversations
             {% if global_unread_count and global_unread_count > 0 %}
-            <span style="font-size:10.5px;background:#F85149;color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
+            <span id="global-notif-msg-badge" style="font-size:10.5px;background:#F85149;color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
             {% endif %}
         </a>
 
@@ -107,6 +142,16 @@
         <a class="nav-item {% if active_page == 'settings' %}active{% endif %}"
            href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}">
             <i class="fas fa-cog"></i> Paramètres
+        </a>
+
+        <a class="nav-item {% if active_page == 'tags' %}active{% endif %}"
+           href="{{ url_for('dashboard.tags', biz_id=biz_id) }}">
+            <i class="fas fa-tags"></i> Mes Tags (IA)
+        </a>
+
+        <a class="nav-item {% if active_page == 'employees' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}">
+            <i class="fas fa-user-friends"></i> Équipe & Horaires
         </a>
 
         {% if plan == 'PREMIUM' %}
@@ -291,13 +336,14 @@
             badge.style.display = 'none';
         }
         // Badge sur le lien "Conversations" de la sidebar
-        const chatLink = document.querySelector('a[href="'+chatUrl+'"]');
+        const chatLink = document.getElementById('nav-chat-link');
         if (chatLink) {
             let mb = document.getElementById('global-notif-msg-badge');
             if (unreadMessages > 0) {
                 if (!mb) {
                     mb = document.createElement('span');
                     mb.id = 'global-notif-msg-badge';
+                    mb.style.cssText = 'font-size:10.5px;background:#F85149;color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;';
                     chatLink.appendChild(mb);
                 }
                 mb.textContent = unreadMessages > 99 ? '99+' : unreadMessages;
@@ -316,11 +362,33 @@
         if (sub) sub.textContent = notifications.length === 0 ? 'Aucune notification' : `${notifications.length} notification${notifications.length>1?'s':''}`;
     }
 
+    // Create a shared AudioContext so it can be unlocked by user interaction
+    let sharedAudioCtx = null;
+    function getAudioContext() {
+        if (!sharedAudioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) sharedAudioCtx = new AudioContext();
+        }
+        return sharedAudioCtx;
+    }
+
+    // Unlock audio context on first user interaction (required for mobile)
+    function unlockAudio() {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+    }
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+
     window.playNotificationSound = function(type, testVol) {
         try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            // Attempt to resume just in case (will work if called from a click event)
             if (ctx.state === 'suspended') ctx.resume();
             
             let vol = 0.3; // Default
@@ -437,7 +505,9 @@
         if (n.type === 'order') {
             const d = n.data;
             const isPending = d.statut === 'En attente';
-            const actions = isPending ? `
+            let actionsHTML = '';
+            if (isPending) {
+                actionsHTML = `
                 <div class="notif-actions">
                     <button class="notif-btn notif-btn-confirm" onclick="actionOrder(${d.res_id||'null'},'confirm',this)">
                         <i class="fas fa-check"></i> Confirmer
@@ -445,7 +515,10 @@
                     <button class="notif-btn notif-btn-cancel" onclick="actionOrder(${d.res_id||'null'},'cancel',this)">
                         <i class="fas fa-times"></i> Annuler
                     </button>
-                </div>` : `<div class="notif-actions"><span style="font-size:11px;color:var(--muted,#8892a4);margin-left:0;">${esc(d.statut||'')}</span></div>`;
+                </div>`;
+            } else {
+                actionsHTML = `<div class="notif-actions"><span style="font-size:11px;color:var(--muted,#8892a4);margin-left:0;">${esc(d.statut||'')}</span></div>`;
+            }
             const prio = d.priorite === 'Haute'
                 ? `<span style="font-size:10px;background:#F85149;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;">URGENT</span>` : '';
             return `<div class="notif-item order" onclick="openNotification('${n.id}', '${dashUrl}', 'order')">
@@ -455,7 +528,7 @@
                     <span class="notif-time">${n.time}</span>
                 </div>
                 <div class="notif-body">+${esc(d.wa_id)} · ${esc((d.details||'').substring(0,80))}</div>
-                ${actions}
+                ${actionsHTML}
             </div>`;
         } else {
             const d = n.data;
@@ -515,18 +588,21 @@
         .then(r => r.json())
         .then(resp => {
             if (resp.status === 'ok') {
-                // Mettre à jour le statut dans la liste locale
+                // Remove the notification from the list entirely
                 const n = notifications.find(n => n.data && n.data.res_id === resId);
                 if (n) {
-                    n.data.statut = resp.statut;
+                    notifications = notifications.filter(not => not.id !== n.id);
                     if (unreadOrders > 0) unreadOrders--; // Action effectuée, on diminue le compteur
                 }
                 saveState();
                 updateBellBadge();
                 renderNotifList();
                 
-                // Si la page actuelle affiche la liste des commandes, on la rafraîchit pour éviter les doublons d'action
-                if (document.querySelector('.btn-confirm') || document.querySelector('.btn-cancel')) {
+                // Redirect if requested
+                if (resp.redirect_url) {
+                    window.location.href = resp.redirect_url;
+                } else if (document.querySelector('.btn-confirm') || document.querySelector('.btn-cancel')) {
+                    // Si la page actuelle affiche la liste des commandes, on la rafraîchit pour éviter les doublons d'action
                     window.location.reload();
                 }
             }
@@ -541,6 +617,23 @@
         saveState();
         updateBellBadge();
         renderNotifList();
+    };
+
+    window.clearMessagesForWaId = function(waId) {
+        let countRemoved = 0;
+        notifications = notifications.filter(n => {
+            if (n.type === 'message' && n.data && n.data.wa_id === waId) {
+                countRemoved++;
+                return false;
+            }
+            return true;
+        });
+        if (countRemoved > 0) {
+            unreadMessages = Math.max(0, unreadMessages - countRemoved);
+            saveState();
+            updateBellBadge();
+            renderNotifList();
+        }
     };
 
     // ── Toast flottant ──
@@ -634,7 +727,17 @@
     socket.on('statut_commande', function(data) {
         if (data.business_id !== bizId) return;
         const n = notifications.find(n => n.type==='order' && n.data && n.data.res_id === data.res_id);
-        if (n) { n.data.statut = data.statut; if (panelOpen) renderNotifList(); }
+        if (n) { 
+            if (data.statut !== 'En attente') {
+                notifications = notifications.filter(not => not.id !== n.id);
+                if (unreadOrders > 0) unreadOrders--;
+            } else {
+                n.data.statut = data.statut; 
+            }
+            saveState();
+            updateBellBadge();
+            if (panelOpen) renderNotifList(); 
+        }
     });
 
 })();

@@ -651,7 +651,15 @@
                 input.style.height = '';
                 input.focus();
                 // La bulle s'affichera via l'événement SocketIO
+            } else if (data.error) {
+                alert("Erreur: " + data.error);
+                input.focus();
             }
+        })
+        .catch(err => {
+            input.disabled = false;
+            alert("Erreur réseau lors de l'envoi du message.");
+            console.error(err);
         });
     }
 

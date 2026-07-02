@@ -75,6 +75,8 @@ def handle_messages():
                     # Diffusion du message client au Dashboard en temps reel
                     try:
                         from app import socketio
+                        from app.services.notification_service import send_push_notification
+                        
                         socketio.emit('nouveau_message', {
                             'business_id': biz_id,
                             'wa_id': wa_id,
@@ -82,8 +84,19 @@ def handle_messages():
                             'role': 'user',
                             'timestamp': 'now'
                         }, room=biz_id)
+                        
+                        # Envoyer une notification push Firebase
+                        send_push_notification(
+                            business_id=biz_id,
+                            title="Nouveau message WhatsApp",
+                            body=user_text,
+                            data={
+                                "wa_id": wa_id,
+                                "type": "nouveau_message"
+                            }
+                        )
                     except Exception as ws_err:
-                        logger.warning("Erreur SocketIO emit: %s", ws_err)
+                        logger.warning("Erreur SocketIO/Firebase emit: %s", ws_err)
 
                     # Traitement asynchrone (IA + envoi reponse)
                     threading.Thread(

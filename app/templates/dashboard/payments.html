@@ -192,7 +192,10 @@
                     <tbody>
                         {% for res in reservations %}
                         <tr>
-                            <td style="font-weight:600;">{{ res['wa_id'] }}</td>
+                            <td>
+                                <strong>{{ res['client_name'] }}</strong><br>
+                                <span style="font-size:12px; color:var(--muted);">+{{ res['wa_id'] }}</span>
+                            </td>
                             <td style="color:var(--muted); font-size:13px;">{{ res['details'][:60] }}{% if res['details']|length > 60 %}…{% endif %}</td>
                             <td>
                                 {% if res['montant'] and res['montant'] > 0 %}

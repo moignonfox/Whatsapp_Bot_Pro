@@ -143,7 +143,18 @@
                 <tbody>
                     {% for res in reservations|sort(attribute='timestamp', reverse=True) %}
                     <tr>
-                        <td style="white-space:nowrap; color:var(--muted);">{{ res.timestamp[:16] }}</td>
+                        <td style="white-space:nowrap;">
+                            <div style="font-weight:600; color:var(--text); margin-bottom:4px;">
+                                {% if res.date_heure_debut and res.date_heure_debut != 'None' and res.date_heure_debut != '' %}
+                                    <span class="badge" style="background:var(--green-bg); color:var(--green); border:1px solid var(--green); margin-bottom:5px; display:inline-block;"><i class="fas fa-clock"></i> Programmée</span><br>
+                                    <span style="font-size:13px; font-weight:500;">{{ res.date_heure_debut[:16] }}</span>
+                                {% else %}
+                                    <span class="badge" style="background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber); margin-bottom:5px; display:inline-block;"><i class="fas fa-bolt"></i> Immédiate</span><br>
+                                    <span style="font-size:12px; color:var(--muted);">À traiter maintenant</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size:11px; color:var(--muted);">Créé le {{ res.timestamp[:16] }}</div>
+                        </td>
                         <td>
                             <strong>{{ res.client_name }}</strong><br>
                             <span style="font-size:12px; color:var(--muted);">{{ res.wa_id }}</span>

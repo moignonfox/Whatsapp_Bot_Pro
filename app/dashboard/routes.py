@@ -7,7 +7,7 @@ import time
 import random
 from app.services import whatsapp_service
 from app.repositories import (
-    business_repo, order_repo, client_repo, conversation_repo, sector_repo, employee_repo, catalog_repo, marketing_repo, agent_repo
+    tag_repo, business_repo, order_repo, client_repo, conversation_repo, sector_repo, employee_repo, catalog_repo, marketing_repo, agent_repo
 )
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -25,13 +25,15 @@ def check_active_status():
                 return redirect(url_for('dashboard.pending', biz_id=user_id))
 
 @dashboard_bp.context_processor
-def inject_unread_counts():
+def inject_dashboard_context():
     user_id = session.get('user_id')
+    ctx = {'global_unread_count': 0, 'plan': 'BASIC'}
     if user_id:
-        return {
-            'global_unread_count': conversation_repo.get_unread_message_count_for_business(user_id)
-        }
-    return {'global_unread_count': 0}
+        business = business_repo.get_by_id(user_id)
+        if business:
+            ctx['plan'] = dict(business).get('plan_abonnement', 'BASIC')
+        ctx['global_unread_count'] = conversation_repo.get_unread_message_count_for_business(user_id)
+    return ctx
 
 @dashboard_bp.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")  # M-1 : max 10 tentatives/minute/IP
@@ -46,6 +48,8 @@ def login():
         if business and check_password_hash(business['password'], password):
             if not dict(business).get('is_active', 1):
                 return render_template('auth/login.html', error="Compte inactif. Veuillez contacter le support.")
+            session.clear() # CLEAR PREVIOUS BLOAT
+            session.permanent = True
             session['user_id'] = biz_id
             return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
         else:
@@ -138,7 +142,7 @@ def pending(biz_id):
         flash("Vos informations ont été enregistrées. Nous vous contacterons sous peu.", "success")
         return redirect(url_for('dashboard.pending', biz_id=biz_id))
 
-    return render_template('dashboard/pending.html', business=business, biz_id=biz_id)
+    return render_template('dashboard/pending.html', business=business, biz_id=biz_id, active_page='')
 
 
 @dashboard_bp.route('/admin/<biz_id>')
@@ -147,11 +151,33 @@ def admin_dashboard(biz_id):
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
-    reservations = order_repo.get_by_business(biz_id)
+    period = request.args.get('period', 'today')
+
+    raw_reservations = order_repo.get_by_business(biz_id, period=period)
     business = business_repo.get_by_id(biz_id)
-    labels, values = order_repo.get_daily_activity(biz_id)
-    stats = order_repo.get_stats(biz_id)
-    peak_hour = order_repo.get_peak_hour(biz_id)
+    
+    reservations = []
+    for r in raw_reservations:
+        r_dict = dict(r)
+        client = client_repo.get_or_create(biz_id, r['wa_id'])
+        nom = client['nom'] if client else r['wa_id']
+        # Migrate old "Client" to nice format
+        if nom == "Client" and len(r['wa_id']) >= 4:
+            nom = f"Client ...{r['wa_id'][-4:]}"
+        r_dict['client_name'] = nom
+        
+        # Inject tags
+        try:
+            from app.repositories import tag_repo
+            order_tags = tag_repo.get_tags_for_order(r['id'])
+            r_dict['tags'] = [dict(t) for t in order_tags]
+        except Exception as e:
+            r_dict['tags'] = []
+        reservations.append(r_dict)
+
+    labels, values = order_repo.get_daily_activity(biz_id, period=period)
+    stats = order_repo.get_stats(biz_id, period=period)
+    peak_hour = order_repo.get_peak_hour(biz_id, period=period)
 
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
@@ -171,6 +197,7 @@ def admin_dashboard(biz_id):
                            vocab=vocab,
                            plan=plan,
                            employees=employees,
+                           current_period=period,
                            active_page='dashboard')
 
 
@@ -185,6 +212,7 @@ def business_settings(biz_id):
     if request.method == 'POST':
         nom = request.form.get('nom')
         owner_phone = request.form.get('owner_phone')
+        requested_bot_phone = request.form.get('requested_bot_phone')
         prompt = request.form.get('prompt')
         msg_confirm = request.form.get('msg_confirm')
         msg_cancel = request.form.get('msg_cancel')
@@ -208,6 +236,15 @@ def business_settings(biz_id):
         except ValueError:
             debounce_delay = 3
         
+        try:
+            buffer_minutes = int(request.form.get('buffer_minutes', 0))
+        except ValueError:
+            buffer_minutes = 0
+
+        # Horaires JSON
+        horaires_json = request.form.get('horaires_json', '{}')
+        business_repo.set_business_horaires(biz_id, horaires_json)
+
         business_repo.add_or_update(
             biz_id, nom, business['whatsapp_phone_id'],
             business['token_wa'], final_password, prompt,
@@ -218,8 +255,12 @@ def business_settings(biz_id):
             owner_phone,
             drip_j3_enabled,
             drip_j3_msg,
-            debounce_delay
+            debounce_delay,
+            buffer_minutes
         )
+        
+        if requested_bot_phone is not None:
+            business_repo.update_bot_phone(biz_id, requested_bot_phone)
         
         flash("Les paramètres ont été mis à jour avec succès !", "success")
         return redirect(url_for('dashboard.business_settings', biz_id=biz_id))
@@ -330,6 +371,44 @@ def cancel_reservation(res_id):
     return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
 
+
+
+@dashboard_bp.route('/handoff_cancel/<int:res_id>', methods=['POST'])
+def handoff_cancel(res_id):
+    """Le gérant refuse le transfert humain."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Non autorisé'}), 401
+        
+    res = order_repo.get_res_info(res_id)
+    if not res or res['business_id'] != session['user_id']:
+        return jsonify({'error': 'Accès refusé'}), 403
+
+    order_repo.update_status(res_id, "Indisponible ❌")
+    _emit_statut_commande(res['business_id'], res_id, "Indisponible ❌")
+    
+    # Message d'excuse
+    msg = "Désolé, tous nos conseillers sont actuellement occupés ou absents. N'hésitez pas à reposer votre question plus tard ou à continuer avec moi (l'assistant virtuel) !"
+    whatsapp_service.send_message(res['wa_id'], msg, res['whatsapp_phone_id'], res['token_wa'])
+    
+    # Réactiver le bot (enlever le mode humain)
+    from app.repositories import tag_repo, business_repo
+    business_repo.set_human_mode(res['business_id'], res['wa_id'], False)
+    
+    # Notifier SocketIO que le mode a changé
+    try:
+        from app import socketio
+        socketio.emit('human_mode_toggled', {'business_id': res['business_id'], 'wa_id': res['wa_id'], 'state': False}, room=res['business_id'])
+        # Ajouter le message dans le chat
+        socketio.emit('nouveau_message', {
+            'business_id': res['business_id'], 'wa_id': res['wa_id'], 'content': msg,
+            'role': 'assistant', 'timestamp': 'now'
+        }, room=res['business_id'])
+    except Exception as e:
+        logger.debug("[ORDER] Erreur Socket.IO statut: %s", e)
+
+    return jsonify({'status': 'ok', 'statut': 'Indisponible ❌'})
+
+
 @dashboard_bp.route('/ready/<int:res_id>', methods=['GET', 'POST'])
 def ready_reservation(res_id):
     """Marquer une réservation comme prête et notifier le client."""
@@ -388,6 +467,14 @@ def business_orders(biz_id):
         r_dict = dict(r)
         client = client_repo.get_or_create(biz_id, r['wa_id'])
         r_dict['client_name'] = client['nom'] if client else r['wa_id']
+        
+        # Inject tags
+        try:
+            from app.repositories import tag_repo
+            order_tags = tag_repo.get_tags_for_order(r['id'])
+            r_dict['tags'] = [dict(t) for t in order_tags]
+        except Exception as e:
+            r_dict['tags'] = []
         res_list.append(r_dict)
 
     return render_template('dashboard/orders.html', 
@@ -439,29 +526,62 @@ def add_catalog_product(biz_id):
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
+    import os
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+
     nom = request.form.get('nom')
     categorie = request.form.get('categorie', 'Général')
     prix = request.form.get('prix', 0)
     description = request.form.get('description', '')
+    is_visible = 1 if request.form.get('is_visible') == 'on' else 0
+    duree_minutes = request.form.get('duree_minutes', 30)
 
     try:
         prix = int(prix)
     except ValueError:
         prix = 0
 
+    try:
+        duree_minutes = int(duree_minutes)
+    except ValueError:
+        duree_minutes = 30
+
+    image_url = None
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename != '':
+            filename = secure_filename(file.filename)
+            biz_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'businesses', biz_id, 'products')
+            os.makedirs(biz_upload_dir, exist_ok=True)
+            filepath = os.path.join(biz_upload_dir, filename)
+            file.save(filepath)
+            # URL relative pour l'affichage
+            image_url = f"/static/uploads/businesses/{biz_id}/products/{filename}"
+
     if nom:
-        catalog_repo.add_product(biz_id, nom, prix, description, categorie)
+        catalog_repo.add_product(biz_id, nom, prix, description, categorie, image_url, is_visible, duree_minutes)
 
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
 @dashboard_bp.route('/admin/<biz_id>/catalog/toggle/<int:product_id>')
 def toggle_catalog_product(biz_id, product_id):
-    """API: Activer/Désactiver un produit."""
+    """API: Activer/Désactiver un produit pour le bot."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
     catalog_repo.toggle_availability(product_id, biz_id)
+    return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
+
+
+@dashboard_bp.route('/admin/<biz_id>/catalog/toggle_visibility/<int:product_id>')
+def toggle_catalog_visibility(biz_id, product_id):
+    """API: Activer/Désactiver un produit sur la vitrine web."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+
+    catalog_repo.toggle_visibility(product_id, biz_id)
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
@@ -540,7 +660,14 @@ def send_chat_message(biz_id):
         return jsonify({'error': 'Business introuvable'}), 404
 
     # Envoi via l'API WhatsApp
-    whatsapp_service.send_message(wa_id, text, business['whatsapp_phone_id'], business['token_wa'])
+    status_code = whatsapp_service.send_message(wa_id, text, business['whatsapp_phone_id'], business['token_wa'])
+
+    if status_code not in (200, 201):
+        return jsonify({'error': 'Erreur lors de l\'envoi du message via WhatsApp.'}), 500
+    
+    # Si on est en mode humain, on réinitialise le timer à cet instant précis
+    if business_repo.is_human_mode(biz_id, wa_id):
+        business_repo.set_human_mode(biz_id, wa_id, True)
 
     # Sauvegarde en base avec role 'agent'
     conversation_repo.save_message(wa_id, 'agent', text, biz_id)
@@ -555,8 +682,8 @@ def send_chat_message(biz_id):
             'role': 'agent',
             'timestamp': 'now'
         }, room=biz_id)
-    except Exception as ws_err:
-        print(f"Erreur SocketIO emit (agent): {ws_err}")
+    except Exception as e:
+        print(f"Erreur SocketIO: {e}")
 
     return jsonify({'status': 'sent'})
 
@@ -679,6 +806,98 @@ def generate_campaign_copy(biz_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # ==========================================
+# GESTION DES EMPLOYÉS (ÉQUIPE)
+# ==========================================
+@dashboard_bp.route('/admin/<biz_id>/employees', methods=['GET', 'POST'])
+def business_employees(biz_id):
+    """Gère l'équipe (employés et leurs horaires)."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+
+    business = business_repo.get_by_id(biz_id)
+    plan = dict(business).get('plan_abonnement', 'BASIC')
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'add':
+            nom = request.form.get('nom')
+            poste = request.form.get('poste')
+            horaires_json = request.form.get('horaires_json')
+            employee_repo.add(biz_id, nom, poste, horaires_json)
+            flash("Employé ajouté.", "success")
+        elif action == 'edit':
+            employee_id = request.form.get('employee_id')
+            nom = request.form.get('nom')
+            poste = request.form.get('poste')
+            horaires_json = request.form.get('horaires_json')
+            employee_repo.update(employee_id, nom, poste, horaires_json)
+            flash("Employé modifié.", "success")
+        elif action == 'delete':
+            employee_id = request.form.get('employee_id')
+            employee_repo.delete(employee_id)
+            flash("Employé supprimé.", "success")
+        return redirect(url_for('dashboard.business_employees', biz_id=biz_id))
+
+    employees = employee_repo.get_by_business(biz_id)
+    
+    biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
+    sector = sector_repo.get_by_id(biz_type)
+    vocab = sector['vocab'] if sector else {}
+
+    return render_template('dashboard/employees.html',
+                           biz_id=biz_id,
+                           business=business,
+                           employees=employees,
+                           vocab=vocab,
+                           plan=plan,
+                           active_page='employees')
+
+# ==========================================
+# AGENDA (FULLCALENDAR)
+# ==========================================
+@dashboard_bp.route('/admin/<biz_id>/agenda')
+def business_agenda(biz_id):
+    """Affiche l'agenda visuel des réservations."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+
+    business = business_repo.get_by_id(biz_id)
+    plan = dict(business).get('plan_abonnement', 'BASIC')
+    employees = employee_repo.get_by_business(biz_id)
+    
+    return render_template('dashboard/agenda.html',
+                           biz_id=biz_id,
+                           business=business,
+                           plan=plan,
+                           employees=employees,
+                           active_page='agenda')
+
+@dashboard_bp.route('/api/agenda/events/<biz_id>')
+def api_agenda_events(biz_id):
+    """Retourne les réservations (orders) au format FullCalendar."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify([])
+
+    orders = order_repo.get_by_business(biz_id)
+    events = []
+    for order in orders:
+        if order['date_heure_debut']:
+            title_name = order['client_name'] if order['client_name'] else f"+{order['wa_id']}"
+            # Replace space with T to make it ISO 8601 compliant (fixes iOS Safari bug where events don't show)
+            start_iso = order['date_heure_debut'].replace(' ', 'T')
+            events.append({
+                "id": order['id'],
+                "title": f"{title_name} ({order['details']})",
+                "start": start_iso,
+                # "end": sera calculé si nécessaire (date_heure_debut + duree)
+                "extendedProps": {
+                    "statut": order['statut'],
+                    "employee_id": order['employee_id']
+                }
+            })
+    return jsonify(events)
+
+# ==========================================
 # GESTION DES AGENTS IA (PREMIUM)
 # ==========================================
 @dashboard_bp.route('/admin/<biz_id>/agents', methods=['GET', 'POST'])
@@ -789,7 +1008,8 @@ def business_agents(biz_id):
         business=business,
         plan=plan,
         agents=agents_list,
-        default_templates=default_templates
+        default_templates=default_templates,
+        active_page='agents'
     )
 
 @dashboard_bp.route('/admin/<biz_id>/send-campaign', methods=['POST'])
@@ -861,7 +1081,17 @@ def business_payments(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    reservations = order_repo.get_by_business(biz_id)
+    raw_reservations = order_repo.get_by_business(biz_id)
+    reservations = []
+    for r in raw_reservations:
+        r_dict = dict(r)
+        client = client_repo.get_or_create(biz_id, r['wa_id'])
+        nom = client['nom'] if client else r['wa_id']
+        if nom == "Client" and len(r['wa_id']) >= 4:
+            nom = f"Client ...{r['wa_id'][-4:]}"
+        r_dict['client_name'] = nom
+        reservations.append(r_dict)
+
 
     return render_template('dashboard/payments.html',
                            biz_id=biz_id,
@@ -896,3 +1126,150 @@ def test_report(biz_id):
         flash(f"Erreur lors de l'envoi : {e}", "error")
         
     return redirect(url_for('dashboard.business_settings', biz_id=biz_id))
+
+@dashboard_bp.route('/admin/<biz_id>/vitrine', methods=['GET', 'POST'])
+def vitrine_settings(biz_id):
+    """Paramètres de la vitrine web."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return redirect(url_for('dashboard.login'))
+
+    biz_type = dict(business).get('business_type', 'restaurant')
+    sector = sector_repo.get_by_id(biz_type)
+    vocab = sector['vocab'] if sector else {}
+    plan = dict(business).get('plan_abonnement', 'BASIC')
+
+    if request.method == 'POST':
+        import os
+        from werkzeug.utils import secure_filename
+        from flask import current_app
+
+        color = request.form.get('vitrine_color', '#5b6af0')
+        logo_url = None
+
+        if 'logo' in request.files:
+            file = request.files['logo']
+            if file and file.filename != '':
+                filename = secure_filename(file.filename)
+                biz_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'businesses', biz_id)
+                os.makedirs(biz_upload_dir, exist_ok=True)
+                filepath = os.path.join(biz_upload_dir, filename)
+                file.save(filepath)
+                logo_url = f'/static/uploads/businesses/{biz_id}/{filename}'
+
+        business_repo.set_vitrine_settings(biz_id, color, logo_url)
+        flash('Paramètres de la vitrine mis à jour.', 'success')
+        return redirect(url_for('dashboard.vitrine_settings', biz_id=biz_id))
+
+    return render_template('dashboard/vitrine_settings.html',
+                           biz_id=biz_id,
+                           business=business,
+                           vocab=vocab,
+                           plan=plan,
+                           active_page='vitrine')
+
+@dashboard_bp.route('/v/<biz_id>')
+def public_vitrine(biz_id):
+    """Route publique pour la vitrine du client."""
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return 'Vitrine introuvable', 404
+        
+    plan = dict(business).get('plan_abonnement', 'BASIC')
+
+    products = catalog_repo.get_by_business(biz_id, only_available=False)
+    # Filtrer uniquement les produits visibles
+    visible_products = [p for p in products if dict(p).get('is_visible', 1) == 1]
+
+    grouped_products = {}
+    for p in visible_products:
+        cat = p['categorie'] or 'Général'
+        if cat not in grouped_products:
+            grouped_products[cat] = []
+        grouped_products[cat].append(p)
+
+    return render_template('vitrine.html',
+                           business=business,
+                           plan=plan,
+                           grouped_products=grouped_products)
+
+@dashboard_bp.route('/admin/<biz_id>/catalog/edit/<int:product_id>', methods=['POST'])
+def edit_catalog_product(biz_id, product_id):
+    """API: Editer un produit du catalogue."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+
+    import os
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+
+    nom = request.form.get('nom')
+    categorie = request.form.get('categorie', 'Général')
+    prix = request.form.get('prix', 0)
+    description = request.form.get('description', '')
+    is_visible = 1 if request.form.get('is_visible') == 'on' else 0
+    duree_minutes = request.form.get('duree_minutes', 30)
+
+    try:
+        prix = int(prix)
+    except ValueError:
+        prix = 0
+
+    try:
+        duree_minutes = int(duree_minutes)
+    except ValueError:
+        duree_minutes = 30
+
+    image_url = None
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename != '':
+            filename = secure_filename(file.filename)
+            biz_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'businesses', biz_id, 'products')
+            os.makedirs(biz_upload_dir, exist_ok=True)
+            filepath = os.path.join(biz_upload_dir, filename)
+            file.save(filepath)
+            # URL relative pour l'affichage
+            image_url = f"/static/uploads/businesses/{biz_id}/products/{filename}"
+
+    if nom:
+        catalog_repo.update_product(product_id, biz_id, nom, prix, description, categorie, image_url, is_visible, duree_minutes)
+
+    return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
+
+
+@dashboard_bp.route('/admin/<biz_id>/tags', methods=['GET', 'POST'])
+def tags(biz_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        flash("Accès refusé", "error")
+        return redirect(url_for('dashboard.login'))
+
+    biz = business_repo.get_by_id(biz_id)
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        tag_type = request.form.get('type')
+        color = request.form.get('color', '#3B82F6')
+        description = request.form.get('description', '')
+
+        if name and tag_type:
+            tag_repo.create_tag(biz_id, name, tag_type, color, description)
+            flash("Tag créé avec succès.", "success")
+        else:
+            flash("Nom et type obligatoires.", "error")
+        return redirect(url_for('dashboard.tags', biz_id=biz_id))
+
+    tags_list = tag_repo.get_business_tags(biz_id)
+    return render_template('dashboard/tags.html', business=biz, tags=tags_list, page='tags', biz_id=biz_id, active_page='tags')
+
+@dashboard_bp.route('/admin/<biz_id>/tags/delete/<int:tag_id>', methods=['POST'])
+def delete_tag(biz_id, tag_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({"success": False}), 403
+
+    tag_repo.delete_tag(tag_id, biz_id)
+    flash("Tag supprimé.", "success")
+    return redirect(url_for('dashboard.tags', biz_id=biz_id))

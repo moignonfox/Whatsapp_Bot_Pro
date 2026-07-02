@@ -328,6 +328,23 @@
 
     <div class="content">
 
+        <!-- ── Filters ── -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+            <form method="GET" action="{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}">
+                <select name="period" onchange="this.form.submit()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; outline: none;">
+                    <option value="today" {% if current_period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+                    <option value="week" {% if current_period == 'week' %}selected{% endif %}>7 derniers jours</option>
+                    <option value="month" {% if current_period == 'month' %}selected{% endif %}>Ce mois-ci</option>
+                    <option value="semester" {% if current_period == 'semester' %}selected{% endif %}>Ce semestre</option>
+                    <option value="year" {% if current_period == 'year' %}selected{% endif %}>Cette année</option>
+                    <option value="all" {% if current_period == 'all' %}selected{% endif %}>Toutes les dates</option>
+                </select>
+            </form>
+        </div>
+
+        {% set p_labels = {'today': "Aujourd'hui", 'week': '7 derniers jours', 'month': 'Ce mois-ci', 'semester': 'Ce semestre', 'year': 'Cette année', 'all': 'Toutes les dates'} %}
+        {% set p_text = p_labels.get(current_period, "Aujourd'hui") %}
+
         <!-- ── Stats ── -->
         <div class="stat-grid">
             <div class="stat-card" style="--accent: var(--green); --icon-bg: var(--green-bg); --icon-border: rgba(37,211,102,0.2);">
@@ -336,7 +353,7 @@
                     <div class="stat-icon-wrap" style="color:var(--green);"><i class="fas fa-calendar-check"></i></div>
                 </div>
                 <div class="stat-value">{{ reservations|length }}</div>
-                <div class="stat-sub">toutes demandes confondues</div>
+                <div class="stat-sub">📅 {{ p_text }}</div>
             </div>
 
             <div class="stat-card" style="--accent: var(--red); --icon-bg: var(--red-bg); --icon-border: rgba(248,81,73,0.2);">
@@ -345,7 +362,7 @@
                     <div class="stat-icon-wrap" style="color:var(--red);"><i class="fas fa-user-slash"></i></div>
                 </div>
                 <div class="stat-value">{{ stats.taux_annul }}<span style="font-size:18px;font-weight:500;color:var(--muted);">%</span></div>
-                <div class="stat-sub">taux sur la période</div>
+                <div class="stat-sub">📅 {{ p_text }}</div>
             </div>
 
             <div class="stat-card" style="--accent: var(--amber); --icon-bg: var(--amber-bg); --icon-border: rgba(240,180,41,0.2);">
@@ -354,7 +371,7 @@
                     <div class="stat-icon-wrap" style="color:var(--amber);"><i class="fas fa-coins"></i></div>
                 </div>
                 <div class="stat-value" style="font-size:22px;">{{ "{:,.0f}".format(stats.ca) }}</div>
-                <div class="stat-sub">F CFA · estimation</div>
+                <div class="stat-sub">📅 {{ p_text }}</div>
             </div>
 
             <div class="stat-card" style="--accent: var(--blue); --icon-bg: var(--blue-bg); --icon-border: rgba(88,166,255,0.2);">
@@ -363,7 +380,7 @@
                     <div class="stat-icon-wrap" style="color:var(--blue);"><i class="fas fa-clock"></i></div>
                 </div>
                 <div class="stat-value" style="font-size:22px;">{{ peak_hour }}</div>
-                <div class="stat-sub">pic d'activité du bot</div>
+                <div class="stat-sub">📅 {{ p_text }}</div>
             </div>
         </div>
 
@@ -372,7 +389,7 @@
             <div class="section-header">
                 <span class="section-title">
                     <i class="fas fa-chart-line"></i>
-                    Activité des 7 derniers jours
+                    Activité : {{ p_text }}
                 </span>
                 <span style="font-size:12px;color:var(--muted);">Demandes reçues par le bot</span>
             </div>
@@ -416,11 +433,23 @@
                             <td>
                                 <div class="client-cell">
                                     <div class="client-avatar"><i class="fas fa-user"></i></div>
-                                    <span class="client-name">{{ res['wa_id'] }}</span>
+                                    <div>
+                                        <div class="client-name">{{ res['client_name'] }}</div>
+                                        <div style="font-size:12px; color:var(--muted);">+{{ res['wa_id'] }}</div>
+                                    </div>
                                 </div>
                             </td>
                             <td>
                                 <div class="detail-main">{{ res['details'] }}</div>
+                                {% if res.get('tags') %}
+                                <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                                    {% for t in res['tags'] %}
+                                    <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; background: {{ t.color }}20; color: {{ t.color }}; border: 1px solid {{ t.color }}40;">
+                                        {{ t.name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                                 {% if res['priorite'] == 'Haute' %}
                                     <span class="priority-tag priority-high"><i class="fas fa-exclamation-circle"></i> Priorité haute</span>
                                 {% else %}
@@ -441,12 +470,10 @@
                             <td>
                                 <div class="actions">
                                     {% if res['statut'] == 'En attente' %}
-                                        <a href="{{ url_for('dashboard.confirm_reservation', res_id=res['id']) }}" class="btn-act btn-confirm">
-                                            <i class="fas fa-check"></i> Confirmer
-                                        </a>
-                                        <a href="{{ url_for('dashboard.cancel_reservation', res_id=res['id']) }}" class="btn-act btn-cancel">
-                                            <i class="fas fa-times"></i> Annuler
-                                        </a>
+                                        <button onclick="actionOrder({{ res['id'] }}, 'confirm', this)" class="btn-act btn-confirm">
+                                            <i class="fas fa-check"></i> Confirmer</button>
+                                        <button onclick="actionOrder({{ res['id'] }}, 'cancel', this)" class="btn-act btn-cancel">
+                                            <i class="fas fa-times"></i> Annuler</button>
                                     {% elif res['statut'] == 'Confirmé ✅' %}
                                         <a href="{{ url_for('dashboard.ready_reservation', res_id=res['id']) }}" class="btn-act btn-ready">
                                             <i class="fas fa-box"></i> {{ vocab.btn_ready }}

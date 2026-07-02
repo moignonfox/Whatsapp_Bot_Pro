@@ -59,7 +59,10 @@ def init_db() -> None:
             drip_j3_msg       TEXT,
             agent_routing_mode TEXT DEFAULT 'visible',
             debounce_delay    INTEGER DEFAULT 3,
-            requested_bot_phone TEXT
+            requested_bot_phone TEXT,
+            vitrine_color     TEXT DEFAULT '#5b6af0',
+            vitrine_logo_url  TEXT,
+            fcm_token         TEXT
         )
     """)
 
@@ -116,6 +119,8 @@ def init_db() -> None:
             description TEXT,
             prix        INTEGER DEFAULT 0,
             disponible  INTEGER DEFAULT 1,
+            image_url   TEXT,
+            is_visible  INTEGER DEFAULT 1,
             FOREIGN KEY (business_id) REFERENCES businesses (id)
         )
     """)
@@ -133,6 +138,42 @@ def init_db() -> None:
             FOREIGN KEY (business_id) REFERENCES businesses (id)
         )
     """)
+
+
+    # --- Migration V10: Tags System ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id TEXT NOT NULL,
+            type TEXT DEFAULT 'Commande', -- 'Commande' ou 'Client'
+            name TEXT NOT NULL,
+            color TEXT,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS order_tags (
+            order_id INTEGER,
+            tag_id INTEGER,
+            FOREIGN KEY (order_id) REFERENCES reservations (id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+            PRIMARY KEY (order_id, tag_id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS client_tags (
+            wa_id TEXT,
+            business_id TEXT,
+            tag_id INTEGER,
+            FOREIGN KEY (wa_id, business_id) REFERENCES clients (wa_id, business_id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+            PRIMARY KEY (wa_id, business_id, tag_id)
+        )
+    ''')
 
     conn.commit()
     conn.close()
@@ -213,6 +254,16 @@ def update_schema() -> None:
     except sqlite3.OperationalError:
         pass
 
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN horaires_json TEXT DEFAULT '{}'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN fcm_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     # Migration V9 : Renommage de permissions_json en agent_settings_json pour plus de clarté
     try:
         cursor.execute("ALTER TABLE ai_agents RENAME COLUMN permissions_json TO agent_settings_json")
@@ -285,6 +336,11 @@ def update_schema() -> None:
     except sqlite3.OperationalError:
         pass  # La colonne existe déjà
 
+    try:
+        cursor.execute("ALTER TABLE products ADD COLUMN duree_minutes INTEGER DEFAULT 30")
+    except sqlite3.OperationalError:
+        pass  # La colonne existe déjà
+
     # Migration de la table clients pour isoler par société (business_id)
     cursor.execute("PRAGMA table_info(clients)")
     columns = [col[1] for col in cursor.fetchall()]
@@ -304,6 +360,42 @@ def update_schema() -> None:
             SELECT '', wa_id, nom, date_inscription FROM clients_old
         """)
         cursor.execute("DROP TABLE clients_old")
+
+
+    # --- Migration V10: Tags System ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id TEXT NOT NULL,
+            type TEXT DEFAULT 'Commande', -- 'Commande' ou 'Client'
+            name TEXT NOT NULL,
+            color TEXT,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS order_tags (
+            order_id INTEGER,
+            tag_id INTEGER,
+            FOREIGN KEY (order_id) REFERENCES reservations (id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+            PRIMARY KEY (order_id, tag_id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS client_tags (
+            wa_id TEXT,
+            business_id TEXT,
+            tag_id INTEGER,
+            FOREIGN KEY (wa_id, business_id) REFERENCES clients (wa_id, business_id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+            PRIMARY KEY (wa_id, business_id, tag_id)
+        )
+    ''')
 
     conn.commit()
     conn.close()

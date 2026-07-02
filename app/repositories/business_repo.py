@@ -26,7 +26,8 @@ def add_or_update(
     owner_phone: str = None,
     drip_j3_enabled: int = 0,
     drip_j3_msg: str = None,
-    debounce_delay: int = 3
+    debounce_delay: int = 3,
+    buffer_minutes: int = 0
 ) -> None:
     """Ajoute ou met à jour un business dans la base."""
     conn = sqlite3.connect(get_db_path())
@@ -42,24 +43,69 @@ def add_or_update(
                nom = ?, whatsapp_phone_id = ?, token_wa = ?, password = ?,
                prompt = ?, msg_confirm = ?, msg_cancel = ?, msg_ready = ?, 
                business_type = ?, plan_abonnement = ?, is_active = ?, 
-               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?
+               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?
                WHERE id = ?""",
             (nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, biz_id)
+             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, biz_id)
         )
     else:
         cursor.execute(
             """INSERT INTO businesses
                (id, nom, whatsapp_phone_id, token_wa, password,
-                prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone, 
+                drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (biz_id, nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay),
+             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes),
         )
+        
+    conn.commit()
         
     conn.commit()
     conn.close()
 
+def update_basic_profile(biz_id: str, nom: str = None, is_active: int = None, prompt: str = None, msg_confirm: str = None, horaires_json: str = None) -> None:
+    """Met à jour les paramètres de base du profil via l'application mobile."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    
+    # Construire la requête dynamiquement
+    fields = []
+    values = []
+    
+    if nom is not None:
+        fields.append("nom = ?")
+        values.append(nom)
+    if is_active is not None:
+        fields.append("is_active = ?")
+        values.append(is_active)
+    if prompt is not None:
+        fields.append("prompt = ?")
+        values.append(prompt)
+    if msg_confirm is not None:
+        fields.append("msg_confirm = ?")
+        values.append(msg_confirm)
+    if horaires_json is not None:
+        fields.append("horaires_json = ?")
+        values.append(horaires_json)
+        
+    if fields:
+        query = "UPDATE businesses SET " + ", ".join(fields) + " WHERE id = ?"
+        values.append(biz_id)
+        cursor.execute(query, tuple(values))
+        conn.commit()
+        
+    conn.close()
+def set_business_horaires(biz_id: str, horaires_json: str) -> None:
+    """Met à jour les horaires d'ouverture de l'entreprise."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE businesses SET horaires_json = ? WHERE id = ?",
+        (horaires_json, biz_id)
+    )
+    conn.commit()
+    conn.close()
 
 def set_requested_bot_phone(biz_id: str, phone: str) -> None:
     """Met à jour le numéro de téléphone demandé pour le bot."""
@@ -69,6 +115,36 @@ def set_requested_bot_phone(biz_id: str, phone: str) -> None:
         "UPDATE businesses SET requested_bot_phone = ? WHERE id = ?",
         (phone, biz_id)
     )
+    conn.commit()
+    conn.close()
+
+def set_fcm_token(biz_id: str, fcm_token: str) -> None:
+    """Met à jour le token Firebase Cloud Messaging (FCM) du business."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE businesses SET fcm_token = ? WHERE id = ?",
+        (fcm_token, biz_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+
+def set_vitrine_settings(biz_id: str, color: str, logo_url: str = None) -> None:
+    """Met à jour les paramètres de la vitrine d'un business."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    if logo_url is not None:
+        cursor.execute(
+            "UPDATE businesses SET vitrine_color = ?, vitrine_logo_url = ? WHERE id = ?",
+            (color, logo_url, biz_id)
+        )
+    else:
+        cursor.execute(
+            "UPDATE businesses SET vitrine_color = ? WHERE id = ?",
+            (color, biz_id)
+        )
     conn.commit()
     conn.close()
 
@@ -134,6 +210,14 @@ def update_owner_phone(biz_id: str, owner_phone: str) -> None:
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute("UPDATE businesses SET owner_phone = ? WHERE id = ?", (owner_phone, biz_id))
+    conn.commit()
+    conn.close()
+
+def update_bot_phone(biz_id: str, bot_phone: str) -> None:
+    """Met à jour le numéro WhatsApp du bot pour la vitrine."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("UPDATE businesses SET requested_bot_phone = ? WHERE id = ?", (bot_phone, biz_id))
     conn.commit()
     conn.close()
 

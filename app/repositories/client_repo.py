@@ -10,7 +10,7 @@ from typing import Optional
 from app.models.schema import get_db_path
 
 
-def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = "Client") -> sqlite3.Row:
+def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = None) -> sqlite3.Row:
     """
     Récupère un client existant ou en crée un nouveau.
 
@@ -24,6 +24,10 @@ def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = "Client") 
     row = cursor.fetchone()
 
     if row is None:
+        if nom_par_defaut is None:
+            # Create a more user-friendly default name instead of just 'Client'
+            nom_par_defaut = f"Client ...{wa_id[-4:]}" if len(wa_id) >= 4 else "Client Inconnu"
+            
         cursor.execute(
             "INSERT INTO clients (business_id, wa_id, nom) VALUES (?, ?, ?)",
             (business_id, wa_id, nom_par_defaut),

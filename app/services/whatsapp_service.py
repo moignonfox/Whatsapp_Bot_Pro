@@ -15,10 +15,15 @@ def send_message(to, text, phone_id, token):
         "type": "text",
         "text": {"body": text}
     }
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code not in (200, 201):
-        logger.error("Erreur API WhatsApp (%s) : %s", response.status_code, response.text)
-    return response.status_code
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        if response.status_code not in (200, 201):
+            logger.error("Erreur API WhatsApp (%s) : %s", response.status_code, response.text)
+        return response.status_code
+    except requests.exceptions.RequestException as e:
+        safe_number = f"****{to[-4:]}" if len(to) >= 4 else "****"
+        logger.error("❌ Exception API WhatsApp lors de l'envoi à %s: %s", safe_number, type(e).__name__)
+        return 500
 
 def send_text_message(to_number, message_text, phone_number_id, access_token):
     """

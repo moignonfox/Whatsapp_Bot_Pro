@@ -108,7 +108,7 @@ def get_full_history(wa_id: str, business_id: str, limit: int = 50) -> List[Dict
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT role, content, timestamp 
+        SELECT id, role, content, timestamp 
         FROM history 
         WHERE wa_id = ? AND business_id = ?
         ORDER BY id DESC LIMIT ?
@@ -117,7 +117,7 @@ def get_full_history(wa_id: str, business_id: str, limit: int = 50) -> List[Dict
     conn.close()
     
     rows.reverse()
-    return [{"role": r, "content": c, "timestamp": t} for r, c, t in rows]
+    return [{"id": i, "role": r, "content": c, "timestamp": t} for i, r, c, t in rows]
 
 def get_pending_user_messages(wa_id: str, business_id: str) -> List[str]:
     """Récupère tous les messages envoyés par le client depuis la dernière réponse de l'assistant."""

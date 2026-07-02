@@ -7,3 +7,6 @@ google-genai==2.9.0
 python-dotenv==1.2.2
 eventlet==0.41.0
 apscheduler==3.11.2
+flask-jwt-extended==4.6.0
+flask-cors==4.0.0
+firebase-admin==6.4.0
