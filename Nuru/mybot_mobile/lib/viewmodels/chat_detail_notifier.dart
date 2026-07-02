@@ -152,3 +152,4 @@ class ChatDetailNotifier extends Notifier<Map<String, ChatDetailState>> {
 final chatDetailNotifierProvider = NotifierProvider<ChatDetailNotifier, Map<String, ChatDetailState>>(() {
   return ChatDetailNotifier();
 });
+

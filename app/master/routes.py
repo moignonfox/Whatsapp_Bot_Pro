@@ -155,6 +155,23 @@ def save_new_business():
                                 dict(existing).get('is_active', 1) if existing else 1,
                                 owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay)
 
+    # Sauvegarder les champs supplémentaires (email, approbation, dates)
+    email = request.form.get('email', '').strip() or None
+    is_approved = int(request.form.get('is_approved', 1))
+    date_debut = request.form.get('date_debut_abonnement', '').strip() or None
+    date_fin = request.form.get('date_fin_abonnement', '').strip() or None
+
+    import sqlite3
+    from app.models.schema import get_db_path
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        """UPDATE businesses SET email=?, is_approved=?, date_debut_abonnement=?, date_fin_abonnement=? WHERE id=?""",
+        (email, is_approved, date_debut, date_fin, biz_id)
+    )
+    conn.commit()
+    conn.close()
+
     return redirect(url_for('master.master_dashboard'))
 
 

@@ -67,3 +67,4 @@ class ChatNotifier extends AsyncNotifier<List<Conversation>> {
     state = AsyncValue.data(updatedList);
   }
 }
+

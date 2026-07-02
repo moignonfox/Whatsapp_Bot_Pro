@@ -262,7 +262,7 @@ def get_upcoming_reminders() -> List[sqlite3.Row]:
     # entre maintenant et dans 65 minutes.
     cursor.execute("""
         SELECT r.id, r.wa_id, r.business_id, r.details, r.date_heure_debut, 
-               b.whatsapp_phone_id, b.token_wa, b.phone as manager_phone
+               b.whatsapp_phone_id, b.token_wa, b.owner_phone as manager_phone
         FROM reservations r
         JOIN businesses b ON r.business_id = b.id
         WHERE r.statut NOT LIKE 'Annulé%' 

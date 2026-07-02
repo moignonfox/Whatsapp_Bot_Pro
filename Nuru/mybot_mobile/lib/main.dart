@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/router.dart';
 import 'viewmodels/theme_notifier.dart';
 
@@ -50,84 +51,116 @@ class MyApp extends ConsumerWidget {
     final goRouter = ref.watch(routerProvider);
     final themeMode = ref.watch(themeNotifierProvider);
     
-    const Color primaryTeal = Color(0xFF128C7E);
-    const Color accentGreen = Color(0xFF25D366);
-    const Color darkTeal = Color(0xFF075E54);
+    const Color primaryIndigo = Color(0xFF4F46E5);
+    const Color accentSky = Color(0xFF0EA5E9);
+    
+    // Light Mode
+    const Color lightBg = Color(0xFFF8FAFC);
+    const Color lightCard = Colors.white;
+    const Color lightText = Color(0xFF0F172A);
+    
+    // Dark Mode
+    const Color darkBg = Color(0xFF0F172A);
+    const Color darkCard = Color(0xFF1E293B);
+    const Color darkText = Color(0xFFF8FAFC);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Nuru Mobile',
+      title: 'Vira Mobile',
       themeMode: themeMode,
       theme: ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF0F2F5),
-        cardColor: Colors.white,
+        scaffoldBackgroundColor: lightBg,
+        cardColor: lightCard,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryTeal,
-          primary: primaryTeal,
-          secondary: accentGreen,
-          surface: Colors.white,
+          seedColor: primaryIndigo,
+          primary: primaryIndigo,
+          secondary: accentSky,
+          surface: lightBg,
+          onSurface: lightText,
         ),
+        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          backgroundColor: lightBg,
+          foregroundColor: lightText,
           elevation: 0,
         ),
+        cardTheme: CardThemeData(
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.08),
+          color: lightCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide.none,
+          ),
+        ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: Colors.white,
-          indicatorColor: primaryTeal.withOpacity(0.15),
+          backgroundColor: lightCard,
+          indicatorColor: primaryIndigo.withOpacity(0.15),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: primaryTeal);
+              return const IconThemeData(color: primaryIndigo);
             }
-            return IconThemeData(color: Colors.grey.shade600);
+            return IconThemeData(color: Colors.grey.shade400);
           }),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const TextStyle(color: primaryTeal, fontWeight: FontWeight.bold, fontSize: 12);
+              return const TextStyle(color: primaryIndigo, fontWeight: FontWeight.w600, fontSize: 12);
             }
-            return TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500, fontSize: 12);
+            return TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w400, fontSize: 12);
           }),
         ),
-        dividerColor: const Color(0xFFE0E0E0),
+        dividerColor: Colors.black.withOpacity(0.05),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A), // Midnight Blue background
-        cardColor: const Color(0xFF1E293B), // Midnight Blue cards
+        scaffoldBackgroundColor: darkBg,
+        cardColor: darkCard,
         colorScheme: ColorScheme.fromSeed(
           brightness: Brightness.dark,
-          seedColor: darkTeal,
-          primary: primaryTeal,
-          secondary: accentGreen,
-          surface: const Color(0xFF1E293B),
+          seedColor: primaryIndigo,
+          primary: primaryIndigo,
+          secondary: accentSky,
+          surface: darkBg,
+          onSurface: darkText,
         ),
+        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E293B),
-          foregroundColor: Colors.white,
+          backgroundColor: darkBg,
+          foregroundColor: darkText,
           elevation: 0,
         ),
+        cardTheme: CardThemeData(
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.3),
+          color: darkCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide.none,
+          ),
+        ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF1E293B),
-          indicatorColor: primaryTeal.withOpacity(0.3),
+          backgroundColor: darkCard,
+          indicatorColor: primaryIndigo.withOpacity(0.3),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: accentGreen);
+              return const IconThemeData(color: darkText);
             }
-            return const IconThemeData(color: Colors.white60);
+            return const IconThemeData(color: Colors.white30);
           }),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const TextStyle(color: accentGreen, fontWeight: FontWeight.bold, fontSize: 12);
+              return const TextStyle(color: darkText, fontWeight: FontWeight.w600, fontSize: 12);
             }
-            return const TextStyle(color: Colors.white60, fontWeight: FontWeight.w500, fontSize: 12);
+            return const TextStyle(color: Colors.white30, fontWeight: FontWeight.w400, fontSize: 12);
           }),
         ),
-        dividerColor: const Color(0xFF334155),
+        dividerColor: Colors.white.withOpacity(0.05),
         useMaterial3: true,
       ),
       routerConfig: goRouter,
     );
   }
 }
+

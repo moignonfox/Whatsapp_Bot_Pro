@@ -21,97 +21,106 @@ class WelcomeScreen extends StatelessWidget {
       backgroundColor: colorScheme.surface,
       body: Stack(
         children: [
-          // Subtle, scattered abstract shapes (minimalist)
+          // Elegant subtle blobs
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.15,
-            right: -20,
-            child: _buildDecorativeBlob(colorScheme.primary.withOpacity(isDark ? 0.05 : 0.08), 120),
+            top: MediaQuery.of(context).size.height * 0.1,
+            right: -30,
+            child: _buildDecorativeBlob(colorScheme.primary.withValues(alpha: isDark ? 0.15 : 0.1), 160),
           ),
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.4,
+            bottom: MediaQuery.of(context).size.height * 0.15,
             left: -40,
-            child: _buildDecorativeBlob(const Color(0xFF25D366).withOpacity(isDark ? 0.04 : 0.06), 180),
+            child: _buildDecorativeBlob(colorScheme.secondary.withValues(alpha: isDark ? 0.15 : 0.1), 200),
           ),
-          
-          // Floating Emojis for a modern SaaS touch
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.2,
-            left: 40,
-            child: const Text('🤖', style: TextStyle(fontSize: 32)),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.35,
-            right: 50,
-            child: const Text('✨', style: TextStyle(fontSize: 24)),
-          ),
-
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 40),
-                  // Small Logo Badge
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF25D366).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome,
-                      color: Color(0xFF25D366),
-                      size: 28,
+            child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 40),
+                        // Small Logo Badge
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white10 : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'assets/icon.png',
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Clean Typography
+                        Text(
+                          'Votre assistant\nWhatsApp intelligent.',
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                            color: colorScheme.onSurface,
+                            letterSpacing: -1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Gérez vos commandes, répondez à vos clients et pilotez votre activité sans le moindre effort.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const Spacer(),
+                        
+                        // Minimalist Buttons
+                        Column(
+                          children: [
+                            _buildPaintedButton(
+                              text: 'Se connecter',
+                              onTap: () => context.push('/login'),
+                              isPrimary: true,
+                              colorScheme: colorScheme,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildPaintedButton(
+                              text: 'Créer un compte',
+                              onTap: _launchRegistration,
+                              isPrimary: false,
+                              colorScheme: colorScheme,
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  
-                  // Clean Typography
-                  Text(
-                    'Votre assistant\nWhatsApp intelligent.',
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                      color: colorScheme.onSurface,
-                      letterSpacing: -1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Gérez vos commandes, répondez à vos clients et pilotez votre activité sans le moindre effort.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const Spacer(),
-                  
-                  // Minimalist Buttons
-                  Column(
-                    children: [
-                      _buildPaintedButton(
-                        text: 'Se connecter',
-                        onTap: () => context.push('/login'),
-                        isPrimary: true,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPaintedButton(
-                        text: 'Créer un compte',
-                        onTap: _launchRegistration,
-                        isPrimary: false,
-                        colorScheme: colorScheme,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
+        ),
+      ),
         ],
       ),
     );
@@ -121,7 +130,7 @@ class WelcomeScreen extends StatelessWidget {
     required String text,
     required VoidCallback onTap,
     required bool isPrimary,
-    ColorScheme? colorScheme,
+    required ColorScheme colorScheme,
   }) {
     return Container(
       width: double.infinity,
@@ -129,15 +138,22 @@ class WelcomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: isPrimary
-            ? const LinearGradient(
-                colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+            ? LinearGradient(
+                colors: [colorScheme.primary, colorScheme.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : null,
-        border: !isPrimary && colorScheme != null
-            ? Border.all(color: colorScheme.outlineVariant.withOpacity(0.5), width: 1.5)
+        border: !isPrimary
+            ? Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5), width: 1.5)
             : null,
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ] : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -150,7 +166,7 @@ class WelcomeScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isPrimary ? Colors.white : (colorScheme?.onSurface ?? Colors.black),
+                color: isPrimary ? Colors.white : colorScheme.onSurface,
               ),
             ),
           ),
@@ -166,8 +182,14 @@ class WelcomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color,
+            blurRadius: 40,
+            spreadRadius: 20,
+          ),
+        ],
       ),
     );
   }
 }
-

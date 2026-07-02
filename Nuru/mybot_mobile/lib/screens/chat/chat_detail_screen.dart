@@ -226,7 +226,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               Switch(
                 value: state.isHumanMode,
                 activeColor: Colors.white,
-                activeTrackColor: const Color(0xFF25D366),
+                activeTrackColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   ref.read(chatDetailNotifierProvider.notifier).toggleHumanMode(widget.waId, val);
                 },
@@ -267,29 +267,37 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                             final isMe = !msg.isFromUser;
                               final isDark = Theme.of(context).brightness == Brightness.dark;
                             
-                            final bgColor = isMe 
-                                ? (isDark ? const Color(0xFF005C4B) : const Color(0xFFDCF8C6)) 
-                                : (isDark ? const Color(0xFF1E293B) : Colors.white);
-                            final textColor = isDark ? Colors.white : Colors.black87;
+                            final textColor = isMe ? Colors.white : (isDark ? Colors.white : Colors.black87);
 
                             return Align(
                               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                               child: Container(
                                 constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                                 decoration: BoxDecoration(
-                                  color: bgColor,
-                                  borderRadius: BorderRadius.circular(12).copyWith(
-                                    bottomRight: isMe ? const Radius.circular(0) : null,
-                                    bottomLeft: !isMe ? const Radius.circular(0) : null,
+                                  gradient: isMe 
+                                      ? LinearGradient(
+                                          colors: [
+                                            Theme.of(context).colorScheme.primary, 
+                                            Theme.of(context).colorScheme.secondary
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : null,
+                                  color: isMe ? null : (isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.white),
+                                  borderRadius: BorderRadius.circular(20).copyWith(
+                                    bottomRight: isMe ? const Radius.circular(4) : null,
+                                    bottomLeft: !isMe ? const Radius.circular(4) : null,
                                   ),
                                   boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 1,
-                                      offset: const Offset(0, 1),
-                                    ),
+                                    if (!isMe)
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
                                   ],
                                 ),
                                 child: Column(
@@ -318,7 +326,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                       children: [
                                         Text(
                                           _formatTime(msg.timestamp), 
-                                          style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.black.withOpacity(0.45)),
+                                          style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : (isDark ? Colors.white54 : Colors.black.withValues(alpha: 0.45))),
                                         ),
                                         if (isMe) ...[
                                           const SizedBox(width: 4),
@@ -377,7 +385,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     ),
                                   ),
                                   IconButton(
-                                      icon: Icon(Icons.attach_file, color: _showAttachmentPanel ? const Color(0xFF128C7E) : Colors.grey),
+                                      icon: Icon(Icons.attach_file, color: _showAttachmentPanel ? Theme.of(context).colorScheme.primary : Colors.grey),
                                       onPressed: () {
                                         if (state.isHumanMode) {
                                           _toggleAttachmentPanel();
@@ -398,7 +406,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                               }) : null,
                               child: CircleAvatar(
                                 radius: 24,
-                                backgroundColor: state.isHumanMode ? const Color(0xFF128C7E) : Colors.grey,
+                                backgroundColor: state.isHumanMode ? Theme.of(context).colorScheme.primary : Colors.grey,
                                 child: Icon(_isTyping ? Icons.send : Icons.mic, color: Theme.of(context).cardColor, size: 24),
                               ),
                             )
@@ -413,3 +421,4 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 }
+

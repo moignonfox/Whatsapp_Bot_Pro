@@ -588,6 +588,33 @@
                     <input type="text" name="msg_ready" value="{{ business.msg_ready if business else '' }}" placeholder="C'est prêt !">
                 </div>
 
+                <!-- Compte Mobile & Abonnement -->
+                <div class="section-label">📱 Compte Mobile & Abonnement</div>
+
+                <div class="field">
+                    <label>Email de contact</label>
+                    <input type="email" name="email" placeholder="contact@exemple.com" value="{{ business.email if business and business.email else '' }}">
+                </div>
+
+                <div class="field">
+                    <label>Statut de validation du compte mobile</label>
+                    <select name="is_approved" style="width:100%; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:inherit; font-size:14px; outline:none;">
+                        <option value="1" {% if not business or business.is_approved == 1 %}selected{% endif %}>✅ Approuvé (accès complet)</option>
+                        <option value="0" {% if business and business.is_approved == 0 %}selected{% endif %}>⏳ En attente de validation</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>📅 Date de début d'abonnement</label>
+                    <input type="date" name="date_debut_abonnement"
+                        value="{{ business.date_debut_abonnement[:10] if business and business.date_debut_abonnement else '' }}">
+                </div>
+                <div class="field">
+                    <label>📅 Date de fin d'abonnement</label>
+                    <input type="date" name="date_fin_abonnement"
+                        value="{{ business.date_fin_abonnement[:10] if business and business.date_fin_abonnement else '' }}">
+                </div>
+
                 <!-- Bouton -->
                 <div class="btn-wrap">
                     <button type="submit" class="btn-submit">{% if business %}Enregistrer les modifications{% else %}Déployer le Business →{% endif %}</button>

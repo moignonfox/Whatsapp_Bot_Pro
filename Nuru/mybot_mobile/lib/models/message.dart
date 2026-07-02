@@ -32,3 +32,4 @@ class Message {
   bool get isFromUser => role == 'user';
   bool get isAi => role == 'assistant' || role == 'bot';
 }
+

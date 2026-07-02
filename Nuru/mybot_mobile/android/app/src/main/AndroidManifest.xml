@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mybot_mobile"
+        android:label="Vira"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -48,3 +48,4 @@
         </intent>
     </queries>
 </manifest>
+

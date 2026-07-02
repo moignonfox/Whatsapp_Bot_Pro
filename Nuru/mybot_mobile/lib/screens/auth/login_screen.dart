@@ -50,6 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -66,29 +67,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       body: Stack(
         children: [
-          // Subtle scattered blobs & emojis
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.05,
-            right: -20,
-            child: _buildDecorativeBlob(const Color(0xFF25D366).withOpacity(isDark ? 0.05 : 0.07), 100),
+            top: -50,
+            right: -50,
+            child: _buildDecorativeBlob(colorScheme.primary.withValues(alpha: isDark ? 0.15 : 0.1), 250),
           ),
           Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.2,
-            left: -30,
-            child: _buildDecorativeBlob(colorScheme.primary.withOpacity(isDark ? 0.04 : 0.06), 150),
+            bottom: -50,
+            left: -50,
+            child: _buildDecorativeBlob(colorScheme.secondary.withValues(alpha: isDark ? 0.15 : 0.1), 200),
           ),
-          
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.1,
-            right: 40,
-            child: const Text('👋', style: TextStyle(fontSize: 24)),
-          ),
-          Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.3,
-            left: 30,
-            child: const Text('🔒', style: TextStyle(fontSize: 20)),
-          ),
-          
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -156,10 +144,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Mot de passe oublié ?',
                           style: TextStyle(
-                            color: Color(0xFF25D366),
+                            color: colorScheme.secondary,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -179,19 +167,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 32),
                     
                     // Footer Text
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'Pas encore de compte ?',
                           style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                         TextButton(
-                          onPressed: () => context.go('/welcome'),
-                          child: const Text(
+                          onPressed: () => context.go('/register'),
+                          child: Text(
                             'S\'inscrire',
                             style: TextStyle(
-                              color: Color(0xFF25D366),
+                              color: colorScheme.secondary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -215,6 +204,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color,
+            blurRadius: 50,
+            spreadRadius: 20,
+          ),
+        ],
       ),
     );
   }
@@ -231,12 +227,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: isPrimary
-            ? const LinearGradient(
-                colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+            ? LinearGradient(
+                colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : null,
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ] : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -255,10 +258,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   )
                 : Text(
                     text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: isPrimary ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
           ),
@@ -284,25 +287,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.7), fontWeight: FontWeight.w400),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontWeight: FontWeight.w400),
         prefixIcon: Icon(icon, color: colorScheme.onSurfaceVariant),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainerHighest.withOpacity(0.3) : colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        fillColor: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3)),
+          borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Color(0xFF25D366), width: 2.0),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2.0),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       ),
     );
   }
 }
+

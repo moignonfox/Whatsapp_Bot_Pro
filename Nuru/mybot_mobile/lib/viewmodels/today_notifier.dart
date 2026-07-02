@@ -78,3 +78,4 @@ class TodayNotifier extends AsyncNotifier<List<Order>> {
     }
   }
 }
+

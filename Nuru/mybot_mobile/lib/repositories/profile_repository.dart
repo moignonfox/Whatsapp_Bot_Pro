@@ -34,4 +34,19 @@ class ProfileRepository {
       throw Exception('Erreur: $e');
     }
   }
+
+  Future<bool> updatePassword(String oldPassword, String newPassword) async {
+    try {
+      final response = await _dio.put('/auth/password', data: {
+        'old_password': oldPassword,
+        'new_password': newPassword,
+      });
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Erreur lors du changement de mot de passe');
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
 }
+

@@ -116,3 +116,4 @@ class SocketClient {
     _socket?.off(event);
   }
 }
+

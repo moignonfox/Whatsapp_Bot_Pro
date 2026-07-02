@@ -146,7 +146,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     _formatTime(conv.lastTimestamp),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: conv.unreadCount > 0 ? const Color(0xFF25D366) : Colors.grey,
+                                      color: conv.unreadCount > 0 ? Theme.of(context).colorScheme.secondary : Colors.grey,
                                       fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                                     ),
                                   ),
@@ -156,7 +156,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               Row(
                                 children: [
                                   if (isAi) ...[
-                                    const Icon(Icons.smart_toy, size: 14, color: Color(0xFF128C7E)),
+                                    Icon(Icons.smart_toy, size: 14, color: Theme.of(context).colorScheme.primary),
                                     const SizedBox(width: 4),
                                   ] else ...[
                                     const Icon(Icons.done_all, size: 16, color: Colors.blue), // Read receipt icon
@@ -178,8 +178,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                       Container(
                                         margin: const EdgeInsets.only(left: 8),
                                         padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF25D366),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.secondary,
                                           shape: BoxShape.circle,
                                         ),
                                         child: Text(
@@ -203,7 +203,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               },
             );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF128C7E))),
+        loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
         error: (error, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -212,7 +212,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.read(chatNotifierProvider.notifier).fetchConversations(),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF128C7E)),
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                 child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
               )
             ],
@@ -221,9 +221,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF25D366),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         child: const Icon(Icons.message, color: Colors.white),
       ),
     );
   }
 }
+

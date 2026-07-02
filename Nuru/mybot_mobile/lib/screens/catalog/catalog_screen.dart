@@ -72,12 +72,12 @@ class CatalogScreen extends ConsumerWidget {
         title: Text('Catalogue & Stocks', style: TextStyle(fontWeight: FontWeight.w500)),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF25D366),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         onPressed: () => _showProductForm(context, ref),
         child: Icon(Icons.add, color: Colors.white),
       ),
       body: state.when(
-        loading: () => Center(child: CircularProgressIndicator(color: Color(0xFF128C7E))),
+        loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
         error: (error, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +86,7 @@ class CatalogScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.read(catalogNotifierProvider.notifier).fetchProducts(),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF128C7E)),
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                 child: Text('Réessayer', style: TextStyle(color: Colors.white)),
               )
             ],
@@ -125,7 +125,7 @@ class CatalogScreen extends ConsumerWidget {
                       ),
                     ),
                     SizedBox(
-                      height: 310, // Hauteur fixe augmentée pour éviter l'overflow
+                      height: 340, // Hauteur fixe augmentée pour éviter l'overflow
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -138,10 +138,17 @@ class CatalogScreen extends ConsumerWidget {
                             width: 170, // Largeur fixe de la carte
                             child: Container(
                               margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.08),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                                ),
                               clipBehavior: Clip.antiAlias,
                               child: Stack(
                                 children: [
@@ -185,7 +192,7 @@ class CatalogScreen extends ConsumerWidget {
                                                   Text(
                                                     '${product.prix.toStringAsFixed(2)} F',
                                                     style: TextStyle(
-                                                      color: product.disponible ? const Color(0xFF075E54) : Colors.grey,
+                                                      color: product.disponible ? Theme.of(context).colorScheme.secondary : Colors.grey,
                                                       fontWeight: FontWeight.w600,
                                                     ),
                                                   ),
@@ -213,7 +220,7 @@ class CatalogScreen extends ConsumerWidget {
                                                       scale: 0.7,
                                                       child: Switch(
                                                         value: product.disponible,
-                                                        activeColor: const Color(0xFF25D366),
+                                                        activeColor: Theme.of(context).colorScheme.primary,
                                                         onChanged: (val) {
                                                           ref.read(catalogNotifierProvider.notifier).toggleStock(product.id);
                                                         },
@@ -232,7 +239,7 @@ class CatalogScreen extends ConsumerWidget {
                                                       scale: 0.7,
                                                       child: Switch(
                                                         value: product.isVisible,
-                                                        activeColor: const Color(0xFF25D366),
+                                                        activeColor: Theme.of(context).colorScheme.primary,
                                                         onChanged: (val) {
                                                           final data = {
                                                             'nom': product.nom,
@@ -385,7 +392,7 @@ class _ProductBottomSheetContentState extends State<_ProductBottomSheetContent> 
       fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0F172A) : Colors.grey.shade50,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF128C7E))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -516,7 +523,7 @@ class _ProductBottomSheetContentState extends State<_ProductBottomSheetContent> 
               ),
               child: SwitchListTile(
                 title: Text('Afficher en Vitrine', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                activeColor: const Color(0xFF25D366),
+                activeColor: Theme.of(context).colorScheme.primary,
                 value: _isVisible,
                 onChanged: (val) => setState(() => _isVisible = val),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -556,7 +563,7 @@ class _ProductBottomSheetContentState extends State<_ProductBottomSheetContent> 
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF128C7E),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -572,3 +579,4 @@ class _ProductBottomSheetContentState extends State<_ProductBottomSheetContent> 
     );
   }
 }
+

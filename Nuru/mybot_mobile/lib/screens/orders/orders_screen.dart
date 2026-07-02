@@ -26,7 +26,7 @@ class OrdersScreen extends ConsumerWidget {
         title: Text('Commandes', style: TextStyle(fontWeight: FontWeight.w500)),
       ),
       body: state.when(
-          loading: () => Center(child: CircularProgressIndicator(color: Color(0xFF128C7E))),
+          loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
           error: (error, _) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -35,7 +35,7 @@ class OrdersScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => ref.read(todayNotifierProvider.notifier).fetchOrders(),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF128C7E)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                   child: Text('Réessayer', style: TextStyle(color: Colors.white)),
                 )
               ],
@@ -72,7 +72,7 @@ class OrdersScreen extends ConsumerWidget {
                   statusBg = Colors.blue.shade50;
                 }
                 if (order.statut.contains('Prêt')) {
-                  statusColor = const Color(0xFF25D366);
+                  statusColor = Theme.of(context).colorScheme.secondary;
                   statusBg = const Color(0xFFE8F5E9);
                 }
                 if (order.statut.contains('Annulé')) {
@@ -80,19 +80,9 @@ class OrdersScreen extends ConsumerWidget {
                   statusBg = Colors.red.shade50;
                 }
 
-                return Container(
+                return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -108,11 +98,11 @@ class OrdersScreen extends ConsumerWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 18,
-                                    backgroundColor: order.type == 'Réservation' ? Colors.purple.shade50 : const Color(0xFFE8F5E9),
+                                    backgroundColor: order.type == 'Réservation' ? Colors.purple.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                     child: Icon(
                                       order.type == 'Réservation' ? Icons.calendar_month : Icons.shopping_bag_outlined,
                                       size: 18,
-                                      color: order.type == 'Réservation' ? Colors.purple.shade700 : const Color(0xFF128C7E),
+                                      color: order.type == 'Réservation' ? Colors.purple.shade400 : Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -254,10 +244,10 @@ class OrdersScreen extends ConsumerWidget {
                                 ),
                                 Text(
                                   '${order.montant.toInt()} F',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold, 
                                     fontSize: 16,
-                                    color: Color(0xFF075E54),
+                                    color: Theme.of(context).colorScheme.secondary,
                                   ),
                                 ),
                               ],
@@ -281,7 +271,7 @@ class OrdersScreen extends ConsumerWidget {
                                       ref.read(statsNotifierProvider.notifier).fetchStats();
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF128C7E),
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                       elevation: 0,
@@ -298,7 +288,7 @@ class OrdersScreen extends ConsumerWidget {
                                   ref.read(statsNotifierProvider.notifier).fetchStats();
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF25D366),
+                                  backgroundColor: Theme.of(context).colorScheme.secondary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                   elevation: 0,
@@ -319,3 +309,4 @@ class OrdersScreen extends ConsumerWidget {
     );
   }
 }
+

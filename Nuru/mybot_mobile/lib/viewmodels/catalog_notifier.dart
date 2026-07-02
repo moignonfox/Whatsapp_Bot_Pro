@@ -84,3 +84,4 @@ class CatalogNotifier extends AsyncNotifier<List<Product>> {
     }
   }
 }
+

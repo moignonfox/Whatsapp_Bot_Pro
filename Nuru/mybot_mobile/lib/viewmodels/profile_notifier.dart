@@ -40,3 +40,4 @@ class ProfileNotifier extends AsyncNotifier<BusinessProfile?> {
     }
   }
 }
+

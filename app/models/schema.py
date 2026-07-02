@@ -62,7 +62,13 @@ def init_db() -> None:
             requested_bot_phone TEXT,
             vitrine_color     TEXT DEFAULT '#5b6af0',
             vitrine_logo_url  TEXT,
-            fcm_token         TEXT
+            fcm_token         TEXT,
+            email             TEXT,
+            owner_name        TEXT,
+            devise            TEXT DEFAULT 'FCFA',
+            is_approved       INTEGER DEFAULT 0,
+            date_debut_abonnement DATETIME DEFAULT CURRENT_TIMESTAMP,
+            date_fin_abonnement   DATETIME
         )
     """)
 
@@ -261,6 +267,36 @@ def update_schema() -> None:
 
     try:
         cursor.execute("ALTER TABLE businesses ADD COLUMN fcm_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN email TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN date_debut_abonnement DATETIME DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN date_fin_abonnement DATETIME")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN owner_name TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN devise TEXT DEFAULT 'FCFA'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN is_approved INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
 

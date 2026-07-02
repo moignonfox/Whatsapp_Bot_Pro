@@ -181,7 +181,7 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
                 cat = p['categorie'] or 'Général'
                 grouped.setdefault(cat, []).append(p)
                 
-            needs_product_detail = any(kw in combined_text.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
+            needs_product_detail = any(kw in user_message.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
             
             for cat, items in grouped.items():
                 catalog_str += f"[{cat}]\n"
@@ -278,7 +278,7 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         "tantôt", "tout à l'heure", "commande", "commander", "livraison", "ce soir", "ce matin"
     ]
     
-    msg_lower = combined_text.lower()
+    msg_lower = user_message.lower()
     has_pending = last_res and last_res['statut'] == 'En attente'
     needs_scheduling = any(kw in msg_lower for kw in SCHEDULING_KEYWORDS) or has_pending
 

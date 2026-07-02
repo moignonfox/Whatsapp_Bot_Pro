@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
+import 'profile_notifier.dart';
+import 'catalog_notifier.dart';
+import 'chat_notifier.dart';
+import 'chat_detail_notifier.dart';
+import 'stats_notifier.dart';
+import 'today_notifier.dart';
 
 // État de l'authentification
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -33,6 +39,16 @@ class AuthNotifier extends AsyncNotifier<AuthStatus> {
   Future<void> logout() async {
     final repository = ref.read(authRepositoryProvider);
     await repository.logout();
+    
+    ref.invalidate(profileNotifierProvider);
+    ref.invalidate(catalogNotifierProvider);
+    ref.invalidate(chatNotifierProvider);
+    ref.invalidate(chatDetailNotifierProvider);
+    ref.invalidate(statsNotifierProvider);
+    ref.invalidate(statsPeriodProvider);
+    ref.invalidate(todayNotifierProvider);
+    
     state = const AsyncValue.data(AuthStatus.unauthenticated);
   }
 }
+

@@ -24,3 +24,4 @@ class StatsRepository {
     }
   }
 }
+

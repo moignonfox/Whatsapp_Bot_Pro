@@ -36,12 +36,14 @@ class TodayScreen extends ConsumerWidget {
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('meinBot', style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                      Text('Tableau de bord', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Vira', style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                        Text('Tableau de bord', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
                   ),
                   Row(
                     children: [
@@ -74,7 +76,7 @@ class TodayScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor: const Color(0xFF128C7E),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         child: profileState.when(
                           data: (p) => Text(p?.nom.substring(0, 2).toUpperCase() ?? 'MB', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                           loading: () => const SizedBox(),
@@ -90,7 +92,7 @@ class TodayScreen extends ConsumerWidget {
               // GREETING BAR
               SliverToBoxAdapter(
                 child: Container(
-                  color: const Color(0xFF128C7E),
+                  color: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -156,25 +158,25 @@ class TodayScreen extends ConsumerWidget {
                           _buildStatCard(context,
                               label: 'Chiffre d\'affaires',
                             value: '${stats.revenue.toInt()} F',
-                            valueColor: const Color(0xFF075E54),
+                            valueColor: Theme.of(context).colorScheme.primary, // Indigo
                             delta: 'Généré via chat',
                           ),
                           _buildStatCard(context,
                               label: 'Validées',
                             value: '${stats.ordersCount}',
-                            valueColor: const Color(0xFF25D366),
+                            valueColor: Colors.teal, // Better contrast against indigo
                             delta: '${stats.pendingCount} en attente',
                           ),
                           _buildStatCard(context,
                               label: 'En attente',
                             value: '${stats.pendingCount}',
-                            valueColor: Colors.orange,
+                            valueColor: Colors.amber.shade700,
                             delta: 'À traiter',
                           ),
                           _buildStatCard(context,
                               label: 'Annulées',
                             value: '${stats.cancellations}',
-                            valueColor: Colors.red,
+                            valueColor: Colors.redAccent,
                             delta: 'Aujourd\'hui',
                           ),
                         ],
@@ -198,7 +200,7 @@ class TodayScreen extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF075E54),
+                                color: Theme.of(context).colorScheme.secondary,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -219,7 +221,7 @@ class TodayScreen extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            Text((profile?.isActive ?? false) ? '100%' : '0%', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF075E54))),
+                            Text((profile?.isActive ?? false) ? '100%' : '0%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary)),
                           ],
                         ),
                       ),
@@ -237,7 +239,7 @@ class TodayScreen extends ConsumerWidget {
                           const SizedBox(width: 8),
                           _buildQuickAction(context, Icons.inventory_2_outlined, 'Catalogue', () => context.push('/catalog')),
                           const SizedBox(width: 8),
-                          _buildQuickAction(context, Icons.campaign_outlined, 'Campagnes', () {}),
+                          _buildQuickAction(context, Icons.account_balance_wallet_outlined, 'Money', () => context.go('/money')),
                           const SizedBox(width: 8),
                           _buildQuickAction(context, Icons.settings_outlined, 'Réglages', () => context.go('/profile')),
                         ],
@@ -272,7 +274,7 @@ class TodayScreen extends ConsumerWidget {
                                     Text('Activité récente', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                     InkWell(
                                       onTap: () => context.go('/orders'),
-                                      child: Text('Voir tout', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF25D366))),
+                                      child: Text('Voir tout', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.secondary)),
                                     )
                                   ],
                                 ),
@@ -280,7 +282,7 @@ class TodayScreen extends ConsumerWidget {
                               Divider(height: 1, color: Theme.of(context).dividerColor),
                               ...orders.take(3).map((order) {
                                 Color dotColor = Colors.orange;
-                                if (order.statut.contains('Confirmé') || order.statut.contains('Prêt')) dotColor = const Color(0xFF25D366);
+                                if (order.statut.contains('Confirmé') || order.statut.contains('Prêt')) dotColor = Theme.of(context).colorScheme.secondary;
                                 else if (order.statut.contains('Annulé')) dotColor = Colors.red;
 
                                 return Container(
@@ -302,7 +304,7 @@ class TodayScreen extends ConsumerWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Text('${order.montant.toInt()} F', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF075E54))),
+                                      Text('${order.montant.toInt()} F', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary)),
                                     ],
                                   ),
                                 );
@@ -357,7 +359,7 @@ class TodayScreen extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: const Color(0xFF075E54)),
+              Icon(icon, size: 20, color: Theme.of(context).colorScheme.secondary),
               SizedBox(height: 4),
               Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87)),
             ],
@@ -374,8 +376,8 @@ class TodayScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF128C7E) : Colors.transparent,
-          border: Border.all(color: active ? const Color(0xFF128C7E) : Colors.grey.withOpacity(0.3)),
+          color: active ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          border: Border.all(color: active ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.3)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -390,5 +392,6 @@ class TodayScreen extends ConsumerWidget {
     );
   }
 }
+
 
 

@@ -59,3 +59,4 @@ class StatsNotifier extends AsyncNotifier<DailyStats> {
     state = await AsyncValue.guard(() => repo.getTodayStats(period: period));
   }
 }
+

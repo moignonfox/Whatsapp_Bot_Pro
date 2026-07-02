@@ -43,20 +43,20 @@ def add_or_update(
                nom = ?, whatsapp_phone_id = ?, token_wa = ?, password = ?,
                prompt = ?, msg_confirm = ?, msg_cancel = ?, msg_ready = ?, 
                business_type = ?, plan_abonnement = ?, is_active = ?, 
-               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?
+               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?, email = ?
                WHERE id = ?""",
             (nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, biz_id)
+             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, None, biz_id)
         )
     else:
         cursor.execute(
             """INSERT INTO businesses
                (id, nom, whatsapp_phone_id, token_wa, password,
                 prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone, 
-                drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, email)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (biz_id, nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes),
+             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, None),
         )
         
     conn.commit()
@@ -64,7 +64,32 @@ def add_or_update(
     conn.commit()
     conn.close()
 
-def update_basic_profile(biz_id: str, nom: str = None, is_active: int = None, prompt: str = None, msg_confirm: str = None, horaires_json: str = None) -> None:
+def create_business_registration(
+    biz_id: str,
+    email: str,
+    password: str,
+    nom: str,
+    owner_name: str,
+    owner_phone: str,
+    requested_bot_phone: str,
+    business_type: str,
+    devise: str
+) -> None:
+    """Création d'un nouveau compte en attente de validation via l'application mobile."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        """INSERT INTO businesses
+           (id, email, password, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise, is_approved, is_active, plan_abonnement, prompt, msg_confirm, msg_cancel, msg_ready)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'BASIC', '', '', '', '')""",
+        (biz_id, email, password, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise),
+    )
+    
+    conn.commit()
+    conn.close()
+
+def update_basic_profile(biz_id: str, nom: str = None, is_active: int = None, prompt: str = None, msg_confirm: str = None, horaires_json: str = None, email: str = None, owner_phone: str = None) -> None:
     """Met à jour les paramètres de base du profil via l'application mobile."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
@@ -88,6 +113,12 @@ def update_basic_profile(biz_id: str, nom: str = None, is_active: int = None, pr
     if horaires_json is not None:
         fields.append("horaires_json = ?")
         values.append(horaires_json)
+    if email is not None:
+        fields.append("email = ?")
+        values.append(email)
+    if owner_phone is not None:
+        fields.append("owner_phone = ?")
+        values.append(owner_phone)
         
     if fields:
         query = "UPDATE businesses SET " + ", ".join(fields) + " WHERE id = ?"
@@ -171,6 +202,19 @@ def get_by_id(biz_id: str) -> Optional[sqlite3.Row]:
     cursor.execute(
         "SELECT * FROM businesses WHERE id = ?",
         (biz_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+def get_by_email(email: str) -> Optional[sqlite3.Row]:
+    """Recherche un business par son adresse email."""
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM businesses WHERE LOWER(email) = LOWER(?)",
+        (email,),
     )
     row = cursor.fetchone()
     conn.close()
