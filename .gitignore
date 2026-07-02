@@ -2,6 +2,7 @@
 .env
 
 # === Base de données ===
+*.db
 data/*.db
 
 # === Python cache ===
@@ -13,6 +14,10 @@ old/
 
 # === Environnement virtuel ===
 .venv/
+
+# === IDE ===
+.idea/
+desktop.ini
 
 # === Flask instance ===
 instance/
