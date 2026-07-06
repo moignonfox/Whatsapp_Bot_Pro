@@ -306,9 +306,23 @@
                     <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Comportement en cas de dépassement</h3>
                     <div style="max-width: 300px;">
                         <select name="overage_behavior" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
-                            <option value="FALLBACK" {% if global_settings.get('overage_behavior') == 'FALLBACK' %}selected{% endif %}>FALLBACK (Mode dégradé)</option>
-                            <option value="BLOCK" {% if global_settings.get('overage_behavior') == 'BLOCK' %}selected{% endif %}>BLOCK (Couper l'IA silencieusement)</option>
-                            <option value="OVERAGE" {% if global_settings.get('overage_behavior') == 'OVERAGE' %}selected{% endif %}>OVERAGE (Continuer et facturer en plus)</option>
+                            {% if global_settings.get('overage_behavior') == 'FALLBACK' %}
+                                <option value="FALLBACK" selected>FALLBACK (Mode dégradé)</option>
+                            {% else %}
+                                <option value="FALLBACK">FALLBACK (Mode dégradé)</option>
+                            {% endif %}
+                            
+                            {% if global_settings.get('overage_behavior') == 'BLOCK' %}
+                                <option value="BLOCK" selected>BLOCK (Couper l'IA silencieusement)</option>
+                            {% else %}
+                                <option value="BLOCK">BLOCK (Couper l'IA silencieusement)</option>
+                            {% endif %}
+                            
+                            {% if global_settings.get('overage_behavior') == 'OVERAGE' %}
+                                <option value="OVERAGE" selected>OVERAGE (Continuer et facturer en plus)</option>
+                            {% else %}
+                                <option value="OVERAGE">OVERAGE (Continuer et facturer en plus)</option>
+                            {% endif %}
                         </select>
                     </div>
                 </div>
@@ -380,13 +394,28 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% set bar_color = 'var(--green)' %}
+                            {% if b.ai_usage_pct >= 100 %}
+                                {% set bar_color = '#F85149' %}
+                            {% elif b.ai_usage_pct >= 80 %}
+                                {% set bar_color = '#F0B429' %}
+                            {% endif %}
+                            
+                            {% set bar_width = b.ai_usage_pct %}
+                            {% if b.ai_usage_pct > 100 %}
+                                {% set bar_width = 100 %}
+                            {% endif %}
+                            
+                            {% set header_style = "display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: " ~ bar_color ~ ";" %}
+                            {% set bar_style = "height: 100%; transition: width 0.3s ease; width: " ~ bar_width ~ "%; background: " ~ bar_color ~ ";" %}
+                            
                             <div style="display: flex; flex-direction: column; gap: 4px; max-width: 150px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: {% if b.ai_usage_pct >= 100 %}#F85149{% elif b.ai_usage_pct >= 80 %}#F0B429{% else %}var(--green){% endif %};">
+                                <div style="{{ header_style }}">
                                     <span>{{ b.ai_usage }} / {{ b.ai_quota }} msg</span>
                                     <span>{{ b.ai_usage_pct }}%</span>
                                 </div>
                                 <div style="height: 6px; width: 100%; background: var(--border); border-radius: 3px; overflow: hidden;">
-                                    <div style="height: 100%; width: {{ b.ai_usage_pct if b.ai_usage_pct <= 100 else 100 }}%; background: {% if b.ai_usage_pct >= 100 %}#F85149{% elif b.ai_usage_pct >= 80 %}#F0B429{% else %}var(--green){% endif %}; transition: width 0.3s ease;"></div>
+                                    <div style="{{ bar_style }}"></div>
                                 </div>
                             </div>
                         </td>
@@ -504,7 +533,7 @@
                 <div style="flex:1;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:600; color:var(--text);">{{ notif.title }}</h4>
-                        <button class="notif-delete-btn" onclick="deleteNotification({{ notif.id }})" style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.2); color:#F85149; cursor:pointer; padding:6px; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center;" title="Supprimer"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                        <button class="notif-delete-btn" onclick="deleteNotification('{{ notif.id }}')" style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.2); color:#F85149; cursor:pointer; padding:6px; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center;" title="Supprimer"><i class="fas fa-trash" style="font-size:12px;"></i></button>
                     </div>
                     <p style="margin:0 0 8px 0; font-size:14px; color:var(--text); line-height:1.5;">{{ notif.message }}</p>
                     <div style="font-size:11px; color:var(--muted); font-weight:500;">
@@ -683,49 +712,85 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
     var socket = io();
     
-    let globalAudioCtx = null;
-
-    function initAudioContext() {
-        if (!globalAudioCtx) {
+    let sharedAudioCtx = null;
+    function getAudioContext() {
+        if (!sharedAudioCtx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
-            globalAudioCtx = new AudioContext();
+            if (AudioContext) sharedAudioCtx = new AudioContext();
         }
-        if (globalAudioCtx.state === 'suspended') {
-            globalAudioCtx.resume();
-        }
+        return sharedAudioCtx;
     }
 
-    // Autoriser le navigateur à jouer du son lors du moindre clic sur le Dashboard
-    document.addEventListener('click', initAudioContext);
-    document.addEventListener('keydown', initAudioContext);
+    // Unlock audio context on first user interaction
+    function unlockAudio() {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+    }
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
 
-    function playBeep() {
-        if (!globalAudioCtx) return;
-        if (globalAudioCtx.state === 'suspended') globalAudioCtx.resume();
-
+    window.playNotificationSound = function(type, testVol) {
         try {
-            const osc = globalAudioCtx.createOscillator();
-            const gainNode = globalAudioCtx.createGain();
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') ctx.resume();
             
-            osc.connect(gainNode);
-            gainNode.connect(globalAudioCtx.destination);
+            let vol = 0.3; // Default
+            if (testVol !== undefined) {
+                vol = testVol;
+            } else {
+                const savedVol = localStorage.getItem('notif_volume_master');
+                if (savedVol !== null) vol = parseFloat(savedVol);
+            }
+            vol = Math.max(0, Math.min(vol, 1));
             
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, globalAudioCtx.currentTime); 
-            osc.frequency.setValueAtTime(1108.73, globalAudioCtx.currentTime + 0.1); 
+            let preset = 'ding_ding';
+            if (type === 'inscription') preset = 'success';
+            if (type === 'alerte') preset = 'alert';
             
-            gainNode.gain.setValueAtTime(0, globalAudioCtx.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.5, globalAudioCtx.currentTime + 0.05);
-            gainNode.gain.linearRampToValueAtTime(0, globalAudioCtx.currentTime + 0.1);
-            gainNode.gain.linearRampToValueAtTime(0.5, globalAudioCtx.currentTime + 0.15);
-            gainNode.gain.linearRampToValueAtTime(0, globalAudioCtx.currentTime + 0.25);
+            const playTone = (oscType, freq, time, duration, v, slideFreq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = oscType;
+                osc.frequency.setValueAtTime(freq, time);
+                if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, time + duration);
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(v, time + Math.min(0.02, duration/2));
+                gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(time);
+                osc.stop(time + duration);
+            };
             
-            osc.start(globalAudioCtx.currentTime);
-            osc.stop(globalAudioCtx.currentTime + 0.3);
-        } catch(e) {
-            console.log('Audio error:', e);
+            const t = ctx.currentTime;
+            if (preset === 'pop') {
+                playTone('sine', 800, t, 0.1, vol, 300);
+            } else if (preset === 'chime') {
+                playTone('sine', 659.25, t, 0.4, vol); // E5
+                playTone('sine', 880, t + 0.15, 0.4, vol); // A5
+                playTone('sine', 1108.73, t + 0.3, 0.6, vol); // C#6
+            } else if (preset === 'success') {
+                playTone('triangle', 523.25, t, 0.2, vol); // C5
+                playTone('triangle', 659.25, t + 0.1, 0.2, vol); // E5
+                playTone('triangle', 783.99, t + 0.2, 0.2, vol); // G5
+                playTone('triangle', 1046.50, t + 0.3, 0.5, vol); // C6
+            } else if (preset === 'alert') {
+                playTone('square', 880, t, 0.1, vol*0.5);
+                playTone('square', 880, t + 0.2, 0.1, vol*0.5);
+                playTone('square', 880, t + 0.4, 0.1, vol*0.5);
+            } else { // ding_ding
+                playTone('sine', 880, t, 0.3, vol);
+                playTone('sine', 1108.73, t + 0.1, 0.3, vol);
+            }
+        } catch (e) {
+            console.log("Audio play failed:", e);
         }
-    }
+    };
 
     socket.on('connect', function() {
         socket.emit('rejoindre_room', {room: 'master'});
@@ -762,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size:13px;font-weight:700;color:var(--text,#e0e6f0);margin-bottom:3px;">${title}</div>
                 <div style="font-size:12px;color:var(--muted,#8892a4);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${body}</div>
                 <div style="font-size:11px;color:${color};margin-top:6px;font-weight:600;">
-                    <i class="fas fa-arrow-right" style="font-size:9px;margin-right:3px;"></i>Ouvrir le panneau
+                    ${data.type === 'inscription' ? '<i class="fas fa-sync" style="font-size:9px;margin-right:3px;"></i>Rechargement en cours...' : '<i class="fas fa-arrow-right" style="font-size:9px;margin-right:3px;"></i>Ouvrir le panneau'}
                 </div>
             </div>
             <button id="global-notif-toast-close" style="background:none;border:none;color:var(--muted,#8892a4);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;">&times;</button>
@@ -770,14 +835,21 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.addEventListener('click', function(e) {
             if (e.target.id === 'global-notif-toast-close') { toast.remove(); return; }
             toast.remove();
-            toggleMasterNotifPanel();
+            if (data.type !== 'inscription') {
+                toggleMasterNotifPanel();
+            }
         });
         document.body.appendChild(toast);
-        setTimeout(() => toast && toast.remove(), 8000);
+        
+        if (data.type === 'inscription') {
+            setTimeout(() => window.location.reload(), 2500);
+        } else {
+            setTimeout(() => toast && toast.remove(), 8000);
+        }
     }
 
     socket.on('master_notification', function(data) {
-        playBeep();
+        window.playNotificationSound(data.type);
         showToastMaster(data);
         
         const bellIcon = document.querySelector('.fa-bell');

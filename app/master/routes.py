@@ -286,52 +286,60 @@ def change_business_status(biz_id):
     if not session.get('is_master'):
         return jsonify({"success": False, "error": "Non autorisé"}), 403
     
-    data = request.get_json() or {}
-    master_password = data.get('master_password')
-    new_status = data.get('status')
-    
-    from werkzeug.security import check_password_hash
-    if not master_password or not check_password_hash(current_app.config.get('MASTER_PASSWORD_HASH', ''), master_password):
-        return jsonify({"success": False, "error": "Mot de passe incorrect"}), 401
-    
-    business = business_repo.get_by_id(biz_id)
-    if not business:
-        return jsonify({"success": False, "error": "Business introuvable"}), 404
+    try:
+        data = request.get_json() or {}
+        master_password = data.get('master_password')
+        new_status = data.get('status')
         
-    biz_dict = dict(business)
-    now = datetime.now()
-    
-    import sqlite3
-    from app.models.schema import get_db_path
-    from app.services import whatsapp_disconnect_service
-    from app.services.notification_master_service import create_master_notification
-    conn = sqlite3.connect(get_db_path())
-    cursor = conn.cursor()
-    
-    msg = "Statut mis à jour."
-    if new_status == 'archived':
-        cursor.execute("UPDATE businesses SET status = 'archived', archived_at = ?, deletion_scheduled_at = NULL WHERE id = ?", (now.isoformat(), biz_id))
-        try:
-            whatsapp_disconnect_service.disconnect_whatsapp_number(biz_dict.get('token_wa'), biz_dict.get('whatsapp_phone_id'))
-        except:
-            pass
-        create_master_notification('alerte', 'Archivage', f'Business {biz_id} archivé', biz_id)
-        msg = "Business archivé."
-    elif new_status == 'deleted':
-        deletion_date = now + timedelta(days=7)
-        cursor.execute("UPDATE businesses SET status = 'deleted', deletion_scheduled_at = ?, archived_at = NULL WHERE id = ?", (deletion_date.isoformat(), biz_id))
-        create_master_notification('alerte', 'Suppression compte', f'Business {biz_id} supprimé (Programmé dans 7j)', biz_id)
-        msg = "Business supprimé (programmé dans 7 jours)."
-    elif new_status == 'active':
-        cursor.execute("UPDATE businesses SET status = 'active', archived_at = NULL, deletion_scheduled_at = NULL WHERE id = ?", (biz_id,))
-        create_master_notification('info', 'Restauration', f'Business {biz_id} restauré en actif', biz_id)
-        msg = "Business restauré. Le gérant doit reconnecter son numéro WhatsApp."
-    
-    conn.commit()
-    conn.close()
-    
-    flash(msg, 'success')
-    return jsonify({"success": True, "message": msg})
+        from werkzeug.security import check_password_hash
+        if not master_password or not check_password_hash(current_app.config.get('MASTER_PASSWORD_HASH', ''), master_password):
+            return jsonify({"success": False, "error": "Mot de passe incorrect"}), 401
+        
+        business = business_repo.get_by_id(biz_id)
+        if not business:
+            return jsonify({"success": False, "error": "Business introuvable"}), 404
+            
+        biz_dict = dict(business)
+        now = datetime.now()
+        
+        import sqlite3
+        from app.models.schema import get_db_path
+        from app.services import whatsapp_disconnect_service
+        from app.services.notification_master_service import create_master_notification
+        conn = sqlite3.connect(get_db_path())
+        cursor = conn.cursor()
+        
+        msg = "Statut mis à jour."
+        if new_status == 'archived':
+            cursor.execute("UPDATE businesses SET status = 'archived', archived_at = ?, deletion_scheduled_at = NULL WHERE id = ?", (now.isoformat(), biz_id))
+            conn.commit()
+            try:
+                whatsapp_disconnect_service.disconnect_whatsapp_number(biz_dict.get('token_wa'), biz_dict.get('whatsapp_phone_id'))
+            except:
+                pass
+            create_master_notification('alerte', 'Archivage', f'Business {biz_id} archivé', biz_id)
+            msg = "Business archivé."
+        elif new_status == 'deleted':
+            deletion_date = now + timedelta(days=7)
+            cursor.execute("UPDATE businesses SET status = 'deleted', deletion_scheduled_at = ?, archived_at = NULL WHERE id = ?", (deletion_date.isoformat(), biz_id))
+            conn.commit()
+            create_master_notification('alerte', 'Suppression compte', f'Business {biz_id} supprimé (Programmé dans 7j)', biz_id)
+            msg = "Business supprimé (programmé dans 7 jours)."
+        elif new_status == 'active':
+            cursor.execute("UPDATE businesses SET status = 'active', archived_at = NULL, deletion_scheduled_at = NULL WHERE id = ?", (biz_id,))
+            conn.commit()
+            create_master_notification('info', 'Restauration', f'Business {biz_id} restauré en actif', biz_id)
+            msg = "Business restauré. Le gérant doit reconnecter son numéro WhatsApp."
+        
+        conn.close()
+        
+        flash(msg, 'success')
+        return jsonify({"success": True, "message": msg})
+    except Exception as e:
+        import traceback
+        import logging
+        logging.error(f"Error in change_status: {e}\n{traceback.format_exc()}")
+        return jsonify({"success": False, "error": f"Internal Error: {str(e)}", "trace": traceback.format_exc()}), 500
 
 
 @master_bp.route('/business/<biz_id>', methods=['DELETE'])
