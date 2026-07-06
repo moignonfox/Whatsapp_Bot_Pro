@@ -54,6 +54,10 @@ class AuthRepository {
     required String requestedBotPhone,
     required String businessType,
     required String devise,
+    required String ville,
+    required List<String> botTasks,
+    required String tone,
+    required String businessInfo,
   }) async {
     try {
       final response = await _dio.post('/auth/register', data: {
@@ -65,6 +69,10 @@ class AuthRepository {
         'requested_bot_phone': requestedBotPhone,
         'business_type': businessType,
         'devise': devise,
+        'ville': ville,
+        'bot_tasks': botTasks,
+        'tone': tone,
+        'business_info': businessInfo,
       });
 
       if (response.data['success'] == true) {

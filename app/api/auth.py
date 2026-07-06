@@ -9,6 +9,7 @@ from flask_jwt_extended import (
 from app import limiter
 from app.api import api_bp
 from app.repositories import business_repo
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -32,38 +33,44 @@ def _blocklist_token(jti: str, expires_at) -> None:
 def register():
     data = request.get_json() or {}
 
-    required_fields = ['email', 'password', 'nom', 'owner_name', 'owner_phone', 'business_type', 'devise', 'requested_bot_phone']
+    # Nouveaux champs d'onboarding IA
+    required_fields = ['email', 'password', 'nom', 'owner_name', 'owner_phone', 'business_type', 'devise', 'requested_bot_phone', 'ville', 'bot_tasks', 'tone', 'business_info']
     for field in required_fields:
         if not data.get(field):
             return jsonify({"success": False, "error": f"Champ requis manquant : {field}"}), 400
 
     email = data['email'].strip().lower()
 
-    # Vérifier si l'email est déjà utilisé
-    existing = business_repo.get_by_email(email)
-    if existing:
-        return jsonify({"success": False, "error": "Un compte avec cet email existe déjà."}), 409
+    # VǸrifier si l'email est dǸj utilisǸ
+    if business_repo.get_by_email(email):
+        return jsonify({"success": False, "error": "Cet email est dǸj utilisǸ"}), 400
 
-    # L'ID unique sera une suite de chiffres générée aléatoirement
-    import random
-    while True:
-        biz_id = str(random.randint(10000000, 99999999))
-        if not business_repo.get_by_id(biz_id):
-            break
-
-    hashed_password = generate_password_hash(data['password'])
+    biz_id = str(uuid.uuid4())
+    password_hash = generate_password_hash(data['password'])
+    
+    # Générer le prompt avec l'IA Service
+    from app.services.ai_service import generate_bot_prompt_from_answers
+    generated_prompt = generate_bot_prompt_from_answers(
+        data['nom'].strip(),
+        data['business_type'].strip(),
+        data['ville'].strip(),
+        data['bot_tasks'], # list
+        data['tone'].strip(),
+        data['business_info'].strip()
+    )
 
     try:
         business_repo.create_business_registration(
-            biz_id=biz_id,
-            email=email,
-            password=hashed_password,
-            nom=data['nom'],
-            owner_name=data['owner_name'],
-            owner_phone=data['owner_phone'],
-            requested_bot_phone=data['requested_bot_phone'],
-            business_type=data['business_type'],
-            devise=data['devise'],
+            biz_id,
+            email,
+            password_hash,
+            data['nom'].strip(),
+            data['owner_name'].strip(),
+            data['owner_phone'].strip(),
+            data['requested_bot_phone'].strip(),
+            data['business_type'].strip(),
+            data['devise'].strip(),
+            prompt=generated_prompt
         )
         try:
             from app.services.notification_master_service import create_master_notification

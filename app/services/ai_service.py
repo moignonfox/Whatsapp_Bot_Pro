@@ -616,3 +616,25 @@ def improve_marketing_message(message: str) -> str:
         
     raise Exception("Les services d'IA (Gemini et Groq) sont actuellement indisponibles. Vérifiez vos quotas API.")
 
+
+
+def generate_bot_prompt_from_answers(nom: str, business_type: str, location: str, bot_tasks: list, tone: str, business_info: str) -> str:
+    """Génère un system_prompt initial de qualité à partir des réponses d'onboarding."""
+    tasks_text = "\n".join([f"- {t}" for t in bot_tasks]) if isinstance(bot_tasks, list) else bot_tasks
+    
+    template = f"""Tu es l'assistant virtuel de {nom}, un(e) {business_type} situé(e) à {location}.
+
+Ton rôle principal est de :
+{tasks_text}
+
+Tu t'adresses aux clients avec un ton {tone}.
+
+Informations importantes sur l'établissement :
+{business_info}
+
+Règles importantes :
+- Tu réponds uniquement en rapport avec {nom}
+- Si tu ne connais pas la réponse, tu invites le client à contacter directement l'établissement
+- Tu ne donnes jamais d'informations sur d'autres établissements
+"""
+    return template

@@ -1,605 +1,631 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription — MyBot SaaS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Injection du thème AVANT le rendu pour éviter le flash -->
-    <script>
-      (function(){
-        var t = localStorage.getItem('mybot-theme');
-        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', t);
-      })();
-    </script>
-
+    <title>Créer un compte | Vira</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        /* ══════════════════════════════════════════════
-           TOKENS — Dark (défaut)
-        ══════════════════════════════════════════════ */
-        :root,
-        [data-theme="dark"] {
-            --bg:            #0D1117;
-            --surface:       #161B27;
-            --card:          #1C2333;
-            --border:        #2A3347;
-            --green:         #25D366;
-            --green-dim:     #1aaa50;
-            --green-glow:    rgba(37,211,102,0.18);
-            --green-bg:      rgba(37,211,102,0.10);
-            --green-border:  rgba(37,211,102,0.25);
-            --text:          #F0F6FC;
-            --muted:         #8B949E;
-            --error:         #F85149;
-            --placeholder:   #4a5568;
-            --panel-left-bg: linear-gradient(145deg, #0f1f14 0%, #0a1a0f 100%);
-            --panel-left-glow: rgba(37,211,102,0.12);
-            --user-bubble:   #1f5c35;
-            --user-text:     #e2f5ea;
-            --shadow:        0 24px 80px rgba(0,0,0,0.55);
-            --blob1-opacity: 0.35;
-            --blob2-opacity: 0.35;
-            --toggle-bg:     #2A3347;
-            --toggle-hover:  #354055;
+        :root {
+            --bg: #0f111a;
+            --surface: #1e2130;
+            --surface-hover: #2a2d3d;
+            --border: #2a2d3d;
+            --text: #ffffff;
+            --muted: #8b92a5;
+            --brand: #5b6af0;
+            --brand-hover: #4a56d9;
+            --error: #f44336;
+            --success: #00e676;
         }
 
-        /* ══════════════════════════════════════════════
-           TOKENS — Light
-        ══════════════════════════════════════════════ */
-        [data-theme="light"] {
-            --bg:            #F0F4F8;
-            --surface:       #FFFFFF;
-            --card:          #FFFFFF;
-            --border:        #D1D9E0;
-            --green:         #1DA851;
-            --green-dim:     #178f44;
-            --green-glow:    rgba(29,168,81,0.18);
-            --green-bg:      rgba(29,168,81,0.08);
-            --green-border:  rgba(29,168,81,0.28);
-            --text:          #0D1117;
-            --muted:         #57606A;
-            --error:         #CF222E;
-            --placeholder:   #A8B3BC;
-            --panel-left-bg: linear-gradient(145deg, #d4f0df 0%, #e8f8ef 100%);
-            --panel-left-glow: rgba(29,168,81,0.10);
-            --user-bubble:   #D4EDDA;
-            --user-text:     #0d3320;
-            --shadow:        0 24px 80px rgba(0,0,0,0.12);
-            --blob1-opacity: 0.18;
-            --blob2-opacity: 0.12;
-            --toggle-bg:     #E6EBF0;
-            --toggle-hover:  #D1D9E0;
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* ══════════════════════════════════════════════
-           Transition douce entre les thèmes
-        ══════════════════════════════════════════════ */
-        body, .panel-left, .panel-right, .card,
-        .field input, .btn-submit, .bubble, .typing {
-            transition:
-                background 0.3s ease,
-                background-color 0.3s ease,
-                border-color 0.3s ease,
-                color 0.3s ease,
-                box-shadow 0.3s ease;
-        }
-
-        /* ══════════════════════════════════════════════
-           Base
-        ══════════════════════════════════════════════ */
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            display: flex;
-            padding: 24px;
-            position: relative;
             overflow-x: hidden;
-            overflow-y: auto;
         }
 
-        /* ── Ambient blobs ── */
-        .blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-        .blob-1 {
-            width: 420px; height: 420px;
-            background: var(--green);
-            opacity: var(--blob1-opacity);
-            top: -140px; right: -100px;
-            animation: drift 9s ease-in-out infinite alternate;
-        }
-        .blob-2 {
-            width: 300px; height: 300px;
-            background: #1565c0;
-            opacity: var(--blob2-opacity);
-            bottom: -80px; left: -80px;
-            animation: drift 12s ease-in-out infinite alternate-reverse;
-        }
-        @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(30px, 20px) scale(1.08); }
-        }
-
-        /* ── Bouton theme toggle ── */
-        #theme-toggle {
-            position: fixed;
-            top: 18px;
-            right: 18px;
-            z-index: 100;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid var(--border);
-            background: var(--toggle-bg);
-            color: var(--muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, border-color 0.2s, transform 0.15s;
-            outline: none;
-        }
-        #theme-toggle:hover {
-            background: var(--toggle-hover);
-            color: var(--text);
-            transform: scale(1.08);
-        }
-        #theme-toggle:focus-visible {
-            box-shadow: 0 0 0 3px var(--green-glow);
-        }
-        #theme-toggle svg {
-            width: 18px; height: 18px;
-            fill: currentColor;
-        }
-
-        /* ── Layout ── */
-        .page {
-            display: flex;
+        .wizard-container {
             width: 100%;
-            max-width: 900px;
-            min-height: 540px;
+            max-width: 600px;
+            background: var(--surface);
             border-radius: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow), 0 0 0 1px var(--border);
-            position: relative;
-            z-index: 1;
-            margin: auto;
-        }
-
-        /* ── Left panel ── */
-        .panel-left {
-            flex: 1;
-            background: var(--panel-left-bg);
-            padding: 52px 44px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            padding: 40px;
             position: relative;
             overflow: hidden;
         }
-        .panel-left::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 30% 40%, var(--panel-left-glow) 0%, transparent 65%);
-            pointer-events: none;
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
         }
 
-        /* Chat illustration */
-        .chat-preview {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 32px;
-            position: relative;
-            z-index: 1;
-        }
-        .bubble {
-            max-width: 82%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-            animation: fadeUp 0.6s ease both;
-        }
-        .bubble.bot {
-            background: var(--card);
-            color: var(--text);
-            border-bottom-left-radius: 2px;
-            align-self: flex-start;
-            border: 1px solid var(--border);
-        }
-        .bubble.user {
-            background: var(--user-bubble);
-            color: var(--user-text);
-            border-bottom-right-radius: 2px;
-            align-self: flex-end;
-        }
-        .bubble.bot .sender {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--green);
-            margin-bottom: 3px;
-        }
-        .bubble:nth-child(1) { animation-delay: 0.1s; }
-        .bubble:nth-child(2) { animation-delay: 0.35s; }
-        .bubble:nth-child(3) { animation-delay: 0.6s; }
-        .bubble:nth-child(4) { animation-delay: 0.85s; }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .header h1 {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
         }
 
-        .typing {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            padding: 12px 16px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            border-bottom-left-radius: 2px;
-            width: fit-content;
-            align-self: flex-start;
-            animation: fadeUp 0.6s ease 1.1s both;
-        }
-        .typing span {
-            width: 7px; height: 7px;
-            background: var(--muted);
-            border-radius: 50%;
-            animation: bounce 1.2s ease infinite;
-        }
-        .typing span:nth-child(2) { animation-delay: 0.18s; }
-        .typing span:nth-child(3) { animation-delay: 0.36s; }
-        @keyframes bounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30%            { transform: translateY(-6px); }
-        }
-
-        .left-footer {
-            position: relative;
-            z-index: 1;
-        }
-        .left-footer p {
-            font-size: 12px;
+        .header p {
             color: var(--muted);
-            line-height: 1.6;
+            margin: 0;
+            font-size: 14px;
         }
-        .left-footer strong { color: var(--green); font-weight: 600; }
 
-        /* ── Right panel ── */
-        .panel-right {
-            width: 400px;
-            background: var(--card);
-            padding: 52px 44px;
+        /* Progress Bar */
+        .progress-wrapper {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
         }
 
-        .logo {
+        .progress-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border);
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .progress-line-fill {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 2px;
+            background: var(--brand);
+            z-index: 2;
+            transform: translateY(-50%);
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .step-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            position: relative;
+            z-index: 3;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            border-color: var(--brand);
+            color: var(--brand);
+            background: var(--bg);
+        }
+
+        .step-dot.completed {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+        }
+
+        /* Forms */
+        .step-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(91, 106, 240, 0.2);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Checkboxes & Radios */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .option-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: 0.2s;
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 40px;
+            background: var(--bg);
         }
-        .logo-icon {
-            width: 38px; height: 38px;
-            background: var(--green);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 0 18px var(--green-glow);
-        }
-        .logo-icon svg { width: 22px; height: 22px; fill: #fff; }
-        .logo-text {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.4px;
-        }
-        .logo-text span { color: var(--green); }
 
-        .form-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
+        .option-card:hover {
+            border-color: var(--brand);
         }
-        .form-subtitle {
-            font-size: 13.5px;
-            color: var(--muted);
-            margin-bottom: 32px;
+
+        .option-card.selected {
+            border-color: var(--brand);
+            background: rgba(91, 106, 240, 0.1);
+        }
+
+        .option-card input {
+            display: none;
+        }
+
+        /* Buttons */
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            background: var(--border);
+        }
+
+        .btn-primary {
+            background: var(--brand);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-hover);
+        }
+
+        /* Preview Chat Box */
+        .preview-box {
+            background: var(--bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            font-size: 14px;
             line-height: 1.5;
         }
 
-        .field { margin-bottom: 16px; }
-        .field label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 7px;
-        }
-        .field input {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
+        .chat-bubble.client {
+            background: var(--surface-hover);
             color: var(--text);
-            font-family: inherit;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
-            outline: none;
-        }
-        .field input::placeholder { color: var(--placeholder); }
-        
-        .field textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
-            outline: none;
-            resize: vertical;
-            min-height: 80px;
-        }
-        .field textarea::placeholder { color: var(--placeholder); }
-        .field textarea:focus {
-            border-color: var(--green);
-            box-shadow: 0 0 0 3px var(--green-glow);
+            border-bottom-left-radius: 4px;
+            float: left;
+            clear: both;
         }
 
-        .alert-red {
-            background: rgba(248,81,73,0.08);
-            border: 1px solid rgba(248,81,73,0.30);
-            color: var(--error);
-            font-size: 13px;
-            padding: 14px 18px;
-            border-radius: 8px;
-            margin-bottom: 18px;
-            line-height: 1.6;
-        }
-
-        .field input:focus {
-            border-color: var(--green);
-            box-shadow: 0 0 0 3px var(--green-glow);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 13px;
-            background: var(--green);
+        .chat-bubble.bot {
+            background: var(--brand);
             color: #fff;
-            font-family: inherit;
-            font-size: 14.5px;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: background 0.2s, transform 0.12s, box-shadow 0.2s;
-            letter-spacing: 0.2px;
-            box-shadow: 0 4px 20px var(--green-glow);
+            border-bottom-right-radius: 4px;
+            float: right;
+            clear: both;
         }
-        .btn-submit:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 6px 28px var(--green-glow);
-            transform: translateY(-1px);
+        
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
         }
-        .btn-submit:active { transform: translateY(0); }
-
+        
         .error-msg {
-            background: rgba(248,81,73,0.08);
-            border: 1px solid rgba(248,81,73,0.30);
             color: var(--error);
             font-size: 13px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-top: 14px;
+            margin-top: 10px;
+            display: none;
             text-align: center;
         }
 
-        .form-footer {
-            margin-top: 28px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-            font-size: 12px;
-            color: var(--muted);
-            text-align: center;
-            line-height: 1.7;
-        }
-        .form-footer a { color: var(--green); text-decoration: none; }
-        .form-footer a:hover { text-decoration: underline; }
-
-        /* ── Badge ── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--green-bg);
-            border: 1px solid var(--green-border);
-            color: var(--green);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            letter-spacing: 0.3px;
-        }
-        .badge .dot {
-            width: 6px; height: 6px;
-            background: var(--green);
-            border-radius: 50%;
-            animation: pulse 2s ease infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 680px) {
-            body { padding: 0; background: var(--surface); }
-            .page { 
-                max-width: 100%; 
-                min-height: 100vh; 
-                border-radius: 0; 
-                box-shadow: none; 
-                border: none; 
-                margin: 0; 
-            }
-            .panel-left { display: none; }
-            .panel-right { 
-                width: 100%; 
-                padding: 40px 24px; 
-                display: flex; 
-                flex-direction: column; 
-                justify-content: center; 
-            }
-            #theme-toggle { top: 16px; right: 16px; background: var(--bg); }
-        }
-
-        /* ── Reduced motion ── */
-        @media (prefers-reduced-motion: reduce) {
-            .blob, .bubble, .typing, .badge .dot,
-            .typing span { animation: none; opacity: 1; transform: none; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Bouton toggle thème -->
-    <button id="theme-toggle" aria-label="Passer en mode clair">
-        <!-- Soleil (visible en dark mode) -->
-        <svg class="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block">
-            <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-13a1 1 0 0 0 1-1V2a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1zm0 14a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm9-6h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zM3 12a1 1 0 0 0-1-1H1a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1zm15.364-7.05-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 17.657l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0-1.414-1.414zm12.728.707-.707-.707a1 1 0 0 0-1.414 1.414l.707.707a1 1 0 0 0 1.414-1.414zM6.343 6.343l-.707-.707A1 1 0 0 0 4.222 7.05l.707.707a1 1 0 0 0 1.414-1.414z"/>
-        </svg>
-        <!-- Lune (visible en light mode) -->
-        <svg class="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none">
-            <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-.95z"/>
-        </svg>
-    </button>
-
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
-    <div class="page">
-
-        <!-- LEFT: panneau visuel -->
-        <div class="panel-left">
-            <div>
-                <div class="badge">
-                    <span class="dot"></span>
-                    Bot actif 24h/24
-                </div>
-                <h1 style="font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.6px;line-height:1.3;">
-                    Votre assistant<br>
-                    <span style="color:var(--green);">WhatsApp</span> intelligent
-                </h1>
-                <p style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.7;">
-                    Automatisez vos réponses, gérez vos rendez-vous et fidélisez vos clients — sans effort.
-                </p>
-            </div>
-
-            <div class="chat-preview">
-                <div class="bubble bot">
-                    <div class="sender">MyBot</div>
-                    Bonjour ! 👋 Comment puis-je vous aider aujourd'hui ?
-                </div>
-                <div class="bubble user">Je voudrais prendre un rendez-vous</div>
-                <div class="bubble bot">
-                    <div class="sender">MyBot</div>
-                    Parfait ! Quelle date vous convient ? Je vérifie les disponibilités 📅
-                </div>
-                <div class="typing">
-                    <span></span><span></span><span></span>
-                </div>
-            </div>
-
-            <div class="left-footer">
-                <p>Plus de <strong>500 entreprises</strong> font confiance à MyBot pour gérer leur relation client automatiquement.</p>
-            </div>
-        </div>
-
-        <!-- RIGHT: formulaire de connexion -->
-        <div class="panel-right">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                </div>
-                <span class="logo-text">My<span>Bot</span> SaaS</span>
-            </div>
-
-            
-            <h2 class="form-title">Créer votre bot</h2>
-            <p class="form-subtitle">Rejoignez-nous et automatisez votre WhatsApp.</p>
-
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="field">
-                    <label for="nom">Nom de l'entreprise</label>
-                    <input type="text" id="nom" name="nom" placeholder="ex: Mon Super Resto" required>
-                </div>
-                <div class="field">
-                    <label for="username">Nom d'utilisateur</label>
-                    <input type="text" id="username" name="username" placeholder="ex: mon-resto-123" required>
-                </div>
-                <div class="field">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" placeholder="••••••••" required>
-                </div>
-                
-                <div class="field">
-                    <label for="owner_phone">Numéro de téléphone personnel du Gérant</label>
-                    <input type="text" id="owner_phone" name="owner_phone" placeholder="ex: +33612345678" required>
-                </div>
-
-                <div class="field">
-                    <label for="prompt">Description du Business</label>
-                    <textarea id="prompt" name="prompt" placeholder="ex: Nous sommes un salon de coiffure, nos coupes coûtent 5000 FCFA..." required></textarea>
-                </div>
-                
-                <button type="submit" class="btn-submit">
-                    Créer mon bot →
-                </button>
-            </form>
-
-            {% if error %}
-            <div class="error-msg">{{ error }}</div>
-            {% endif %}
-
-            <div class="form-footer">
-                Déjà un compte ? <a href="{{ url_for('dashboard.login') }}">Connectez-vous</a><br>
-                En vous inscrivant, vous acceptez nos <a href="#">CGU</a>.
-            </div>
-
-        </div>
-
+<div class="wizard-container">
+    <div class="header">
+        <h1>Créez votre Bot Vira</h1>
+        <p id="step-desc">Étape 1 : Informations de connexion</p>
     </div>
 
-    <!-- Fichier JS externe (créé séparément) -->
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <div class="progress-wrapper">
+        <div class="progress-line"></div>
+        <div class="progress-line-fill" id="progress-fill"></div>
+        <div class="step-dot active" data-step="1"><i class="fas fa-user"></i></div>
+        <div class="step-dot" data-step="2"><i class="fas fa-store"></i></div>
+        <div class="step-dot" data-step="3"><i class="fas fa-robot"></i></div>
+        <div class="step-dot" data-step="4"><i class="fas fa-check"></i></div>
+    </div>
+
+    <!-- Étape 1 : Compte -->
+    <div class="step-content active" id="step-1">
+        <div class="grid-2">
+            <div class="input-group">
+                <label>Nom complet (Gérant)</label>
+                <input type="text" id="owner_name" placeholder="Ex: Jean Dupont">
+            </div>
+            <div class="input-group">
+                <label>Votre téléphone</label>
+                <input type="text" id="owner_phone" placeholder="+228 90 00 00 00">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Adresse Email</label>
+            <input type="email" id="email" placeholder="contact@entreprise.com">
+        </div>
+        <div class="input-group">
+            <label>Mot de passe</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <div class="input-group">
+            <label>Numéro WhatsApp dédié au Bot</label>
+            <input type="text" id="bot_phone" placeholder="+228 99 00 00 00">
+            <span style="font-size:11px; color:var(--muted); margin-top:4px; display:block;">C'est le numéro que vos clients contacteront.</span>
+        </div>
+    </div>
+
+    <!-- Étape 2 : Identité -->
+    <div class="step-content" id="step-2">
+        <div class="input-group">
+            <label>Nom de l'entreprise</label>
+            <input type="text" id="biz_name" placeholder="Ex: Restaurant Chez Kofi">
+        </div>
+        
+        <div class="grid-2">
+            <div class="input-group">
+                <label>Type d'activité</label>
+                <select id="biz_type">
+                    <option value="Restaurant / Fast-Food">Restaurant / Fast-Food</option>
+                    <option value="Boutique / E-commerce">Boutique / E-commerce</option>
+                    <option value="Salon de Beauté / Coiffure">Salon de Beauté / Coiffure</option>
+                    <option value="Services">Services (Plombier, etc.)</option>
+                    <option value="Clinique / Santé">Clinique / Santé</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Devise</label>
+                <select id="devise">
+                    <option value="FCFA">FCFA</option>
+                    <option value="EUR">Euro (€)</option>
+                    <option value="USD">Dollar ($)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>Ville & Pays</label>
+            <input type="text" id="location" placeholder="Ex: Lomé, Togo">
+        </div>
+    </div>
+
+    <!-- Étape 3 : Configuration Bot -->
+    <div class="step-content" id="step-3">
+        <div class="input-group">
+            <label>Que voulez-vous que votre bot fasse ? (Multi-choix)</label>
+            <div class="options-grid">
+                <label class="option-card">
+                    <input type="checkbox" name="tasks" value="Prendre des commandes et vendre des produits" checked>
+                    <i class="fas fa-shopping-cart" style="color:var(--brand)"></i> Vendre / Commander
+                </label>
+                <label class="option-card">
+                    <input type="checkbox" name="tasks" value="Gérer des réservations et des rendez-vous">
+                    <i class="fas fa-calendar-alt" style="color:var(--brand)"></i> Réservations
+                </label>
+                <label class="option-card">
+                    <input type="checkbox" name="tasks" value="Répondre aux questions fréquentes (FAQ)" checked>
+                    <i class="fas fa-question-circle" style="color:var(--brand)"></i> Support / FAQ
+                </label>
+                <label class="option-card">
+                    <input type="checkbox" name="tasks" value="Proposer des promotions et relancer les clients">
+                    <i class="fas fa-bullhorn" style="color:var(--brand)"></i> Promotions
+                </label>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Ton de la conversation</label>
+            <div class="options-grid">
+                <label class="option-card selected">
+                    <input type="radio" name="tone" value="Amical, accueillant et tutoiement si possible" checked>
+                    Amical & Chaleureux
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="tone" value="Formel, très professionnel et vouvoiement">
+                    Formel & Pro
+                </label>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Informations importantes pour l'IA (Horaires, règles, spécificités)</label>
+            <textarea id="biz_info" rows="3" placeholder="Ex: Ouvert de 8h à 22h. Livraison 1000F. Nous n'acceptons que les paiements à la livraison ou TMoney."></textarea>
+        </div>
+    </div>
+
+    <!-- Étape 4 : Aperçu -->
+    <div class="step-content" id="step-4">
+        <div style="text-align:center; margin-bottom:20px;">
+            <i class="fas fa-magic" style="font-size:30px; color:var(--brand); margin-bottom:10px;"></i>
+            <h3 style="margin:0;">Votre bot est généré !</h3>
+            <p style="color:var(--muted); font-size:13px; margin-top:5px;">Voici un aperçu de comment votre Assistant IA s'adressera à vos clients.</p>
+        </div>
+
+        <div class="preview-box clearfix">
+            <div class="chat-bubble client">Bonjour</div>
+            <div class="chat-bubble bot" id="preview-text">
+                <!-- Dynamique -->
+            </div>
+        </div>
+        
+        <p id="error-alert" class="error-msg"></p>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-outline" id="btn-prev" style="display:none;" onclick="prevStep()">Retour</button>
+        <button class="btn btn-primary" id="btn-next" onclick="nextStep()" style="margin-left:auto;">Continuer <i class="fas fa-arrow-right" style="margin-left:6px;"></i></button>
+        <button class="btn btn-primary" id="btn-submit" style="display:none; margin-left:auto;" onclick="submitForm()">Soumettre ma demande</button>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    const totalSteps = 4;
+    
+    // UI Interactions for options
+    document.querySelectorAll('.option-card input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', function() {
+            if(this.checked) this.parentElement.classList.add('selected');
+            else this.parentElement.classList.remove('selected');
+        });
+    });
+
+    document.querySelectorAll('.option-card input[type="radio"]').forEach(input => {
+        input.addEventListener('change', function() {
+            document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => {
+                r.parentElement.classList.remove('selected');
+            });
+            if(this.checked) this.parentElement.classList.add('selected');
+        });
+    });
+
+    function updateProgress() {
+        const fill = document.getElementById('progress-fill');
+        const percentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+        fill.style.width = percentage + '%';
+
+        document.querySelectorAll('.step-dot').forEach((dot, index) => {
+            const stepNum = index + 1;
+            dot.classList.remove('active', 'completed');
+            if (stepNum < currentStep) {
+                dot.classList.add('completed');
+                dot.innerHTML = '<i class="fas fa-check"></i>';
+            } else if (stepNum === currentStep) {
+                dot.classList.add('active');
+                const icons = ['fa-user', 'fa-store', 'fa-robot', 'fa-check'];
+                dot.innerHTML = `<i class="fas ${icons[index]}"></i>`;
+            } else {
+                const icons = ['fa-user', 'fa-store', 'fa-robot', 'fa-check'];
+                dot.innerHTML = `<i class="fas ${icons[index]}"></i>`;
+            }
+        });
+        
+        const descs = [
+            "Étape 1 : Informations de connexion",
+            "Étape 2 : Identité du Business",
+            "Étape 3 : Configuration de l'Intelligence Artificielle",
+            "Étape 4 : Aperçu & Lancement"
+        ];
+        document.getElementById('step-desc').innerText = descs[currentStep-1];
+    }
+
+    function validateStep(step) {
+        if (step === 1) {
+            if(!document.getElementById('owner_name').value) return false;
+            if(!document.getElementById('email').value) return false;
+            if(!document.getElementById('password').value) return false;
+            if(!document.getElementById('owner_phone').value) return false;
+            if(!document.getElementById('bot_phone').value) return false;
+        } else if (step === 2) {
+            if(!document.getElementById('biz_name').value) return false;
+            if(!document.getElementById('location').value) return false;
+        }
+        return true;
+    }
+
+    function generatePreview() {
+        const name = document.getElementById('biz_name').value || "Votre entreprise";
+        const isFormal = document.querySelector('input[name="tone"]:checked').value.includes('Formel');
+        
+        let msg = "";
+        if(isFormal) {
+            msg = `Bonjour ! Bienvenue chez ${name}. Je suis l'assistant virtuel de l'établissement, disponible à toute heure. Que puis-je faire pour vous aujourd'hui ?`;
+        } else {
+            msg = `Salut ! 👋 Bienvenue chez ${name}. Je suis l'assistant virtuel, là pour t'aider 24h/24. Comment je peux t'aider ? Commande, réservation, infos ?`;
+        }
+        document.getElementById('preview-text').innerText = msg;
+    }
+
+    function showStep(step) {
+        document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('step-' + step).classList.add('active');
+        
+        document.getElementById('btn-prev').style.display = step > 1 ? 'block' : 'none';
+        
+        if (step === totalSteps) {
+            document.getElementById('btn-next').style.display = 'none';
+            document.getElementById('btn-submit').style.display = 'block';
+            generatePreview();
+        } else {
+            document.getElementById('btn-next').style.display = 'block';
+            document.getElementById('btn-submit').style.display = 'none';
+        }
+        
+        updateProgress();
+    }
+
+    function nextStep() {
+        if(!validateStep(currentStep)) {
+            alert("Veuillez remplir tous les champs obligatoires avant de continuer.");
+            return;
+        }
+        if (currentStep < totalSteps) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    }
+
+    function prevStep() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    }
+
+    async function submitForm() {
+        const btn = document.getElementById('btn-submit');
+        const err = document.getElementById('error-alert');
+        err.style.display = 'none';
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Configuration...';
+        btn.disabled = true;
+
+        // Collect tasks
+        const tasks = [];
+        document.querySelectorAll('input[name="tasks"]:checked').forEach(el => tasks.push(el.value));
+
+        const payload = {
+            owner_name: document.getElementById('owner_name').value,
+            owner_phone: document.getElementById('owner_phone').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            requested_bot_phone: document.getElementById('bot_phone').value,
+            
+            nom: document.getElementById('biz_name').value,
+            business_type: document.getElementById('biz_type').value,
+            devise: document.getElementById('devise').value,
+            ville: document.getElementById('location').value,
+            
+            bot_tasks: tasks,
+            tone: document.querySelector('input[name="tone"]:checked').value,
+            business_info: document.getElementById('biz_info').value
+        };
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            
+            if(data.success) {
+                document.querySelector('.wizard-container').innerHTML = `
+                    <div style="text-align:center; padding: 40px 20px; animation: fadeIn 0.5s ease;">
+                        <i class="fas fa-check-circle" style="font-size:60px; color:var(--success); margin-bottom:20px;"></i>
+                        <h2 style="margin:0 0 15px 0; color:var(--text);">Demande soumise !</h2>
+                        <p style="color:var(--muted); line-height:1.6; font-size:15px; margin-bottom:30px;">
+                            Votre bot a été généré et votre demande est en cours d'analyse.<br>
+                            Vous pourrez vous connecter dès que l'administrateur aura validé votre accès.
+                        </p>
+                        <a href="/login" class="btn btn-primary" style="text-decoration:none; display:inline-block;">Retour à la connexion</a>
+                    </div>
+                `;
+            } else {
+                err.innerText = data.error || "Erreur lors de l'inscription.";
+                err.style.display = 'block';
+                btn.innerHTML = 'Soumettre ma demande';
+                btn.disabled = false;
+            }
+        } catch(e) {
+            err.innerText = "Erreur de connexion au serveur.";
+            err.style.display = 'block';
+            btn.innerHTML = 'Soumettre ma demande';
+            btn.disabled = false;
+        }
+    }
+
+</script>
+
 </body>
 </html>

@@ -81,7 +81,8 @@ def create_business_registration(
     owner_phone: str,
     requested_bot_phone: str,
     business_type: str,
-    devise: str
+    devise: str,
+    prompt: str = ""
 ) -> None:
     """Création d'un nouveau compte en attente de validation via l'application mobile."""
     conn = sqlite3.connect(get_db_path())
@@ -90,8 +91,8 @@ def create_business_registration(
     cursor.execute(
         """INSERT INTO businesses
            (id, email, password, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise, is_approved, is_active, plan_abonnement, prompt, msg_confirm, msg_cancel, msg_ready)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'BASIC', '', '', '', '')""",
-        (biz_id, email, password, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise),
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'BASIC', ?, '', '', '')""",
+        (biz_id, email, password, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise, prompt),
     )
     
     conn.commit()

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import os
+
+dart_code = """import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../repositories/auth_repository.dart';
@@ -319,11 +321,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 16),
                           const Text(
                             'Votre bot est généré !',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 20, fontWeight: bold),
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            "Voici un aperçu de comment votre Assistant IA s'adressera à vos clients.",
+                            'Voici un aperçu de comment votre Assistant IA s\\'adressera à vos clients.',
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
@@ -399,105 +401,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Widget _buildField({required TextEditingController controller, required String label, required IconData icon, TextInputType? keyboardType}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontWeight: FontWeight.w400),
-        prefixIcon: Icon(icon, color: colorScheme.onSurfaceVariant),
-        filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2.0),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       validator: (v) => v == null || v.trim().isEmpty ? 'Champ requis' : null,
     );
   }
 
   Widget _buildPasswordField({required TextEditingController controller, required String label}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       obscureText: !_isPasswordVisible,
-      style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontWeight: FontWeight.w400),
-        prefixIcon: Icon(Icons.lock_outline, color: colorScheme.onSurfaceVariant),
+        prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
-          icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility, color: colorScheme.onSurfaceVariant),
+          icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
           onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
-        filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2.0),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       validator: (v) => v == null || v.length < 6 ? 'Minimum 6 caractères' : null,
     );
   }
 
   Widget _buildDropdown({required String label, required IconData icon, required String value, required List<Map<String, String>> items, required ValueChanged<String?> onChanged}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return DropdownButtonFormField<String>(
-      isExpanded: true,
-      initialValue: value,
-      items: items.map((e) => DropdownMenuItem(
-        value: e['value'], 
-        child: Text(
-          e['label']!,
-          overflow: TextOverflow.ellipsis,
-        )
-      )).toList(),
+      value: value,
+      items: items.map((e) => DropdownMenuItem(value: e['value'], child: Text(e['label']!))).toList(),
       onChanged: onChanged,
-      style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontWeight: FontWeight.w400),
-        prefixIcon: Icon(icon, color: colorScheme.onSurfaceVariant),
-        filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2.0),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -512,17 +456,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         borderRadius: BorderRadius.circular(12),
         color: isChecked ? colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: CheckboxListTile(
-          title: Text(task, style: const TextStyle(fontSize: 14)),
-          secondary: Icon(icon, color: isChecked ? colorScheme.primary : null),
-          value: isChecked,
-          onChanged: (v) => _onTaskChanged(task, v!),
-          activeColor: colorScheme.primary,
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        ),
+      child: CheckboxListTile(
+        title: Text(task, style: const TextStyle(fontSize: 14)),
+        secondary: Icon(icon, color: isChecked ? colorScheme.primary : null),
+        value: isChecked,
+        onChanged: (v) => _onTaskChanged(task, v!),
+        activeColor: colorScheme.primary,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       ),
     );
   }
@@ -537,32 +478,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         borderRadius: BorderRadius.circular(12),
         color: isSelected ? colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _selectedTone = value),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: RadioListTile<String>(
+        title: Text(title, style: const TextStyle(fontSize: 14)),
+        value: value,
+        groupValue: _selectedTone,
+        onChanged: (v) => setState(() => _selectedTone = v!),
+        activeColor: colorScheme.primary,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       ),
     );
   }
 }
+"""
+
+flutter_screen_path = r'c:\Users\moign\Daily Projekt\Whatsapp_Bot_Pro\Nuru\mybot_mobile\lib\screens\auth\register_screen.dart'
+
+with open(flutter_screen_path, 'w', encoding='utf-8') as f:
+    f.write(dart_code)
+
+print("register_screen.dart written with Stepper implementation.")

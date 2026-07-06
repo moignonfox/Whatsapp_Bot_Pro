@@ -72,58 +72,65 @@ def logout():
 
 @dashboard_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """Inscription autonome d'un nouveau partenaire business."""
+    """Inscription autonome d'un nouveau partenaire business (Wizard Onboarding)."""
     if request.method == 'POST':
-        nom = request.form.get('nom')
-        email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password')
-        owner_phone = request.form.get('owner_phone')
-        prompt = request.form.get('prompt')
+        # On peut recevoir du JSON (API/Ajax via fetch dans le JS du Wizard) ou du Form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            if hasattr(request, 'form') and 'bot_tasks[]' in request.form:
+                data['bot_tasks'] = request.form.getlist('bot_tasks[]')
+            elif 'bot_tasks' in data and isinstance(data['bot_tasks'], str):
+                data['bot_tasks'] = [data['bot_tasks']]
+                
+        nom = data.get('nom')
+        email = data.get('email', '').strip().lower()
+        password = data.get('password')
+        owner_name = data.get('owner_name')
+        owner_phone = data.get('owner_phone')
+        business_type = data.get('business_type')
+        devise = data.get('devise', 'FCFA')
+        requested_bot_phone = data.get('requested_bot_phone')
+        
+        ville = data.get('ville')
+        bot_tasks = data.get('bot_tasks', [])
+        tone = data.get('tone')
+        business_info = data.get('business_info')
 
-        if not (nom and email and password and owner_phone and prompt):
+        if not (nom and email and password and owner_name and owner_phone and business_type and ville and tone):
+            if request.is_json: return jsonify({"success": False, "error": "Champs manquants."})
             return render_template('auth/register.html', error="Veuillez remplir tous les champs.")
 
-        # Vérifier si l'email existe déjà
-        existing_email = business_repo.get_by_email(email)
-        if existing_email:
-            return render_template('auth/register.html', error="Un compte avec cet email existe déjà.")
+        if business_repo.get_by_email(email):
+            if request.is_json: return jsonify({"success": False, "error": "Email dǸj utilisǸ."})
+            return render_template('auth/register.html', error="Cet email est dǸj utilisǸ.")
 
-        # Création du biz_id: suite de chiffres auto-générée (ex: 8 chiffres aléatoires)
-        import random
-        while True:
-            biz_id = str(random.randint(10000000, 99999999))
-            existing_id = business_repo.get_by_id(biz_id)
-            if not existing_id:
-                break
-
-        hashed_pw = generate_password_hash(password)
+        import uuid
+        biz_id = str(uuid.uuid4())
+        hashed = generate_password_hash(password)
         
-        # M-6 : Compte créé inactif (is_active=0) — doit être validé par le Master
-        business_repo.add_or_update(
-            biz_id=biz_id,
-            nom=nom,
-            phone_id="",
-            token="",
-            password=hashed_pw,
-            prompt=prompt,
-            msg_confirm="Votre demande est confirmée !",
-            msg_cancel="Désolé, nous ne pouvons pas confirmer...",
-            msg_ready="C'est prêt !",
-            business_type='restaurant',
-            plan_abonnement='BASIC',
-            is_active=0,
-            owner_phone=owner_phone,
-            email=email
+        # Generation du prompt
+        from app.services.ai_service import generate_bot_prompt_from_answers
+        generated_prompt = generate_bot_prompt_from_answers(
+            nom.strip(), business_type.strip(), ville.strip(), bot_tasks, tone.strip(), business_info.strip() if business_info else ""
+        )
+
+        business_repo.create_business_registration(
+            biz_id, email, hashed, nom, owner_name, owner_phone, requested_bot_phone, business_type, devise, prompt=generated_prompt
         )
         
+        # M-14 Notification au Master
         try:
             from app.services.notification_master_service import create_master_notification
-            create_master_notification('inscription', 'Nouvelle inscription', f'Nouveau business (Web) : {nom}', biz_id)
+            create_master_notification('inscription', 'Nouvelle Inscription Web', f"Nouveau Business (Web) : {nom}", biz_id)
         except Exception as e:
-            pass
-            
-        session['user_id'] = biz_id
-        return redirect(url_for('dashboard.pending', biz_id=biz_id))
+            import logging
+            logging.getLogger(__name__).error(f"Failed to notify master: {e}")
+        
+        if request.is_json:
+            return jsonify({'success': True, 'message': 'Inscription rǸussie.'})
+        return redirect(url_for('dashboard.login'))
 
     return render_template('auth/register.html')
 
