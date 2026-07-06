@@ -213,7 +213,12 @@
                             <div class="client-info">
                                 <div class="avatar">{{ c.client_name[:1]|upper }}</div>
                                 <div>
-                                    <div class="client-name">{{ c.client_name }}</div>
+                                    <div class="client-name" style="display:flex; flex-direction:column;">
+                                        <span style="font-weight:600; color:var(--text);">{{ c.client_display_name or c.client_real_name or c.client_name }}</span>
+                                        {% if c.client_display_name and c.client_real_name and c.client_display_name != c.client_real_name %}
+                                        <span style="font-size:11px; font-weight:400; color:var(--muted); margin-top:2px;">{{ c.client_real_name }}</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="client-phone">{{ c.wa_id }}</div>
                                 </div>
                             </div>
@@ -232,9 +237,14 @@
                             <div style="color: var(--muted); font-size: 13.5px;">{{ c.last_timestamp }}</div>
                         </td>
                         <td>
-                            <a href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ c.wa_id }}" class="btn-chat">
-                                <i class="fas fa-comment-dots"></i> Chatter
-                            </a>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="openEditClientModal('{{ c.wa_id }}', '{{ c.client_display_name or '' }}', '{{ c.client_real_name or '' }}')" class="btn-chat" style="background:var(--surface); color:var(--text); border:1px solid var(--border);">
+                                    <i class="fas fa-pen"></i> Modifier
+                                </button>
+                                <a href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ c.wa_id }}" class="btn-chat">
+                                    <i class="fas fa-comment-dots"></i> Chatter
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -270,5 +280,69 @@
 </script>
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+<!-- Modal Edition Client -->
+<div id="editClientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
+    <div style="background:var(--surface); width:400px; max-width:90%; border-radius:16px; padding:24px; box-shadow:var(--shadow);">
+        <h3 style="margin-top:0; color:var(--text); margin-bottom:16px;">Modifier le profil client</h3>
+        
+        <input type="hidden" id="edit-wa-id">
+        
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">Nom d'usage / Surnom (Display Name)</label>
+            <input type="text" id="edit-display-name" style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:inherit;">
+            <p style="font-size:11px; color:var(--muted); margin-top:4px;">Ce nom sera utilisé par le bot (campagnes, chat).</p>
+        </div>
+        
+        <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">Nom complet / Légal</label>
+            <input type="text" id="edit-real-name" style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:inherit;">
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <button onclick="closeEditClientModal()" style="padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); cursor:pointer;">Annuler</button>
+            <button onclick="saveClientProfile()" style="padding:10px 16px; border-radius:8px; border:none; background:var(--green); color:#fff; font-weight:600; cursor:pointer;">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditClientModal(waId, displayName, realName) {
+        document.getElementById('edit-wa-id').value = waId;
+        document.getElementById('edit-display-name').value = displayName;
+        document.getElementById('edit-real-name').value = realName;
+        document.getElementById('editClientModal').style.display = 'flex';
+    }
+    
+    function closeEditClientModal() {
+        document.getElementById('editClientModal').style.display = 'none';
+    }
+    
+    async function saveClientProfile() {
+        const waId = document.getElementById('edit-wa-id').value;
+        const disp = document.getElementById('edit-display-name').value;
+        const real = document.getElementById('edit-real-name').value;
+        
+        try {
+            const res = await fetch(`/admin/{{ biz_id }}/chat/${waId}/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ display_name: disp, nom: real })
+            });
+            const data = await res.json();
+            if(data.success) {
+                window.location.reload();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        } catch(e) {
+            alert("Erreur réseau");
+        }
+    }
+</script>
+
 </body>
 </html>

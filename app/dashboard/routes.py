@@ -589,7 +589,7 @@ def add_catalog_product(biz_id):
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
-@dashboard_bp.route('/admin/<biz_id>/catalog/toggle/<int:product_id>', methods=['POST'])
+@dashboard_bp.route('/admin/<biz_id>/catalog/toggle/<int:product_id>', methods=['GET', 'POST'])
 def toggle_catalog_product(biz_id, product_id):
     """API: Activer/Désactiver un produit pour le bot."""
     if 'user_id' not in session or session['user_id'] != biz_id:
@@ -599,7 +599,7 @@ def toggle_catalog_product(biz_id, product_id):
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
-@dashboard_bp.route('/admin/<biz_id>/catalog/toggle_visibility/<int:product_id>', methods=['POST'])
+@dashboard_bp.route('/admin/<biz_id>/catalog/toggle_visibility/<int:product_id>', methods=['GET', 'POST'])
 def toggle_catalog_visibility(biz_id, product_id):
     """API: Activer/Désactiver un produit sur la vitrine web."""
     if 'user_id' not in session or session['user_id'] != biz_id:

@@ -13,7 +13,39 @@
         if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', t);
       })();
-    </script>
+    
+    function openEditClientModal() {
+        document.getElementById('editClientModal').style.display = 'flex';
+    }
+    function closeEditClientModal() {
+        document.getElementById('editClientModal').style.display = 'none';
+    }
+    async function saveClientProfile() {
+        const disp = document.getElementById('edit-display-name').value;
+        const real = document.getElementById('edit-real-name').value;
+        
+        try {
+            const res = await fetch(`/admin/{{ biz_id }}/chat/${currentWaId}/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ display_name: disp, nom: real })
+            });
+            const data = await res.json();
+            if(data.success) {
+                closeEditClientModal();
+                // Reload client info softly by triggering loadConversation again
+                loadConversation(currentWaId);
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        } catch(e) {
+            alert("Erreur réseau");
+        }
+    }
+</script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <style>
@@ -427,7 +459,12 @@
                 <div class="conv-item-avatar"><i class="fas fa-user"></i></div>
                 <div class="conv-item-info">
                     <div class="conv-item-top">
-                        <span class="conv-item-name">{{ conv.client_name }}</span>
+                        <div class="conv-item-name" style="display:flex; flex-direction:column; line-height:1.2;">
+                              <span style="font-weight:600; color:var(--text);">{{ conv.client_display_name or conv.client_real_name or conv.client_name }}</span>
+                              {% if conv.client_display_name and conv.client_real_name and conv.client_display_name != conv.client_real_name %}
+                              <span style="font-size:11px; font-weight:400; color:var(--muted); margin-top:2px;">{{ conv.client_real_name }}</span>
+                              {% endif %}
+                          </div>
                         <div style="display:flex;align-items:center;gap:6px;">
                             {% if unread_counts and unread_counts.get(conv.wa_id) %}
                             <span style="font-size:10px;background:#F85149;color:#fff;padding:1px 6px;border-radius:10px;font-weight:700;">{{ unread_counts.get(conv.wa_id) }}</span>
@@ -896,6 +933,31 @@
 </script>
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+
+<!-- Modal Edition Client -->
+<div id="editClientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
+    <div style="background:var(--surface); width:400px; max-width:90%; border-radius:16px; padding:24px; box-shadow:var(--shadow);">
+        <h3 style="margin-top:0; color:var(--text); margin-bottom:16px;">Modifier le profil client</h3>
+        
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">Nom d'usage / Surnom (Display Name)</label>
+            <input type="text" id="edit-display-name" style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:inherit;">
+            <p style="font-size:11px; color:var(--muted); margin-top:4px;">C'est ce nom que le bot utilisera dans les campagnes et l'affichage principal.</p>
+        </div>
+        
+        <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">Nom complet / Légal</label>
+            <input type="text" id="edit-real-name" style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:inherit;">
+            <p style="font-size:11px; color:var(--muted); margin-top:4px;">Le nom officiel pour la facturation ou la référence.</p>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <button onclick="closeEditClientModal()" style="padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); cursor:pointer;">Annuler</button>
+            <button onclick="saveClientProfile()" style="padding:10px 16px; border-radius:8px; border:none; background:var(--green); color:#fff; font-weight:600; cursor:pointer;">Enregistrer</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
