@@ -20,12 +20,9 @@ def add_product(biz_id: str, nom: str, prix: int, description: str = "", categor
     )
     conn.commit()
     conn.close()
-    get_by_business.cache_clear()
+    
 
 
-from functools import lru_cache
-
-@lru_cache(maxsize=100)
 def get_by_business(biz_id: str, only_available: bool = False) -> List[dict]:
     """Récupère le catalogue d'un business (caché en mémoire pour réduire les requêtes)."""
     conn = sqlite3.connect(get_db_path())
@@ -49,8 +46,7 @@ def delete_product(product_id: int, business_id: str) -> None:
     cursor.execute("DELETE FROM products WHERE id = ? AND business_id = ?", (product_id, business_id))
     conn.commit()
     conn.close()
-    get_by_business.cache_clear()
-
+    
 
 def toggle_availability(product_id: int, business_id: str) -> None:
     """Active ou désactive un produit en vérifiant qu'il appartient au business."""
@@ -62,8 +58,7 @@ def toggle_availability(product_id: int, business_id: str) -> None:
     )
     conn.commit()
     conn.close()
-    get_by_business.cache_clear()
-
+    
 
 def toggle_visibility(product_id: int, business_id: str) -> None:
     """Active ou désactive la visibilité d'un produit sur la vitrine web."""
@@ -75,8 +70,7 @@ def toggle_visibility(product_id: int, business_id: str) -> None:
     )
     conn.commit()
     conn.close()
-    get_by_business.cache_clear()
-
+    
 
 def update_product(product_id: int, business_id: str, nom: str, prix: int, description: str = "", categorie: str = "Général", image_url: str = None, is_visible: int = 1, duree_minutes: int = 30) -> None:
     """Met à jour un produit existant."""
@@ -95,4 +89,4 @@ def update_product(product_id: int, business_id: str, nom: str, prix: int, descr
         )
     conn.commit()
     conn.close()
-    get_by_business.cache_clear()
+    
