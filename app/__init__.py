@@ -1,5 +1,6 @@
 """Factory Pattern — Création et configuration de l'application Flask."""
 import os
+import logging
 from flask import Flask, request
 from flask_socketio import SocketIO
 from flask_wtf.csrf import CSRFProtect
@@ -48,27 +49,53 @@ def create_app(config_name=None):
     init_firebase()
 
     # Protection CSRF (flask-wtf)
-    # WTF_CSRF_CHECK_DEFAULT doit être défini AVANT init_app()
     app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24h au lieu de 1h
     csrf.init_app(app)
 
-    # Injection de csrf_token dans tous les templates via context_processor
-    # (méthode fiable indépendante de l'ordre d'initialisation Jinja2)
+    # Injection de csrf_token dans tous les templates
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
         return dict(csrf_token=generate_csrf)
 
-    # Rate limiter (M-1 : protection brute force)
+    # Rate limiter
     limiter.init_app(app)
 
     # Initialisation JWT
     jwt.init_app(app)
 
-    # Initialisation CORS (autoriser seulement /api/*)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    # ------------------------------------------------------------------ #
+    # Blocklist JWT — vérification à chaque requête protégée              #
+    # ------------------------------------------------------------------ #
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        """Retourne True si le token a été révoqué (logout)."""
+        import sqlite3
+        from app.models.schema import get_db_path
+        jti = jwt_payload.get('jti')
+        if not jti:
+            return False
+        try:
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM jwt_blocklist WHERE jti = ?", (jti,))
+            row = cursor.fetchone()
+            conn.close()
+            return row is not None
+        except Exception:
+            return False
 
-    # Gestionnaire d'erreurs global pour l'API (pour toujours renvoyer du JSON au lieu du HTML)
+    # ------------------------------------------------------------------ #
+    # CORS — origines restreintes (pas de wildcard en API REST)           #
+    # ------------------------------------------------------------------ #
+    raw_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000')
+    allowed_api_origins = [o.strip() for o in raw_origins.split(',')]
+    cors.init_app(app, resources={r"/api/*": {"origins": allowed_api_origins}})
+
+    # ------------------------------------------------------------------ #
+    # Handlers d'erreurs globaux (JSON propre, sans stack trace)          #
+    # ------------------------------------------------------------------ #
     @app.errorhandler(400)
     def bad_request(e):
         if request.path.startswith('/api/'):
@@ -104,61 +131,124 @@ def create_app(config_name=None):
             return jsonify(error="Erreur interne du serveur"), 500
         return e
 
-    # Origines autorisées pour SocketIO
-    # En dev : accepter localhost ET 127.0.0.1 (le navigateur peut utiliser l'un ou l'autre)
-    # En prod : définir ALLOWED_ORIGINS dans le .env (séparées par des virgules)
-    env_origins = os.environ.get('ALLOWED_ORIGINS', '')
-    if env_origins:
-        allowed_origins = [o.strip() for o in env_origins.split(',')]
-    else:
-        port = os.environ.get('PORT', '5000')
-        allowed_origins = [
-            f'http://localhost:{port}',
-            f'http://127.0.0.1:{port}',
-        ]
-
-    # Initialisation de SocketIO
+    # ------------------------------------------------------------------ #
+    # SocketIO — cors_allowed_origins="*" requis pour mobile natif        #
+    # (les apps mobiles n'ont pas d'origine HTTP fixe).                   #
+    # Pour un dashboard web, ajouter son domaine dans allowed_api_origins #
+    # ------------------------------------------------------------------ #
     socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet')
+
+    # ------------------------------------------------------------------ #
+    # Tâche planifiée — nettoyage périodique de la blocklist JWT          #
+    # ------------------------------------------------------------------ #
+    def _cleanup_jwt_blocklist():
+        """Supprime les tokens révoqués dont la date d'expiration est passée."""
+        import sqlite3
+        from datetime import datetime, timezone
+        from app.models.schema import get_db_path
+        try:
+            now_ts = int(datetime.now(timezone.utc).timestamp())
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM jwt_blocklist WHERE expires_at < ?", (now_ts,))
+            deleted = cursor.rowcount
+            conn.commit()
+            conn.close()
+            if deleted:
+                logging.getLogger(__name__).info(
+                    "Blocklist cleanup: %d tokens expirés supprimés.", deleted
+                )
+        except Exception as exc:
+            logging.getLogger(__name__).error("Blocklist cleanup error: %s", exc)
+
+    def _cleanup_webhook_seen_ids():
+        """Supprime les wam_id vieux de plus de 24h (anti-rejeu)."""
+        import sqlite3
+        from app.models.schema import get_db_path
+        try:
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM webhook_seen_ids WHERE seen_at < datetime('now', '-24 hours')"
+            )
+            conn.commit()
+            conn.close()
+        except Exception as exc:
+            logging.getLogger(__name__).error("Webhook seen_ids cleanup error: %s", exc)
+
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(_cleanup_jwt_blocklist, 'interval', hours=1, id='jwt_blocklist_cleanup')
+        scheduler.add_job(_cleanup_webhook_seen_ids, 'interval', hours=1, id='webhook_seen_ids_cleanup')
+        scheduler.start()
+    except Exception as sched_err:
+        logging.getLogger(__name__).warning("Scheduler non démarré : %s", sched_err)
+
+
+    from flask_wtf.csrf import CSRFError
+    from flask import jsonify, render_template
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        # Si c'est une requête API
+        if request.path.startswith('/api/'):
+            return jsonify({'success': False, 'error': "Session expirée. Veuillez recharger la page."}), 400
+            
+        # Si c'est sur la page d'authentification
+        if '/forgot-password' in request.path:
+            return render_template('auth/forgot_password.html', error="Votre session a expiré pour des raisons de sécurité. Veuillez soumettre à nouveau le formulaire.")
+        elif '/login' in request.path:
+            return render_template('auth/login.html', error="Votre session a expiré pour des raisons de sécurité. Veuillez vous reconnecter.")
+        elif '/register' in request.path:
+            return render_template('auth/register.html', error="Votre session a expiré pour des raisons de sécurité. Veuillez recommencer l'inscription.")
+            
+        # Par défaut
+        return "Erreur de sécurité (CSRF Expired). Veuillez revenir en arrière et rafraîchir la page.", 400
 
     # Enregistrement des Blueprints
     from app.webhooks.routes import webhooks_bp
+    from app.webhooks.cinetpay import cinetpay_bp
     from app.dashboard.routes import dashboard_bp
     from app.master.routes import master_bp
+    from app.master.master_notifications import master_notifications_bp
     from app.api import api_bp
 
     app.register_blueprint(webhooks_bp)
+    app.register_blueprint(cinetpay_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(master_bp)
+    app.register_blueprint(master_notifications_bp)
     app.register_blueprint(api_bp)
 
     # Exempter l'API de la protection CSRF de base (JWT est utilisé)
     csrf.exempt(api_bp)
 
-    # Exempter le webhook Meta de la protection CSRF
-    # (Meta envoie des requêtes POST sans token CSRF)
+    # Exempter les webhooks de la protection CSRF
     csrf.exempt(webhooks_bp)
+    csrf.exempt(cinetpay_bp)
 
-    # Handler SocketIO pour les rooms — vérifie que l'utilisateur est bien connecté (Session Web)
+    # ------------------------------------------------------------------ #
+    # Handler SocketIO — rooms Session Web (dashboard)                    #
+    # ------------------------------------------------------------------ #
     @socketio.on('rejoindre_room')
     def handle_join_room(data):
         from flask import session
         from flask_socketio import join_room
-        # Refuser si la session ne contient pas d'utilisateur authentifié
         user_id = session.get('user_id') or session.get('is_master')
         if not user_id:
-            return  # Connexion refusée silencieusement
+            return
         room = data.get('room')
-        # Un business ne peut rejoindre QUE sa propre room
         if room and (room == session.get('user_id') or session.get('is_master')):
             join_room(room)
 
-    # Handler SocketIO pour les apps mobiles (via JWT)
+    # ------------------------------------------------------------------ #
+    # Handler SocketIO — authentification JWT (app mobile)                #
+    # ------------------------------------------------------------------ #
     @socketio.on('authenticate_jwt')
     def handle_authenticate_jwt(data):
-        print("Reçu demande authenticate_jwt")
         token = data.get('token')
         if not token:
-            print("Erreur: pas de token")
             return
         from flask_jwt_extended import decode_token
         from flask_socketio import join_room
@@ -167,8 +257,7 @@ def create_app(config_name=None):
             company_id = decoded['sub']
             if company_id:
                 join_room(company_id)
-                print(f"✅ JWT Auth réussi ! A rejoint la room : {company_id}")
         except Exception as e:
-            print(f"❌ Erreur JWT Auth : {e}")
+            logging.getLogger(__name__).warning("SocketIO JWT Auth échoué : %s", e)
 
     return app

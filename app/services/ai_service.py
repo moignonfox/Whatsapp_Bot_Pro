@@ -219,16 +219,30 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
                 "Génère un nouveau tag uniquement si le client demande explicitement à passer une NOUVELLE commande complètement différente.\n"
             )
 
-    # Récupérer le nom du client s'il est déjà connu
     client_name_str = ""
+    client_name = None
     try:
         from app.repositories import client_repo, tag_repo
         client_data = client_repo.get_or_create(biz_id, wa_id)
-        if client_data and dict(client_data).get('nom'):
-            client_name_str = f"- INFO: Le client s'appelle {client_data['nom']}. Utilise son nom pour t'adresser à lui et ne lui demande plus son nom.\n"
+        if client_data:
+            c_dict = dict(client_data)
+            nom = c_dict.get('nom')
+            display_name = c_dict.get('display_name')
+            # Determine which name to use
+            if display_name and not display_name.startswith('Client '):
+                client_name = display_name
+            elif nom and not nom.startswith('Client '):
+                client_name = nom
+            
+            if client_name:
+                client_name_str = f"- INFO: Le client s'appelle {client_name}. Utilise son nom pour t'adresser à lui et ne lui demande plus son nom.\n"
     except Exception as e:
         logger.error(f"[AI] Erreur récupération nom client: {e}")
 
+    # Demander le nom au bout de 2 échanges si on ne le connaît pas (et qu'on est dans un process de commande)
+    name_request_rule = ""
+    if not client_name and len(history) >= 4: # 2 échanges = 4 messages (2 user, 2 bot)
+        name_request_rule = "- IMPORTANT: Tu ne connais pas encore le nom du client. S'il initie une commande ou une réservation, demande-lui poliment son nom dans ta réponse (ex: 'Avec plaisir ! Comment puis-je vous appeler ?'). Ne demande pas le nom s'il pose juste une question d'information.\n"
 
     # Tags dynamiques
     tags_str = ""
@@ -241,8 +255,8 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
                 desc = tag.get('description', '')
                 if desc:
                     words = desc.split()
-                    if len(words) > 8:
-                        desc = " ".join(words[:8]) + "..."
+                    if len(words) > 3:
+                        desc = ' '.join(words[:3]) + '...'
                 tag_lines.append(f"{tag['name']} ({desc})" if desc else tag['name'])
             
             tags_str = (
@@ -307,8 +321,13 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         f"{calendar_str}"
         f"{pending_order_str}"
         f"{client_name_str}"
+        f"{name_request_rule}"
         f"{greeting_rule}"
-        "- Si tu ne connais pas le nom du client et qu'il te le donne, inclus le tag [CLIENT: Nom] dans ta réponse.\n"
+        "--- GESTION DES NOMS (IMPORTANT) ---\n"
+        "- À la première interaction où le client donne son nom (ex: 'Je m'appelle Kofi'), inclus le tag [CLIENT: Son Nom] dans ta réponse.\n"
+        "- Si le client demande à changer de nom d'usage ou de surnom (ex: 'Appelle-moi KK', 'Je préfère Boss'), inclus UNIQUEMENT le tag [DISPLAY_NAME: Nouveau Surnom].\n"
+        "- Si le client corrige une erreur sur son vrai nom légal (ex: 'Mon vrai nom c'est Koffi avec 2 f'), inclus le tag [NOM_CORRECTION: Vrai Nom].\n"
+        "--------------------------------------\n"
         "- Si le client passe une nouvelle commande/réservation, OU s'il ajoute/modifie une information (ex: l'heure, un article) à sa commande déjà en attente, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse pour mettre à jour la base de données : "
         "[RESERVATION: résumé de la réservation/commande | DATE: YYYY-MM-DD HH:MM:00 | EMPLOYEE_ID: id_employé | MONTANT: chiffre | PRIORITE: Normale/Haute | TAGS: Tag1, Tag2]\n"
         "- IMPORTANT : Si aucune date ou heure n'est précisée par le client (par exemple une commande pour tout de suite), tu dois mettre DATE: None\n"
@@ -547,32 +566,53 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         raise Exception(f"Les deux IA sont indisponibles. Dernière erreur: {e}")
 
 
-def generate_marketing_copy(instruction: str) -> str:
+def improve_marketing_message(message: str) -> str:
     """
-    Génère un texte promotionnel optimisé pour WhatsApp via l'IA.
-    L'instruction est ce que le gérant veut annoncer.
+    Améliore un brouillon de message marketing via Gemini, avec fallback Groq (Llama).
     """
-
-
-def generate_marketing_copy(instruction: str) -> str:
-    """Genere un texte promotionnel optimise pour WhatsApp via l'IA."""
     system_prompt = (
         "Tu es un expert en copywriting WhatsApp pour des commerces locaux.\n"
-        "Redige un message promotionnel accrocheur, court (max 4-5 phrases), percutant.\n"
-        "Utilise des emojis. Le message DOIT commencer par 'Bonjour {prenom}' "
-        "(la balise exacte {prenom} doit etre presente).\n"
-        "Pas d'objet de mail ni de salutations formelles a la fin."
+        "Améliore le brouillon de message promotionnel suivant.\n"
+        "Rends-le accrocheur, court (max 4-5 phrases), percutant, et ajoute des emojis pertinents.\n"
+        "Si le tag {prenom} est présent, conserve-le.\n"
+        "Ne renvoie QUE le message amélioré, sans introduction ni explications."
     )
+    
+    # 1. Tentative Gemini
     try:
-        if client:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=f"{system_prompt}\n\nVoici ce que je veux annoncer : {instruction}"
-            )
-            return response.text.strip()
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=f"{system_prompt}\n\nBrouillon :\n{message}"
+        )
+        reply = response.text.strip()
+        if reply:
+            return reply
     except Exception as e:
-        logger.warning('Erreur Gemini Marketing Copy: %s', e)
-        return f'Bonjour {{prenom}}, {instruction}'  # Fallback basique
+        logger.warning('Erreur Gemini Marketing Improve: %s', e)
 
-    return f'Bonjour {{prenom}}, {instruction}'
+    # 2. Fallback Groq
+    try:
+        groq_url = "https://api.groq.com/openai/v1/chat/completions"
+        groq_headers = {
+            "Authorization": f"Bearer {cfg.GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        groq_payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Brouillon :\n{message}"}
+            ],
+            "max_tokens": 1000,
+        }
+        groq_resp = requests.post(groq_url, json=groq_payload, headers=groq_headers)
+        groq_data = groq_resp.json()
+        if "choices" in groq_data:
+            reply = groq_data["choices"][0]["message"]["content"].strip()
+            if reply:
+                return reply
+    except Exception as e:
+        logger.error('Erreur Groq Marketing Improve: %s', e)
+        
+    raise Exception("Les services d'IA (Gemini et Groq) sont actuellement indisponibles. Vérifiez vos quotas API.")
 

@@ -6,12 +6,13 @@
 <title>{{ business.nom }} — Catalogue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
 <style>
 
 :root {
   {% if plan == 'BASIC' %}
-  --brand:      #5b6af0;
+  --brand:      {{ business.vitrine_color or '#5b6af0' }};
   {% else %}
   --brand:      {{ business.vitrine_color or '#5b6af0' }};
   {% endif %}
@@ -746,7 +747,7 @@ footer {
 <!-- FOOTER -->
 <footer>
   <span class="footer-copy">© 2025 Boutique · Lomé, Togo</span>
-  <a href="https://wa.me/22890000000" class="footer-wa">💬 Commander sur WhatsApp</a>
+  <a href="https://wa.me/{{ business.requested_bot_phone|replace('+', '') if business.requested_bot_phone else (business.owner_phone|replace('+', '') if business.owner_phone else '') }}" class="footer-wa">💬 Commander sur WhatsApp</a>
 </footer>
 
 {% if plan != 'BASIC' %}

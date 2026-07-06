@@ -283,14 +283,39 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                               validator: (v) => v == null || v.trim().isEmpty ? 'Champ requis' : null,
                             ),
                             const SizedBox(height: 12),
-                            _buildField(
-                              controller: _botPhoneController,
-                              label: 'Numéro WhatsApp du bot (optionnel)',
-                              icon: Icons.smart_toy_outlined,
-                              keyboardType: TextInputType.phone,
-                              colorScheme: colorScheme,
-                              isDark: isDark,
-                              validator: null,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildField(
+                                  controller: _botPhoneController,
+                                  label: 'Numéro WhatsApp du bot (Obligatoire)',
+                                  icon: Icons.smart_toy_outlined,
+                                  keyboardType: TextInputType.phone,
+                                  colorScheme: colorScheme,
+                                  isDark: isDark,
+                                  validator: (v) => v == null || v.trim().isEmpty ? 'Champ requis' : null,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8, left: 12),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(Icons.info_outline, size: 16, color: colorScheme.primary),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Ce numéro doit être un numéro vierge sans compte WhatsApp actif.',
+                                          style: TextStyle(
+                                            color: colorScheme.onSurfaceVariant,
+                                            fontSize: 12,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
 
                             const SizedBox(height: 32),

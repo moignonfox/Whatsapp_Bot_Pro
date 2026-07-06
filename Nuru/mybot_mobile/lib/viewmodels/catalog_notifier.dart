@@ -48,6 +48,32 @@ class CatalogNotifier extends AsyncNotifier<List<Product>> {
       throw Exception('Erreur de mise à jour: $e');
     }
   }
+
+  Future<void> toggleVisibility(int productId) async {
+    try {
+      final repo = ref.read(catalogRepositoryProvider);
+      
+      if (state.hasValue) {
+        final currentProducts = state.value!;
+        final newProducts = currentProducts.map((p) {
+          if (p.id == productId) {
+            return p.copyWith(isVisible: !p.isVisible);
+          }
+          return p;
+        }).toList();
+        state = AsyncValue.data(newProducts);
+      }
+
+      final success = await repo.toggleVisibility(productId);
+      if (!success) {
+        await fetchProducts();
+      }
+    } catch (e) {
+      await fetchProducts();
+      throw Exception('Erreur de visibilité: $e');
+    }
+  }
+
   Future<void> addProduct(Map<String, dynamic> data, {String? imagePath}) async {
     try {
       final repo = ref.read(catalogRepositoryProvider);

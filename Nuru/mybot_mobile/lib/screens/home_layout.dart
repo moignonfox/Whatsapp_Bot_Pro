@@ -31,8 +31,8 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
   }
 
   void _goBranch(int index, SubscriptionPlan plan) {
-    // index 3 = Money (PRO+)
-    if (index == 3 && !plan.isPro) {
+    // index 3 = Money (PREMIUM+)
+    if (index == 3 && !plan.isPremium) {
       _showUpgradeSnack(AppFeature.paiements, plan);
       return;
     }
@@ -92,7 +92,7 @@ class _HomeLayoutState extends ConsumerState<HomeLayout> {
         ? SubscriptionPlanExtension.fromString(profileState.value!.planAbonnement)
         : SubscriptionPlan.basic;
 
-    final bool moneyLocked = !plan.isPro;
+    final bool moneyLocked = !plan.isPremium;
 
     return Scaffold(
       body: widget.navigationShell,

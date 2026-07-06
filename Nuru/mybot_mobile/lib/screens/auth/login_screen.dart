@@ -140,7 +140,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Mot de passe oublié ?'),
+                              content: const Text('Pour réinitialiser votre mot de passe ou récupérer votre compte, veuillez contacter directement votre administrateur ou le support technique via le web.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
                         ),

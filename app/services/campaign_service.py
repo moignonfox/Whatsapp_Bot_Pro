@@ -62,7 +62,17 @@ def send_campaign(
 
     for i, client in enumerate(clients):
         wa_id = client.get('wa_id') or client.get('wa_id', '')
-        prenom = (client.get('nom') or wa_id).split()[0]
+        # Get names
+        display_name = client.get('display_name')
+        nom_legal = client.get('nom')
+        
+        # Priority: display_name -> nom_legal -> "cher client"
+        if display_name and not display_name.startswith('Client '):
+            prenom = display_name.split()[0]
+        elif nom_legal and not nom_legal.startswith('Client '):
+            prenom = nom_legal.split()[0]
+        else:
+            prenom = "cher client"
 
         # Personnalisation du message
         message = message_template.replace('{prenom}', prenom).replace('{wa_id}', wa_id)

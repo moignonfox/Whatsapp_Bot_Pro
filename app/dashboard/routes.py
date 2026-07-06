@@ -1,4 +1,4 @@
-"""Routes Dashboard — Interface de gestion pour les partenaires business."""
+"""Routes Dashboard â€” Interface de gestion pour les partenaires business."""
 from flask import Blueprint, request, render_template, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import limiter
@@ -40,18 +40,23 @@ def inject_dashboard_context():
 def login():
     """Connexion d'un partenaire business au tableau de bord."""
     if request.method == 'POST':
-        biz_id = request.form.get('biz_id')
+        biz_id_or_email = request.form.get('biz_id', '').strip().lower()
         password = request.form.get('password')
 
-        business = business_repo.get_by_id(biz_id)
+        business = business_repo.get_by_email(biz_id_or_email)
+        if not business:
+            business = business_repo.get_by_id(biz_id_or_email)
+        if not business:
+            slugified = biz_id_or_email.replace('@', '_').replace('.', '_')
+            business = business_repo.get_by_id(slugified)
 
         if business and check_password_hash(business['password'], password):
             if not dict(business).get('is_active', 1):
                 return render_template('auth/login.html', error="Compte inactif. Veuillez contacter le support.")
             session.clear() # CLEAR PREVIOUS BLOAT
             session.permanent = True
-            session['user_id'] = biz_id
-            return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
+            session['user_id'] = business['id']
+            return redirect(url_for('dashboard.admin_dashboard', biz_id=business['id']))
         else:
             return render_template('auth/login.html', error="Identifiants incorrects")
 
@@ -70,24 +75,32 @@ def register():
     """Inscription autonome d'un nouveau partenaire business."""
     if request.method == 'POST':
         nom = request.form.get('nom')
-        username = request.form.get('username')
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
         owner_phone = request.form.get('owner_phone')
         prompt = request.form.get('prompt')
 
-        if not (nom and username and password and owner_phone and prompt):
+        if not (nom and email and password and owner_phone and prompt):
             return render_template('auth/register.html', error="Veuillez remplir tous les champs.")
 
-        # Vérifier si le nom d'utilisateur existe déjà
-        existing = business_repo.get_by_id(username)
-        if existing:
-            return render_template('auth/register.html', error="Un compte avec ce nom d'utilisateur existe déjà.")
+        # Vérifier si l'email existe déjà
+        existing_email = business_repo.get_by_email(email)
+        if existing_email:
+            return render_template('auth/register.html', error="Un compte avec cet email existe déjà.")
+
+        # Création du biz_id: suite de chiffres auto-générée (ex: 8 chiffres aléatoires)
+        import random
+        while True:
+            biz_id = str(random.randint(10000000, 99999999))
+            existing_id = business_repo.get_by_id(biz_id)
+            if not existing_id:
+                break
 
         hashed_pw = generate_password_hash(password)
         
         # M-6 : Compte créé inactif (is_active=0) — doit être validé par le Master
         business_repo.add_or_update(
-            biz_id=username,
+            biz_id=biz_id,
             nom=nom,
             phone_id="",
             token="",
@@ -98,19 +111,26 @@ def register():
             msg_ready="C'est prêt !",
             business_type='restaurant',
             plan_abonnement='BASIC',
-            is_active=0,  # Validation manuelle requise par le Master
-            owner_phone=owner_phone
+            is_active=0,
+            owner_phone=owner_phone,
+            email=email
         )
         
-        session['user_id'] = username
-        return redirect(url_for('dashboard.pending', biz_id=username))
+        try:
+            from app.services.notification_master_service import create_master_notification
+            create_master_notification('inscription', 'Nouvelle inscription', f'Nouveau business (Web) : {nom}', biz_id)
+        except Exception as e:
+            pass
+            
+        session['user_id'] = biz_id
+        return redirect(url_for('dashboard.pending', biz_id=biz_id))
 
     return render_template('auth/register.html')
 
 
 @dashboard_bp.route('/admin/<biz_id>/pending', methods=['GET', 'POST'])
 def pending(biz_id):
-    """Page d'attente VIP tant que l'ID Meta n'est pas renseigné."""
+    """Page d'attente VIP tant que l'ID Meta n'est pas renseignÃ©."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -139,7 +159,7 @@ def pending(biz_id):
                 dict(business).get('debounce_delay', 3)
             )
             
-        flash("Vos informations ont été enregistrées. Nous vous contacterons sous peu.", "success")
+        flash("Vos informations ont Ã©tÃ© enregistrÃ©es. Nous vous contacterons sous peu.", "success")
         return redirect(url_for('dashboard.pending', biz_id=biz_id))
 
     return render_template('dashboard/pending.html', business=business, biz_id=biz_id, active_page='')
@@ -203,7 +223,7 @@ def admin_dashboard(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/settings', methods=['GET', 'POST'])
 def business_settings(biz_id):
-    """Paramètres du business (prompt, messages, mot de passe)."""
+    """ParamÃ¨tres du business (prompt, messages, mot de passe)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -219,14 +239,14 @@ def business_settings(biz_id):
         msg_ready = request.form.get('msg_ready')
         password = request.form.get('password')
 
-        # Si un nouveau mot de passe est saisi, on le hache, sinon on garde l'ancien (déjà haché)
+        # Si un nouveau mot de passe est saisi, on le hache, sinon on garde l'ancien (dÃ©jÃ  hachÃ©)
         final_password = business['password']
         if password:
             final_password = generate_password_hash(password)
 
         current_plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
         
-        # On conserve les paramètres marketing existants
+        # On conserve les paramÃ¨tres marketing existants
         drip_j3_enabled = dict(business).get('drip_j3_enabled', 0) if business else 0
         drip_j3_msg = dict(business).get('drip_j3_msg', None) if business else None
         
@@ -261,8 +281,12 @@ def business_settings(biz_id):
         
         if requested_bot_phone is not None:
             business_repo.update_bot_phone(biz_id, requested_bot_phone)
+
+        daily_report_time = request.form.get('daily_report_time')
+        if daily_report_time:
+            business_repo.set_daily_report_time(biz_id, daily_report_time)
         
-        flash("Les paramètres ont été mis à jour avec succès !", "success")
+        flash("Les paramÃ¨tres ont Ã©tÃ© mis Ã  jour avec succÃ¨s !", "success")
         return redirect(url_for('dashboard.business_settings', biz_id=biz_id))
 
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
@@ -275,7 +299,7 @@ def business_settings(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/marketing-settings', methods=['POST'])
 def marketing_settings(biz_id):
-    """Sauvegarde les paramètres de marketing automatisé (Relance J+3)."""
+    """Sauvegarde les paramÃ¨tres de marketing automatisÃ© (Relance J+3)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -297,15 +321,15 @@ def marketing_settings(biz_id):
             drip_j3_enabled,
             drip_j3_msg
         )
-        flash("Paramètres de marketing automatisé enregistrés avec succès.", "success")
+        flash("ParamÃ¨tres de marketing automatisÃ© enregistrÃ©s avec succÃ¨s.", "success")
     else:
-        flash("La séquence automatisée nécessite le plan PREMIUM.", "error")
+        flash("La sÃ©quence automatisÃ©e nÃ©cessite le plan PREMIUM.", "error")
 
     return redirect(url_for('dashboard.business_marketing', biz_id=biz_id))
 
 
 def _emit_statut_commande(biz_id, res_id, statut):
-    """Helper — diffuse le changement de statut d'une commande en temps réel."""
+    """Helper â€” diffuse le changement de statut d'une commande en temps rÃ©el."""
     try:
         from app import socketio
         socketio.emit('statut_commande', {
@@ -319,55 +343,55 @@ def _emit_statut_commande(biz_id, res_id, statut):
 
 @dashboard_bp.route('/confirm/<int:res_id>', methods=['GET', 'POST'])
 def confirm_reservation(res_id):
-    """Confirmer une réservation et notifier le client."""
+    """Confirmer une rÃ©servation et notifier le client."""
     if 'user_id' not in session:
         if request.method == 'POST':
-            return jsonify({'error': 'Non autorisé'}), 401
+            return jsonify({'error': 'Non autorisÃ©'}), 401
         return redirect(url_for('dashboard.login'))
     res = order_repo.get_res_info(res_id)
     if not res or res['business_id'] != session['user_id']:
         if request.method == 'POST':
-            return jsonify({'error': 'Accès refusé'}), 403
-        return "Accès refusé", 403
+            return jsonify({'error': 'AccÃ¨s refusÃ©'}), 403
+        return "AccÃ¨s refusÃ©", 403
 
-    if res['statut'] == "Confirmé ✅":
+    if res['statut'] == "ConfirmÃ© âœ…":
         if request.method == 'POST':
-            return jsonify({'status': 'ok', 'statut': 'Confirmé ✅'})
+            return jsonify({'status': 'ok', 'statut': 'ConfirmÃ© âœ…'})
         return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
-    order_repo.update_status(res_id, "Confirmé ✅")
-    msg = res['msg_confirm'] if res['msg_confirm'] else "Votre demande est confirmée !"
+    order_repo.update_status(res_id, "ConfirmÃ© âœ…")
+    msg = res['msg_confirm'] if res['msg_confirm'] else "Votre demande est confirmÃ©e !"
     whatsapp_service.send_message(res['wa_id'], msg, res['whatsapp_phone_id'], res['token_wa'])
-    _emit_statut_commande(res['business_id'], res_id, "Confirmé ✅")
+    _emit_statut_commande(res['business_id'], res_id, "ConfirmÃ© âœ…")
     if request.method == 'POST':
-        return jsonify({'status': 'ok', 'statut': 'Confirmé ✅'})
+        return jsonify({'status': 'ok', 'statut': 'ConfirmÃ© âœ…'})
     return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
 
 @dashboard_bp.route('/cancel/<int:res_id>', methods=['GET', 'POST'])
 def cancel_reservation(res_id):
-    """Annuler une réservation et notifier le client."""
+    """Annuler une rÃ©servation et notifier le client."""
     if 'user_id' not in session:
         if request.method == 'POST':
-            return jsonify({'error': 'Non autorisé'}), 401
+            return jsonify({'error': 'Non autorisÃ©'}), 401
         return redirect(url_for('dashboard.login'))
     res = order_repo.get_res_info(res_id)
     if not res or res['business_id'] != session['user_id']:
         if request.method == 'POST':
-            return jsonify({'error': 'Accès refusé'}), 403
-        return "Accès refusé", 403
+            return jsonify({'error': 'AccÃ¨s refusÃ©'}), 403
+        return "AccÃ¨s refusÃ©", 403
 
-    if res['statut'] == "Annulé ❌":
+    if res['statut'] == "AnnulÃ© âŒ":
         if request.method == 'POST':
-            return jsonify({'status': 'ok', 'statut': 'Annulé ❌'})
+            return jsonify({'status': 'ok', 'statut': 'AnnulÃ© âŒ'})
         return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
-    order_repo.update_status(res_id, "Annulé ❌")
-    msg = res['msg_cancel'] if res['msg_cancel'] else "Désolé, nous ne pouvons pas confirmer..."
+    order_repo.update_status(res_id, "AnnulÃ© âŒ")
+    msg = res['msg_cancel'] if res['msg_cancel'] else "DÃ©solÃ©, nous ne pouvons pas confirmer..."
     whatsapp_service.send_message(res['wa_id'], msg, res['whatsapp_phone_id'], res['token_wa'])
-    _emit_statut_commande(res['business_id'], res_id, "Annulé ❌")
+    _emit_statut_commande(res['business_id'], res_id, "AnnulÃ© âŒ")
     if request.method == 'POST':
-        return jsonify({'status': 'ok', 'statut': 'Annulé ❌'})
+        return jsonify({'status': 'ok', 'statut': 'AnnulÃ© âŒ'})
     return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
 
@@ -375,26 +399,26 @@ def cancel_reservation(res_id):
 
 @dashboard_bp.route('/handoff_cancel/<int:res_id>', methods=['POST'])
 def handoff_cancel(res_id):
-    """Le gérant refuse le transfert humain."""
+    """Le gÃ©rant refuse le transfert humain."""
     if 'user_id' not in session:
-        return jsonify({'error': 'Non autorisé'}), 401
+        return jsonify({'error': 'Non autorisÃ©'}), 401
         
     res = order_repo.get_res_info(res_id)
     if not res or res['business_id'] != session['user_id']:
-        return jsonify({'error': 'Accès refusé'}), 403
+        return jsonify({'error': 'AccÃ¨s refusÃ©'}), 403
 
-    order_repo.update_status(res_id, "Indisponible ❌")
-    _emit_statut_commande(res['business_id'], res_id, "Indisponible ❌")
+    order_repo.update_status(res_id, "Indisponible âŒ")
+    _emit_statut_commande(res['business_id'], res_id, "Indisponible âŒ")
     
     # Message d'excuse
-    msg = "Désolé, tous nos conseillers sont actuellement occupés ou absents. N'hésitez pas à reposer votre question plus tard ou à continuer avec moi (l'assistant virtuel) !"
+    msg = "DÃ©solÃ©, tous nos conseillers sont actuellement occupÃ©s ou absents. N'hÃ©sitez pas Ã  reposer votre question plus tard ou Ã  continuer avec moi (l'assistant virtuel) !"
     whatsapp_service.send_message(res['wa_id'], msg, res['whatsapp_phone_id'], res['token_wa'])
     
-    # Réactiver le bot (enlever le mode humain)
+    # RÃ©activer le bot (enlever le mode humain)
     from app.repositories import tag_repo, business_repo
     business_repo.set_human_mode(res['business_id'], res['wa_id'], False)
     
-    # Notifier SocketIO que le mode a changé
+    # Notifier SocketIO que le mode a changÃ©
     try:
         from app import socketio
         socketio.emit('human_mode_toggled', {'business_id': res['business_id'], 'wa_id': res['wa_id'], 'state': False}, room=res['business_id'])
@@ -406,27 +430,27 @@ def handoff_cancel(res_id):
     except Exception as e:
         logger.debug("[ORDER] Erreur Socket.IO statut: %s", e)
 
-    return jsonify({'status': 'ok', 'statut': 'Indisponible ❌'})
+    return jsonify({'status': 'ok', 'statut': 'Indisponible âŒ'})
 
 
 @dashboard_bp.route('/ready/<int:res_id>', methods=['GET', 'POST'])
 def ready_reservation(res_id):
-    """Marquer une réservation comme prête et notifier le client."""
+    """Marquer une rÃ©servation comme prÃªte et notifier le client."""
     if 'user_id' not in session:
         if request.method == 'POST':
-            return jsonify({'error': 'Non autorisé'}), 401
+            return jsonify({'error': 'Non autorisÃ©'}), 401
         return redirect(url_for('dashboard.login'))
     res = order_repo.get_res_info(res_id)
     if not res or res['business_id'] != session['user_id']:
         if request.method == 'POST':
-            return jsonify({'error': 'Accès refusé'}), 403
-        return "Accès refusé", 403
+            return jsonify({'error': 'AccÃ¨s refusÃ©'}), 403
+        return "AccÃ¨s refusÃ©", 403
 
     business = business_repo.get_by_id(res['business_id'])
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    status_ready = vocab.get('status_ready', 'Prêt ✅')
+    status_ready = vocab.get('status_ready', 'PrÃªt âœ…')
 
     if res['statut'] == status_ready:
         if request.method == 'POST':
@@ -434,7 +458,7 @@ def ready_reservation(res_id):
         return redirect(url_for('dashboard.admin_dashboard', biz_id=res['business_id']))
 
     order_repo.update_status(res_id, status_ready)
-    fallback_msg = f"C'est {vocab.get('btn_ready', 'prêt').lower()} !"
+    fallback_msg = f"C'est {vocab.get('btn_ready', 'prÃªt').lower()} !"
     msg = res['msg_ready'] if res['msg_ready'] else fallback_msg
     whatsapp_service.send_message(res['wa_id'], msg, res['whatsapp_phone_id'], res['token_wa'])
     _emit_statut_commande(res['business_id'], res_id, status_ready)
@@ -446,7 +470,7 @@ def ready_reservation(res_id):
 
 @dashboard_bp.route('/admin/<biz_id>/orders')
 def business_orders(biz_id):
-    """Affiche l'historique complet des commandes/réservations."""
+    """Affiche l'historique complet des commandes/rÃ©servations."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -461,7 +485,7 @@ def business_orders(biz_id):
 
     reservations = order_repo.get_by_business(biz_id)
     
-    # On ajoute le nom du client à chaque réservation
+    # On ajoute le nom du client Ã  chaque rÃ©servation
     res_list = []
     for r in reservations:
         r_dict = dict(r)
@@ -503,10 +527,10 @@ def business_catalog(biz_id):
 
     products = catalog_repo.get_by_business(biz_id)
     
-    # Grouper par catégorie
+    # Grouper par catÃ©gorie
     grouped_products = {}
     for p in products:
-        cat = p['categorie'] or 'Général'
+        cat = p['categorie'] or 'GÃ©nÃ©ral'
         if cat not in grouped_products:
             grouped_products[cat] = []
         grouped_products[cat].append(p)
@@ -531,7 +555,7 @@ def add_catalog_product(biz_id):
     from flask import current_app
 
     nom = request.form.get('nom')
-    categorie = request.form.get('categorie', 'Général')
+    categorie = request.form.get('categorie', 'GÃ©nÃ©ral')
     prix = request.form.get('prix', 0)
     description = request.form.get('description', '')
     is_visible = 1 if request.form.get('is_visible') == 'on' else 0
@@ -565,7 +589,7 @@ def add_catalog_product(biz_id):
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
-@dashboard_bp.route('/admin/<biz_id>/catalog/toggle/<int:product_id>')
+@dashboard_bp.route('/admin/<biz_id>/catalog/toggle/<int:product_id>', methods=['POST'])
 def toggle_catalog_product(biz_id, product_id):
     """API: Activer/Désactiver un produit pour le bot."""
     if 'user_id' not in session or session['user_id'] != biz_id:
@@ -575,7 +599,7 @@ def toggle_catalog_product(biz_id, product_id):
     return redirect(url_for('dashboard.business_catalog', biz_id=biz_id))
 
 
-@dashboard_bp.route('/admin/<biz_id>/catalog/toggle_visibility/<int:product_id>')
+@dashboard_bp.route('/admin/<biz_id>/catalog/toggle_visibility/<int:product_id>', methods=['POST'])
 def toggle_catalog_visibility(biz_id, product_id):
     """API: Activer/Désactiver un produit sur la vitrine web."""
     if 'user_id' not in session or session['user_id'] != biz_id:
@@ -597,7 +621,7 @@ def delete_catalog_product(biz_id, product_id):
 
 @dashboard_bp.route('/admin/<biz_id>/chat')
 def chat_inbox(biz_id):
-    """Boite de reception — Interface de chat temps reel."""
+    """Boite de reception â€” Interface de chat temps reel."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -623,7 +647,7 @@ def chat_inbox(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/chat/<wa_id>')
 def get_chat_history(biz_id, wa_id):
-    """API JSON — Historique d'une conversation."""
+    """API JSON â€” Historique d'une conversation."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return jsonify({'error': 'Non autorise'}), 403
 
@@ -632,14 +656,40 @@ def get_chat_history(biz_id, wa_id):
     messages = conversation_repo.get_full_history(wa_id, biz_id, limit=50)
     is_human = business_repo.is_human_mode(biz_id, wa_id)
     client = client_repo.get_or_create(biz_id, wa_id)
-    client_name = client['nom'] if client else wa_id
+    
+    c_nom = client['nom'] if client and client['nom'] else ''
+    c_disp = client['display_name'] if client and client['display_name'] else ''
+    c_main = c_disp or c_nom or wa_id
 
     return jsonify({
         'messages': messages,
         'is_human_mode': is_human,
-        'client_name': client_name,
+        'client_name': c_main,
+        'client_real_name': c_nom,
+        'client_display_name': c_disp,
         'wa_id': wa_id
     })
+
+
+
+@dashboard_bp.route('/admin/<biz_id>/chat/<wa_id>/profile', methods=['PUT'])
+def update_chat_client_profile(biz_id, wa_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Non autorise'}), 403
+
+    data = request.get_json() or {}
+    nom = data.get('nom')
+    display_name = data.get('display_name')
+
+    try:
+        if nom is not None:
+            client_repo.update_name(biz_id, wa_id, nom.strip())
+        if display_name is not None:
+            client_repo.set_display_name(biz_id, wa_id, display_name.strip())
+            
+        return jsonify({"success": True, "message": "Profil mis à jour"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @dashboard_bp.route('/admin/<biz_id>/chat/send', methods=['POST'])
@@ -665,7 +715,7 @@ def send_chat_message(biz_id):
     if status_code not in (200, 201):
         return jsonify({'error': 'Erreur lors de l\'envoi du message via WhatsApp.'}), 500
     
-    # Si on est en mode humain, on réinitialise le timer à cet instant précis
+    # Si on est en mode humain, on rÃ©initialise le timer Ã  cet instant prÃ©cis
     if business_repo.is_human_mode(biz_id, wa_id):
         business_repo.set_human_mode(biz_id, wa_id, True)
 
@@ -690,7 +740,7 @@ def send_chat_message(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/chat/manual-order', methods=['POST'])
 def manual_order(biz_id):
-    """Enregistre manuellement une commande/réservation depuis le chat."""
+    """Enregistre manuellement une commande/rÃ©servation depuis le chat."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return jsonify({'error': 'Non autorise'}), 403
 
@@ -714,7 +764,7 @@ def manual_order(biz_id):
     # On enregistre proprement comme si l'IA l'avait fait
     order_repo.save_reservation(biz_id, wa_id, details=nature, priorite="Haute", montant=montant)
     
-    return jsonify({"status": "success", "message": "Commande enregistrée avec succès."})
+    return jsonify({"status": "success", "message": "Commande enregistrÃ©e avec succÃ¨s."})
 
 
 @dashboard_bp.route('/admin/<biz_id>/chat/toggle-mode', methods=['POST'])
@@ -739,6 +789,22 @@ def toggle_human_mode(biz_id):
     })
 
 
+@dashboard_bp.route('/admin/<biz_id>/clients/<wa_id>/edit', methods=['POST'])
+def edit_client(biz_id, wa_id):
+    """Met à jour le nom légal et le display_name d'un client."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Non autorisé'}), 403
+
+    nom = request.form.get('nom', '').strip()
+    display_name = request.form.get('display_name', '').strip()
+
+    client_repo.update_name(biz_id, wa_id, nom)
+    client_repo.set_display_name(biz_id, wa_id, display_name)
+    
+    flash("Profil client mis à jour avec succès.", "success")
+    # Redirect back to where the user came from (clients list or chat view)
+    return redirect(request.referrer or url_for('dashboard.business_clients', biz_id=biz_id))
+
 @dashboard_bp.route('/admin/<biz_id>/clients')
 def business_clients(biz_id):
     """Mini-CRM : Liste des clients ayant interagi avec le business."""
@@ -746,7 +812,7 @@ def business_clients(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    # On réutilise la fonction qui donne les conversations uniques avec nom et dernier message
+    # On rÃ©utilise la fonction qui donne les conversations uniques avec nom et dernier message
     clients = conversation_repo.get_conversations_for_business(biz_id)
 
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
@@ -765,7 +831,7 @@ def business_clients(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/marketing')
 def business_marketing(biz_id):
-    """Page Marketing (accès réservé aux plans PRO et PREMIUM)."""
+    """Page Marketing (accÃ¨s rÃ©servÃ© aux plans PRO et PREMIUM)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -792,25 +858,30 @@ def business_marketing(biz_id):
 @dashboard_bp.route('/admin/<biz_id>/generate-campaign-copy', methods=['POST'])
 def generate_campaign_copy(biz_id):
     if 'user_id' not in session or session['user_id'] != biz_id:
-        return jsonify({"error": "Non autorisé"}), 403
+        return jsonify({"error": "Non autorisÃ©"}), 403
 
-    instruction = request.json.get('instruction', '')
-    if not instruction.strip():
-        return jsonify({"error": "Instruction vide"}), 400
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return jsonify({"error": "Business introuvable"}), 404
 
-    from app.services.ai_service import generate_marketing_copy
+    message = request.json.get('message', '').strip()
+    if not message:
+        return jsonify({"error": "Message vide"}), 400
+
+    from app.services.ai_service import improve_marketing_message
+    
     try:
-        generated_text = generate_marketing_copy(instruction)
-        return jsonify({"copy": generated_text})
+        improved = improve_marketing_message(message)
+        return jsonify({"copy": improved})
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 # ==========================================
-# GESTION DES EMPLOYÉS (ÉQUIPE)
+# GESTION DES EMPLOYÃ‰S (Ã‰QUIPE)
 # ==========================================
 @dashboard_bp.route('/admin/<biz_id>/employees', methods=['GET', 'POST'])
 def business_employees(biz_id):
-    """Gère l'équipe (employés et leurs horaires)."""
+    """GÃ¨re l'Ã©quipe (employÃ©s et leurs horaires)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -824,18 +895,18 @@ def business_employees(biz_id):
             poste = request.form.get('poste')
             horaires_json = request.form.get('horaires_json')
             employee_repo.add(biz_id, nom, poste, horaires_json)
-            flash("Employé ajouté.", "success")
+            flash("EmployÃ© ajoutÃ©.", "success")
         elif action == 'edit':
             employee_id = request.form.get('employee_id')
             nom = request.form.get('nom')
             poste = request.form.get('poste')
             horaires_json = request.form.get('horaires_json')
             employee_repo.update(employee_id, nom, poste, horaires_json)
-            flash("Employé modifié.", "success")
+            flash("EmployÃ© modifiÃ©.", "success")
         elif action == 'delete':
             employee_id = request.form.get('employee_id')
             employee_repo.delete(employee_id)
-            flash("Employé supprimé.", "success")
+            flash("EmployÃ© supprimÃ©.", "success")
         return redirect(url_for('dashboard.business_employees', biz_id=biz_id))
 
     employees = employee_repo.get_by_business(biz_id)
@@ -857,7 +928,7 @@ def business_employees(biz_id):
 # ==========================================
 @dashboard_bp.route('/admin/<biz_id>/agenda')
 def business_agenda(biz_id):
-    """Affiche l'agenda visuel des réservations."""
+    """Affiche l'agenda visuel des rÃ©servations."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -874,7 +945,7 @@ def business_agenda(biz_id):
 
 @dashboard_bp.route('/api/agenda/events/<biz_id>')
 def api_agenda_events(biz_id):
-    """Retourne les réservations (orders) au format FullCalendar."""
+    """Retourne les rÃ©servations (orders) au format FullCalendar."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return jsonify([])
 
@@ -889,7 +960,7 @@ def api_agenda_events(biz_id):
                 "id": order['id'],
                 "title": f"{title_name} ({order['details']})",
                 "start": start_iso,
-                # "end": sera calculé si nécessaire (date_heure_debut + duree)
+                # "end": sera calculÃ© si nÃ©cessaire (date_heure_debut + duree)
                 "extendedProps": {
                     "statut": order['statut'],
                     "employee_id": order['employee_id']
@@ -902,7 +973,7 @@ def api_agenda_events(biz_id):
 # ==========================================
 @dashboard_bp.route('/admin/<biz_id>/agents', methods=['GET', 'POST'])
 def business_agents(biz_id):
-    """Gère l'équipe d'agents IA (rôles, permissions, instructions)."""
+    """GÃ¨re l'Ã©quipe d'agents IA (rÃ´les, permissions, instructions)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -927,7 +998,7 @@ def business_agents(biz_id):
             }
             
             agent_repo.add(biz_id, name, role, system_prompt, intent_keywords, permissions)
-            flash("Agent IA créé avec succès.", "success")
+            flash("Agent IA crÃ©Ã© avec succÃ¨s.", "success")
             
         elif action == 'edit':
             agent_id = request.form.get('agent_id')
@@ -944,19 +1015,19 @@ def business_agents(biz_id):
             }
             
             agent_repo.update(agent_id, biz_id, name, role, system_prompt, intent_keywords, permissions)
-            flash("Agent IA modifié avec succès.", "success")
+            flash("Agent IA modifiÃ© avec succÃ¨s.", "success")
             
         elif action == 'delete':
             agent_id = request.form.get('agent_id')
             agent_repo.deactivate(agent_id, biz_id)
-            flash("Agent IA désactivé.", "success")
+            flash("Agent IA dÃ©sactivÃ©.", "success")
             
         elif action == 'set_routing':
             routing_mode = request.form.get('routing_mode')
             allowed_modes = {'visible', 'invisible'}
             if routing_mode in allowed_modes:
                 business_repo.update_routing_mode(biz_id, routing_mode)
-                flash("Mode de routage mis à jour.", "success")
+                flash("Mode de routage mis Ã  jour.", "success")
             else:
                 flash("Mode de routage invalide.", "error")
             
@@ -974,29 +1045,29 @@ def business_agents(biz_id):
         a_dict['stats'] = stats.get(a_dict['id'], {'messages_handled': 0})
         agents_list.append(a_dict)
         
-    # Templates par défaut
+    # Templates par dÃ©faut
     default_templates = [
         {
             "name": "Alex - Vendeur Pro",
             "role": "Vente & Conseil",
             "intent_keywords": "prix, acheter, commande, menu, catalogue, combien, promo",
-            "system_prompt": "Ton objectif principal est de convertir la discussion en vente. Sois très chaleureux, n'hésite pas à recommander nos meilleurs produits et à pousser à l'achat.",
+            "system_prompt": "Ton objectif principal est de convertir la discussion en vente. Sois trÃ¨s chaleureux, n'hÃ©site pas Ã  recommander nos meilleurs produits et Ã  pousser Ã  l'achat.",
             "can_propose_promo": True,
             "can_escalate": False
         },
         {
             "name": "Sarah - Support Doux",
             "role": "Support Client",
-            "intent_keywords": "problème, retard, plainte, erreur, remboursement, annuler",
-            "system_prompt": "Ton objectif est de rassurer le client et résoudre son problème. Sois très empathique, excuse-toi pour le dérangement.",
+            "intent_keywords": "problÃ¨me, retard, plainte, erreur, remboursement, annuler",
+            "system_prompt": "Ton objectif est de rassurer le client et rÃ©soudre son problÃ¨me. Sois trÃ¨s empathique, excuse-toi pour le dÃ©rangement.",
             "can_propose_promo": False,
             "can_escalate": True
         },
         {
-            "name": "Sam - Réservation",
+            "name": "Sam - RÃ©servation",
             "role": "Gestionnaire de Rendez-vous",
-            "intent_keywords": "réserver, rdv, table, place, quand, dispo",
-            "system_prompt": "Ton objectif est de prendre les détails de la réservation de manière stricte: nom, date, heure, nombre de personnes.",
+            "intent_keywords": "rÃ©server, rdv, table, place, quand, dispo",
+            "system_prompt": "Ton objectif est de prendre les dÃ©tails de la rÃ©servation de maniÃ¨re stricte: nom, date, heure, nombre de personnes.",
             "can_propose_promo": False,
             "can_escalate": False
         }
@@ -1024,12 +1095,23 @@ def send_campaign(biz_id):
     if not message_template.strip():
         return redirect(url_for('dashboard.business_marketing', biz_id=biz_id))
 
-    all_clients = conversation_repo.get_conversations_for_business(biz_id)
-    
     plan = dict(business).get('plan_abonnement', 'BASIC')
-    if plan != 'PREMIUM':
-        target = 'all'
+    from app.repositories import marketing_repo
+    today_count = marketing_repo.get_today_campaigns_count(biz_id)
+    
+    if plan == 'BASIC' and today_count >= 1:
+        return redirect(url_for('dashboard.business_marketing', biz_id=biz_id, error="Limite de 1 campagne par jour (BASIC)."))
+    elif plan == 'PRO' and today_count >= 1:
+        return redirect(url_for('dashboard.business_marketing', biz_id=biz_id, error="Limite de 1 campagne par jour (PRO)."))
+    elif plan == 'PREMIUM' and today_count >= 3:
+        return redirect(url_for('dashboard.business_marketing', biz_id=biz_id, error="Limite de 3 campagnes par jour (PREMIUM)."))
 
+    if plan == 'BASIC':
+        target = 'all'
+    elif plan == 'PRO' and target == 'inactive':
+        target = 'active'
+
+    all_clients = conversation_repo.get_conversations_for_business(biz_id)
     import datetime
     clients_to_send = []
 
@@ -1054,12 +1136,11 @@ def send_campaign(biz_id):
     else:
         clients_to_send = all_clients
 
+    max_clients = 100 if plan == 'BASIC' else (500 if plan == 'PRO' else len(clients_to_send))
+    clients_to_send = clients_to_send[:max_clients]
+
     if clients_to_send:
-        for client in clients_to_send:
-            prenom = client.get('client_name', 'Client').split()[0]
-            msg = message_template.replace('{prenom}', prenom)
-            marketing_repo.enqueue_message(biz_id, client['wa_id'], msg)
-            
+        marketing_repo.enqueue_campaign(biz_id, clients_to_send, message_template)
         flash(f"La campagne a ete mise en file d'attente pour {len(clients_to_send)} clients !", "success")
 
     return redirect(url_for('dashboard.business_marketing', biz_id=biz_id))
@@ -1068,7 +1149,7 @@ def send_campaign(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/payments')
 def business_payments(biz_id):
-    """Page Paiements (accès réservé au plan PREMIUM)."""
+    """Page Paiements (accÃ¨s rÃ©servÃ© au plan PREMIUM)."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -1129,7 +1210,7 @@ def test_report(biz_id):
 
 @dashboard_bp.route('/admin/<biz_id>/vitrine', methods=['GET', 'POST'])
 def vitrine_settings(biz_id):
-    """Paramètres de la vitrine web."""
+    """ParamÃ¨tres de la vitrine web."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -1161,7 +1242,7 @@ def vitrine_settings(biz_id):
                 logo_url = f'/static/uploads/businesses/{biz_id}/{filename}'
 
         business_repo.set_vitrine_settings(biz_id, color, logo_url)
-        flash('Paramètres de la vitrine mis à jour.', 'success')
+        flash('ParamÃ¨tres de la vitrine mis Ã  jour.', 'success')
         return redirect(url_for('dashboard.vitrine_settings', biz_id=biz_id))
 
     return render_template('dashboard/vitrine_settings.html',
@@ -1186,7 +1267,7 @@ def public_vitrine(biz_id):
 
     grouped_products = {}
     for p in visible_products:
-        cat = p['categorie'] or 'Général'
+        cat = p['categorie'] or 'GÃ©nÃ©ral'
         if cat not in grouped_products:
             grouped_products[cat] = []
         grouped_products[cat].append(p)
@@ -1207,7 +1288,7 @@ def edit_catalog_product(biz_id, product_id):
     from flask import current_app
 
     nom = request.form.get('nom')
-    categorie = request.form.get('categorie', 'Général')
+    categorie = request.form.get('categorie', 'GÃ©nÃ©ral')
     prix = request.form.get('prix', 0)
     description = request.form.get('description', '')
     is_visible = 1 if request.form.get('is_visible') == 'on' else 0
@@ -1244,7 +1325,7 @@ def edit_catalog_product(biz_id, product_id):
 @dashboard_bp.route('/admin/<biz_id>/tags', methods=['GET', 'POST'])
 def tags(biz_id):
     if 'user_id' not in session or session['user_id'] != biz_id:
-        flash("Accès refusé", "error")
+        flash("AccÃ¨s refusÃ©", "error")
         return redirect(url_for('dashboard.login'))
 
     biz = business_repo.get_by_id(biz_id)
@@ -1257,7 +1338,7 @@ def tags(biz_id):
 
         if name and tag_type:
             tag_repo.create_tag(biz_id, name, tag_type, color, description)
-            flash("Tag créé avec succès.", "success")
+            flash("Tag crÃ©Ã© avec succÃ¨s.", "success")
         else:
             flash("Nom et type obligatoires.", "error")
         return redirect(url_for('dashboard.tags', biz_id=biz_id))
@@ -1271,5 +1352,28 @@ def delete_tag(biz_id, tag_id):
         return jsonify({"success": False}), 403
 
     tag_repo.delete_tag(tag_id, biz_id)
-    flash("Tag supprimé.", "success")
+    flash("Tag supprimÃ©.", "success")
     return redirect(url_for('dashboard.tags', biz_id=biz_id))
+
+
+
+
+@dashboard_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        if not email:
+            return render_template('auth/forgot_password.html', error="Veuillez entrer votre adresse email.")
+            
+        business = business_repo.get_by_email(email)
+        if business:
+            try:
+                from app.services.notification_master_service import create_master_notification
+                create_master_notification('alerte', 'Mot de passe oublié', f"Mot de passe oublié: {business['nom']} ({email})", business['id'])
+            except Exception:
+                pass
+                
+        # On affiche toujours un message de succès pour ne pas révéler si l'email existe ou non (sécurité)
+        return render_template('auth/forgot_password.html', success="Si cet email existe dans notre système, notre équipe vous contactera pour réinitialiser votre mot de passe.")
+        
+    return render_template('auth/forgot_password.html')

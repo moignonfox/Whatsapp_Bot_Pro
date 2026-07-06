@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../viewmodels/stats_notifier.dart';
 import '../../viewmodels/today_notifier.dart';
 import '../../viewmodels/profile_notifier.dart';
+import '../../core/feature_gate_widget.dart';
+import '../../core/subscription_gate.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -21,6 +23,8 @@ class TodayScreen extends ConsumerWidget {
     final statsState = ref.watch(statsNotifierProvider);
     final todayState = ref.watch(todayNotifierProvider);
     final profileState = ref.watch(profileNotifierProvider);
+    final planStr = profileState.value?.planAbonnement ?? 'BASIC';
+    final currentPlan = SubscriptionPlanExtension.fromString(planStr);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -233,15 +237,27 @@ class TodayScreen extends ConsumerWidget {
                     // QUICK ACTIONS
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
+                      child: Column(
                         children: [
-                          _buildQuickAction(context, Icons.shopping_bag_outlined, 'Commandes', () => context.go('/orders')),
-                          const SizedBox(width: 8),
-                          _buildQuickAction(context, Icons.inventory_2_outlined, 'Catalogue', () => context.push('/catalog')),
-                          const SizedBox(width: 8),
-                          _buildQuickAction(context, Icons.account_balance_wallet_outlined, 'Money', () => context.go('/money')),
-                          const SizedBox(width: 8),
-                          _buildQuickAction(context, Icons.settings_outlined, 'Réglages', () => context.go('/profile')),
+                          Row(
+                            children: [
+                              _buildQuickAction(context, Icons.shopping_bag_outlined, 'Commandes', () => context.go('/orders')),
+                              const SizedBox(width: 8),
+                              _buildQuickAction(context, Icons.inventory_2_outlined, 'Catalogue', () => context.push('/catalog')),
+                              const SizedBox(width: 8),
+                              _buildQuickAction(context, Icons.campaign_outlined, 'Campagnes', () => context.push('/marketing'), featureGate: AppFeature.campagnes, currentPlan: currentPlan),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _buildQuickAction(context, Icons.account_balance_wallet_outlined, 'Money', () => context.go('/money'), featureGate: AppFeature.paiements, currentPlan: currentPlan),
+                              const SizedBox(width: 8),
+                              _buildQuickAction(context, Icons.settings_outlined, 'Réglages', () => context.go('/profile')),
+                              const SizedBox(width: 8),
+                              Expanded(child: const SizedBox()),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -346,27 +362,31 @@ class TodayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickAction(BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.secondary),
-              SizedBox(height: 4),
-              Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87)),
-            ],
-          ),
+  Widget _buildQuickAction(BuildContext context, IconData icon, String label, VoidCallback onTap, {AppFeature? featureGate, SubscriptionPlan? currentPlan}) {
+    Widget content = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: Theme.of(context).colorScheme.secondary),
+            const SizedBox(height: 4),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87)),
+          ],
         ),
       ),
     );
+
+    if (featureGate != null && currentPlan != null) {
+      content = FeatureGate(feature: featureGate, currentPlan: currentPlan, child: content);
+    }
+
+    return Expanded(child: content);
   }
 
   Widget _buildFilterChip(BuildContext context, String label, String value, WidgetRef ref) {

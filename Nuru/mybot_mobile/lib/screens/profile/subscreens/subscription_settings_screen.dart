@@ -257,27 +257,34 @@ class _ActivePlanHeader extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5), width: 1.5),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12)],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.bolt_rounded, color: colorScheme.primary, size: 26),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.bolt_rounded, color: colorScheme.primary, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Plan BASIC', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w800, fontSize: 20)),
+                    Text('Starter — Gratuit', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                  ],
+                ),
+              ),
+              _activeBadge(colorScheme.primary),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Plan BASIC', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w800, fontSize: 20)),
-                Text('Starter — Gratuit', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
-              ],
-            ),
-          ),
-          _activeBadge(colorScheme.primary),
+          // Dates avec couleurs adaptées au fond clair/sombre
+          _datesRow(profile, formatDate, darkText: true),
         ],
       ),
     );
@@ -295,27 +302,30 @@ class _ActivePlanHeader extends StatelessWidget {
     );
   }
 
-  Widget _datesRow(dynamic profile, String Function(String) formatDate) {
+  Widget _datesRow(dynamic profile, String Function(String) formatDate, {bool darkText = false}) {
     final debut = profile.dateDebutAbonnement ?? '';
     final fin = profile.dateFinAbonnement ?? '';
     if (debut.isEmpty && fin.isEmpty) return const SizedBox();
+    // Couleur adaptative : blanc sur fond sombre, gris sur fond clair
+    final textColor = darkText ? const Color(0xFF888888) : Colors.white54;
+    final iconColor = darkText ? const Color(0xFFAAAAAA) : Colors.white38;
     return Column(
       children: [
         const SizedBox(height: 14),
-        Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+        Container(height: 1, color: darkText ? Colors.black12 : Colors.white.withValues(alpha: 0.1)),
         const SizedBox(height: 12),
         Row(
           children: [
             if (debut.isNotEmpty) ...[
-              const Icon(Icons.play_circle_outline, color: Colors.white38, size: 14),
+              Icon(Icons.play_circle_outline, color: iconColor, size: 14),
               const SizedBox(width: 4),
-              Text('Début : ${formatDate(debut)}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              Text('Début : ${formatDate(debut)}', style: TextStyle(color: textColor, fontSize: 12)),
             ],
             if (debut.isNotEmpty && fin.isNotEmpty) const SizedBox(width: 16),
             if (fin.isNotEmpty) ...[
-              const Icon(Icons.stop_circle_outlined, color: Colors.white38, size: 14),
+              Icon(Icons.stop_circle_outlined, color: iconColor, size: 14),
               const SizedBox(width: 4),
-              Text('Fin : ${formatDate(fin)}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              Text('Fin : ${formatDate(fin)}', style: TextStyle(color: textColor, fontSize: 12)),
             ],
           ],
         ),
@@ -523,7 +533,9 @@ class _PaymentInstructions extends StatelessWidget {
             children: [
               const Text('💳', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 10),
-              Text('Comment passer au niveau supérieur', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: colorScheme.onSurface)),
+              Expanded(
+                child: Text('Comment passer au niveau supérieur', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: colorScheme.onSurface)),
+              ),
             ],
           ),
           const SizedBox(height: 12),

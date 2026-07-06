@@ -20,13 +20,80 @@
   --ink:        #1a1a1a;
   --ink-2:      #555555;
   --ink-3:      #999999;
-  --radius-card: 18px;
+  --radius-card: 14px;
   --radius-btn:  100px;
   --radius-sm:   10px;
   --font-ui:      'DM Sans', sans-serif;
   --font-display: 'Playfair Display', serif;
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px var(--border);
-  --shadow-hover: 0 8px 28px rgba(0,0,0,0.10), 0 0 0 1px var(--border-2);
+  --shadow-card: 0 4px 14px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-hover: 0 10px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand:      #7c88f2;
+    --brand-soft: rgba(91,106,240,0.15);
+    --brand-text: #a0abfd;
+    --bg:         #121212;
+    --surface:    #1e1e1e;
+    --border:     #2a2a2a;
+    --border-2:   #3d3d3d;
+    --ink:        #f5f5f5;
+    --ink-2:      #b3b3b3;
+    --ink-3:      #808080;
+    --shadow-card: 0 4px 14px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-hover: 0 10px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .badge-new   { background: rgba(22, 163, 74, 0.2) !important; color: #4ade80 !important; }
+  .badge-promo { background: rgba(217, 119, 6, 0.2) !important; color: #fcd34d !important; }
+  .badge-hot   { background: rgba(225, 29, 72, 0.2) !important; color: #fda4af !important; }
+  .emoji-placeholder { opacity: 0.7; }
+  nav { background: rgba(18,18,18,0.85) !important; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastEnter {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastLeave {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface);
+  color: var(--ink);
+  border-left: 4px solid #10b981;
+  box-shadow: var(--shadow-hover);
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastEnter 0.4s cubic-bezier(0.2,0.8,0.2,1) forwards;
+  pointer-events: auto;
+}
+
+.toast.hiding {
+  animation: toastLeave 0.3s ease-in forwards;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -188,9 +255,29 @@ nav {
 .hero {
   max-width: 960px;
   margin: 0 auto;
-  padding: 4rem 2rem 2.5rem;
+  padding: 5rem 2rem 3.5rem;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 140%;
+  background: radial-gradient(circle, rgba(91,106,240,0.12) 0%, transparent 60%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero-chip, .hero h1, .hero p { animation: fadeInUp 0.6s ease-out backwards; }
+.hero-chip { animation-delay: 0.05s; }
+.hero h1 { animation-delay: 0.15s; }
+.hero p { animation-delay: 0.25s; }
 
 .hero-chip {
   display: inline-flex;
@@ -265,8 +352,8 @@ nav {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 
 /* ─── CARD ─── */
@@ -277,17 +364,28 @@ nav {
   overflow: hidden;
   transition: box-shadow 0.22s, transform 0.22s;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInUp 0.5s ease-out backwards;
 }
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.15s; }
+.card:nth-child(3) { animation-delay: 0.2s; }
+.card:nth-child(4) { animation-delay: 0.25s; }
+.card:nth-child(5) { animation-delay: 0.3s; }
+.card:nth-child(6) { animation-delay: 0.35s; }
+.card:nth-child(7) { animation-delay: 0.4s; }
+.card:nth-child(8) { animation-delay: 0.45s; }
 
 .card:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-3px);
+  transform: translateY(-4px);
 }
 
 /* FIX 1 — image réelle : object-fit cover sur le conteneur */
 .card-img {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 9;
   background: var(--bg);
   position: relative;
   overflow: hidden;
@@ -309,7 +407,7 @@ nav {
 
 /* Emoji placeholder quand pas d'image */
 .card-img .emoji-placeholder {
-  font-size: 4rem;
+  font-size: 3rem;
   line-height: 1;
   position: relative;
   z-index: 1;
@@ -319,13 +417,13 @@ nav {
 
 .badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 0.65rem;
+  top: 8px;
+  left: 8px;
+  font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 100px;
   z-index: 2;
 }
@@ -334,69 +432,80 @@ nav {
 .badge-promo { background: #fef3c7; color: #92400e; }
 .badge-hot   { background: #ffe4e6; color: #9f1239; }
 
-.card-body { padding: 1rem 1.1rem 1.15rem; }
+.card-body { 
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 
 .card-cat {
-  font-size: 0.67rem;
+  font-size: 0.65rem;
   font-weight: 500;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .card-name {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--ink);
-  line-height: 1.3;
-  margin-bottom: 5px;
+  line-height: 1.25;
+  margin-bottom: 4px;
 }
 
 .card-desc {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--ink-2);
-  line-height: 1.55;
-  margin-bottom: 1rem;
+  line-height: 1.4;
+  margin-bottom: 0.8rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: auto;
 }
 
 .card-price {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--ink);
 }
 
 .card-price small {
-  font-size: 0.72rem;
-  font-weight: 400;
+  font-size: 0.7rem;
+  font-weight: 500;
   color: var(--ink-3);
-  margin-right: 2px;
+  margin-right: 1px;
 }
 
 .add-btn {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--brand-soft);
   border: none;
   color: var(--brand-text);
-  font-size: 1.1rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.18s, transform 0.15s;
+  transition: all 0.18s;
   flex-shrink: 0;
 }
 
-.add-btn:hover  { background: var(--brand); color: #fff; }
-.add-btn:active { transform: scale(0.9); }
+.add-btn:hover  { background: var(--brand); color: #fff; transform: scale(1.05); }
+.add-btn:active { transform: scale(0.95); }
 .add-btn.added  { background: #dcfce7; color: #166534; }
 
 /* ─── PANIER DRAWER (FIX 2) ─── */
@@ -828,6 +937,9 @@ footer {
   <a href="https://wa.me/22890000000" class="footer-wa">💬 Commander sur WhatsApp</a>
 </footer>
 
+<!-- TOAST CONTAINER -->
+<div id="toast-container" class="toast-container"></div>
+
 <!-- PANIER DRAWER -->
 <div class="drawer-overlay" id="overlay"></div>
 <div class="drawer" id="drawer">
@@ -918,6 +1030,20 @@ document.getElementById('cart-btn').addEventListener('click', openDrawer);
 document.getElementById('drawer-close').addEventListener('click', closeDrawer);
 document.getElementById('overlay').addEventListener('click', closeDrawer);
 
+/* ── Notifications (Toasts) ── */
+function showToast(productName) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>✅</span> <span><b>${productName}</b> ajouté au panier</span>`;
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, 2500);
+}
+
 /* ── Ajouter au panier ── */
 document.querySelectorAll('.add-btn').forEach(btn => {
   btn.addEventListener('click', e => {
@@ -929,6 +1055,8 @@ document.querySelectorAll('.add-btn').forEach(btn => {
       emoji: card.dataset.emoji
     });
     renderDrawer();
+    
+    showToast(card.dataset.name);
 
     btn.textContent = '✓';
     btn.classList.add('added');
@@ -945,9 +1073,19 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const cat = btn.dataset.cat;
-    document.querySelectorAll('.card').forEach(c => {
-      c.style.display = (cat === 'all' || c.dataset.cat === cat) ? '' : 'none';
-    });
+    
+    const grid = document.getElementById('product-grid');
+    grid.style.opacity = '0';
+    grid.style.transform = 'translateY(10px)';
+    grid.style.transition = 'opacity 0.2s, transform 0.2s';
+    
+    setTimeout(() => {
+      document.querySelectorAll('.card').forEach(c => {
+        c.style.display = (cat === 'all' || c.dataset.cat === cat) ? '' : 'none';
+      });
+      grid.style.opacity = '1';
+      grid.style.transform = 'translateY(0)';
+    }, 200);
   });
 });
 

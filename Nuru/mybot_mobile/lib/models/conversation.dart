@@ -1,6 +1,8 @@
 class Conversation {
   final String id;
   final String clientName;
+  final String? clientRealName;
+  final String? clientDisplayName;
   final String lastMessage;
   final String lastTimestamp;
   final int unreadCount;
@@ -8,6 +10,8 @@ class Conversation {
   Conversation({
     required this.id, 
     required this.clientName, 
+    this.clientRealName,
+    this.clientDisplayName,
     required this.lastMessage,
     required this.lastTimestamp,
     this.unreadCount = 0,
@@ -17,6 +21,8 @@ class Conversation {
     return Conversation(
       id: json['wa_id']?.toString() ?? '',
       clientName: json['client_name']?.toString() ?? json['wa_id']?.toString() ?? 'Inconnu',
+      clientRealName: json['client_real_name']?.toString(),
+      clientDisplayName: json['client_display_name']?.toString(),
       lastMessage: json['last_message']?.toString() ?? '',
       lastTimestamp: json['last_timestamp']?.toString() ?? '',
       unreadCount: json['unread_count'] as int? ?? 0,

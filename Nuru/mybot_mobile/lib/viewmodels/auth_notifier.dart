@@ -4,6 +4,9 @@ import '../repositories/auth_repository.dart';
 import 'profile_notifier.dart';
 import 'catalog_notifier.dart';
 import 'chat_notifier.dart';
+import 'package:go_router/go_router.dart';
+import '../core/api/api_client.dart';
+import '../core/router.dart';
 import 'chat_detail_notifier.dart';
 import 'stats_notifier.dart';
 import 'today_notifier.dart';
@@ -16,6 +19,12 @@ final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthStatus>(Aut
 class AuthNotifier extends AsyncNotifier<AuthStatus> {
   @override
   FutureOr<AuthStatus> build() async {
+    ApiClient.onUnauthorized = () {
+      state = const AsyncValue.data(AuthStatus.unauthenticated);
+      if (rootNavigatorKey.currentContext != null) {
+        rootNavigatorKey.currentContext!.go('/welcome');
+      }
+    };
     return _checkToken();
   }
 

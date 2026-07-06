@@ -9,3 +9,6 @@ from . import chat
 from . import stats
 from . import catalog
 from . import devices
+from . import marketing
+from . import account
+from . import backup

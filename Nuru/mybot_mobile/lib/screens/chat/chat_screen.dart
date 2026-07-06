@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../viewmodels/chat_notifier.dart';
+import 'widgets/client_profile_sheet.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -117,10 +118,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.grey.shade300,
-                          child: Icon(Icons.person, color: Theme.of(context).cardColor, size: 30),
+                        GestureDetector(
+                          onTap: () {
+                            ClientProfileSheet.show(context, ref, conv);
+                          },
+                          child: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            child: Text(
+                              conv.clientName.isNotEmpty ? conv.clientName.substring(0, 1).toUpperCase() : '?',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary, 
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 18
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -131,15 +144,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      conv.clientName,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          conv.clientName,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (conv.clientRealName != null && conv.clientRealName != conv.clientName && !conv.clientRealName!.startsWith('Client '))
+                                          Text(
+                                            conv.clientRealName!,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6) ?? Colors.black54,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
                                     ),
                                   ),
                                   Text(

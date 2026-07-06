@@ -40,6 +40,7 @@ class Product {
 
   Product copyWith({
     bool? disponible,
+    bool? isVisible,
   }) {
     return Product(
       id: id,
@@ -50,7 +51,7 @@ class Product {
       prix: prix,
       disponible: disponible ?? this.disponible,
       imageUrl: imageUrl,
-      isVisible: isVisible,
+      isVisible: isVisible ?? this.isVisible,
       dureeMinutes: dureeMinutes,
     );
   }

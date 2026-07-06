@@ -84,7 +84,9 @@ def get_conversations_for_business(business_id: str) -> List[Dict]:
                h.content AS last_message,
                h.role AS last_role,
                h.timestamp AS last_timestamp,
-               COALESCE(c.nom, h.wa_id) AS client_name
+               c.nom AS client_real_name,
+               c.display_name AS client_display_name,
+               COALESCE(c.display_name, c.nom, h.wa_id) AS client_name
         FROM history h
         LEFT JOIN clients c ON h.wa_id = c.wa_id AND c.business_id = ?
         WHERE h.business_id = ?
@@ -92,7 +94,7 @@ def get_conversations_for_business(business_id: str) -> List[Dict]:
               SELECT MAX(h2.id) FROM history h2 
               WHERE h2.wa_id = h.wa_id AND h2.business_id = ?
           )
-        ORDER BY h.id DESC
+        ORDER BY h.timestamp DESC
     """, (business_id, business_id, business_id))
     rows = cursor.fetchall()
     conn.close()

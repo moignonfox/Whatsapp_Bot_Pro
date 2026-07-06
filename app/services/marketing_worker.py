@@ -49,8 +49,7 @@ def process_campaign_queue():
         marketing_repo.mark_message_status(msg_id, 'failed')
 
     # Anti-Spam Delay additionnel bloquant UNIQUEMENT ce thread du scheduler,
-    # pour s'assurer qu'un autre job ne s'exécute pas immédiatement 
-    # (Bien que l'intervalle du scheduler fasse l'essentiel du travail)
-    if plan == 'PREMIUM':
-        # Le délai du scheduler est par ex de 10s. On peut ajouter qq secondes d'aléa.
-        time.sleep(random.randint(2, 5))
+    # pour s'assurer qu'un autre job ne s'exécute pas immédiatement.
+    # Ce délai de 8 à 25 secondes simule un comportement humain et est OBLIGATOIRE
+    # pour TOUS les plans afin d'éviter le bannissement par Meta.
+    time.sleep(random.randint(8, 25))

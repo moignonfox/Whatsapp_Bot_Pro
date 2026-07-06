@@ -1,15 +1,50 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../viewmodels/auth_notifier.dart';
+import '../../viewmodels/profile_notifier.dart';
+import '../../core/api/socket_client.dart';
 
 /// Écran affiché aux utilisateurs inscrits mais pas encore validés par le Master.
-class PendingValidationScreen extends ConsumerWidget {
+class PendingValidationScreen extends ConsumerStatefulWidget {
   const PendingValidationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PendingValidationScreen> createState() => _PendingValidationScreenState();
+}
+
+class _PendingValidationScreenState extends ConsumerState<PendingValidationScreen> {
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lance un polling silencieux toutes les 10 secondes pour vérifier le statut du compte
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      ref.read(profileNotifierProvider.notifier).fetchProfile(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    // On écoute le changement de statut pour rediriger automatiquement
+    ref.listen(profileNotifierProvider, (previous, next) {
+      if (next.value != null && next.value!.isApproved) {
+        _pollingTimer?.cancel();
+        if (context.mounted) {
+          context.go('/today');
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -84,7 +119,7 @@ class PendingValidationScreen extends ConsumerWidget {
                 context,
                 icon: Icons.celebration_rounded,
                 title: 'Essai gratuit inclus',
-                subtitle: '7 jours d\'accès Premium offerts à l\'activation',
+                subtitle: '7 jours d\'accès Premium offerts Ã  l\'activation',
                 color: const Color(0xFFFFC107),
               ),
               const SizedBox(height: 12),
@@ -157,3 +192,5 @@ class PendingValidationScreen extends ConsumerWidget {
     );
   }
 }
+
+

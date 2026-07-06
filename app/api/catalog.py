@@ -138,3 +138,10 @@ def toggle_stock(product_id):
     company_id = get_jwt_identity()
     catalog_repo.toggle_availability(product_id, company_id)
     return jsonify({"success": True, "product_id": product_id}), 200
+
+@api_bp.route('/catalog/products/<int:product_id>/visibility', methods=['PUT'])
+@jwt_required()
+def toggle_visibility(product_id):
+    company_id = get_jwt_identity()
+    catalog_repo.toggle_visibility(product_id, company_id)
+    return jsonify({"success": True, "product_id": product_id}), 200

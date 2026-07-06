@@ -36,6 +36,17 @@ class CatalogRepository {
     }
   }
 
+  Future<bool> toggleVisibility(int productId) async {
+    try {
+      final response = await _dio.put('/catalog/products/$productId/visibility');
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      throw Exception('Erreur de visibilité : ${e.message} ${e.response?.data}');
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
+
   Future<bool> addProduct(Map<String, dynamic> data, {String? imagePath}) async {
     try {
       final requestData = FormData.fromMap(data);

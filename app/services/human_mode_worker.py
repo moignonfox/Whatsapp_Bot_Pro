@@ -19,7 +19,15 @@ def check_human_mode_timeouts():
         
         # Récupérer tous les business qui ont le human_mode configuré (non nul)
         cursor.execute("SELECT id, token_wa, whatsapp_phone_id, human_mode FROM businesses WHERE human_mode IS NOT NULL AND human_mode != '{}'")
-        businesses = cursor.fetchall()
+        raw_businesses = cursor.fetchall()
+
+        # Déchiffrer les tokens avant traitement
+        from app.services.crypto_service import decrypt_token
+        businesses = []
+        for b in raw_businesses:
+            bd = dict(b)
+            bd['token_wa'] = decrypt_token(bd.get('token_wa', ''))
+            businesses.append(bd)
         
         now = datetime.now(timezone.utc)
         

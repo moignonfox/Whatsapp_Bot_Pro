@@ -241,14 +241,7 @@ class CatalogScreen extends ConsumerWidget {
                                                         value: product.isVisible,
                                                         activeColor: Theme.of(context).colorScheme.primary,
                                                         onChanged: (val) {
-                                                          final data = {
-                                                            'nom': product.nom,
-                                                            'prix': product.prix,
-                                                            'is_visible': val ? 1 : 0,
-                                                            'description': product.description,
-                                                            'categorie': product.categorie,
-                                                          };
-                                                          ref.read(catalogNotifierProvider.notifier).updateProduct(product.id, data);
+                                                          ref.read(catalogNotifierProvider.notifier).toggleVisibility(product.id);
                                                         },
                                                       ),
                                                     ),

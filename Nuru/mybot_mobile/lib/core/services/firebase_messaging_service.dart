@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
 import '../api/api_client.dart';
 
 final firebaseMessagingProvider = Provider<FirebaseMessagingService>((ref) {
@@ -68,8 +69,14 @@ class FirebaseMessagingService {
       if (response.statusCode == 200) {
         debugPrint('✅ FCM Token envoyé au backend');
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        debugPrint("⚠️ FCM Token non envoyé : session expirée (401). L'intercepteur gère la déconnexion.");
+        return;
+      }
+      debugPrint("❌ Erreur lors de l'envoi du FCM Token au backend: $e");
     } catch (e) {
-      debugPrint('❌ Erreur lors de l\'envoi du FCM Token au backend: $e');
+      debugPrint("❌ Erreur inattendue lors de l'envoi du FCM Token: $e");
     }
   }
 }

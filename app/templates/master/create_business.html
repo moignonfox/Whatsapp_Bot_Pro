@@ -563,6 +563,11 @@
                     <label>Access Token (Permanent)</label>
                     <input type="text" name="token" placeholder="EAAxxxxxxx…" value="{{ business.token_wa if business else '' }}" required>
                 </div>
+                <div class="field full">
+                    <label>Numéro de téléphone du Bot (Vitrine) 📞</label>
+                    <input type="text" name="requested_bot_phone" placeholder="ex: 22890000000" value="{{ business.requested_bot_phone if business else '' }}">
+                    <small style="color: #64748b; margin-top: 4px; display: block;">Si défini, la vitrine de ce client redirigera ses commandes vers ce numéro.</small>
+                </div>
 
                 <!-- IA -->
                 <div class="section-label">🤖 Intelligence Artificielle</div>

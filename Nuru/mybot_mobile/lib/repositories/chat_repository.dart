@@ -62,5 +62,17 @@ class ChatRepository {
       throw Exception('Erreur mode humain : ${e.message}');
     }
   }
+
+  Future<bool> updateClientProfile(String waId, String? realName, String? displayName) async {
+    try {
+      final response = await _dio.put('/conversations/$waId/client', data: {
+        'nom': realName ?? '',
+        'display_name': displayName ?? '',
+      });
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      throw Exception('Erreur mise à jour profil : ${e.message}');
+    }
+  }
 }
 

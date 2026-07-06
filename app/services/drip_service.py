@@ -16,11 +16,11 @@ def process_daily_drip_campaigns():
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # 1. Trouver les business éligibles (is_active, plan PREMIUM, option activée)
+    # 1. Trouver les business éligibles (is_active, PRO ou PREMIUM, option activée)
     cursor.execute("""
-        SELECT id, nom, drip_j3_msg 
+        SELECT id, nom, plan_abonnement, drip_j3_msg 
         FROM businesses 
-        WHERE is_active = 1 AND plan_abonnement = 'PREMIUM' AND drip_j3_enabled = 1
+        WHERE is_active = 1 AND plan_abonnement IN ('PRO', 'PREMIUM') AND drip_j3_enabled = 1
     """)
     eligible_businesses = cursor.fetchall()
 
@@ -29,26 +29,28 @@ def process_daily_drip_campaigns():
         logger.info("Aucun business éligible pour le Drip Marketing.")
         return
 
-    # 2. Pour chaque business, trouver les clients dont le dernier message date d'il y a 3 jours (entre J-3 et J-4)
-    # J-3 c'est: timestamp <= now - 3 jours AND timestamp > now - 4 jours
+    # 2. Pour chaque business, trouver les clients
     now = datetime.now()
-    limit_start = now - timedelta(days=4)
     limit_end = now - timedelta(days=3)
 
     for biz in eligible_businesses:
         biz_id = biz['id']
         msg_template = biz['drip_j3_msg']
         if not msg_template or not msg_template.strip():
-            continue # Pas de message configuré
+            continue
 
-        # On prend la dernière interaction par client
         cursor.execute("""
-            SELECT h.wa_id, MAX(h.timestamp) as last_timestamp, COALESCE(c.nom, 'Client') as client_name
-            FROM history h
-            LEFT JOIN clients c ON h.wa_id = c.wa_id AND c.business_id = ?
-            WHERE h.business_id = ?
-            GROUP BY h.wa_id
-        """, (biz_id, biz_id))
+            SELECT h1.wa_id, h1.timestamp as last_timestamp, h1.role as last_role, h1.message as last_message, COALESCE(c.nom, 'Client') as client_name
+            FROM history h1
+            INNER JOIN (
+                SELECT wa_id, MAX(timestamp) as max_ts
+                FROM history
+                WHERE business_id = ?
+                GROUP BY wa_id
+            ) h2 ON h1.wa_id = h2.wa_id AND h1.timestamp = h2.max_ts
+            LEFT JOIN clients c ON h1.wa_id = c.wa_id AND c.business_id = ?
+            WHERE h1.business_id = ?
+        """, (biz_id, biz_id, biz_id))
         
         clients = cursor.fetchall()
         queued_count = 0
@@ -56,9 +58,12 @@ def process_daily_drip_campaigns():
         for c in clients:
             try:
                 last_ts = datetime.fromisoformat(c['last_timestamp'])
-                # Si la dernière interaction était il y a exactement 3 jours (à 24h près)
-                if limit_start < last_ts <= limit_end:
-                    # Enqueue le message
+                # Client inactif depuis AU MOINS 3 jours ET n'a pas répondu au dernier message du bot
+                if last_ts <= limit_end and c['last_role'] == 'assistant':
+                    # Anti-boucle: Si le dernier message envoyé est DÉJÀ la relance, on ne la renvoie pas en boucle
+                    if "[CAMPAGNE MARKETING]" in c['last_message'] and msg_template[:20] in c['last_message']:
+                        continue
+                        
                     prenom = c['client_name'].split()[0]
                     final_msg = msg_template.replace('{prenom}', prenom)
                     marketing_repo.enqueue_message(biz_id, c['wa_id'], final_msg)

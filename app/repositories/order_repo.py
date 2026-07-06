@@ -250,7 +250,12 @@ def get_res_info(res_id: int) -> Optional[sqlite3.Row]:
     )
     row = cursor.fetchone()
     conn.close()
-    return row
+    if row:
+        from app.services.crypto_service import decrypt_token
+        row_dict = dict(row)
+        row_dict['token_wa'] = decrypt_token(row_dict.get('token_wa', ''))
+        return row_dict
+    return None
 
 
 def get_upcoming_reminders() -> List[sqlite3.Row]:
@@ -274,7 +279,13 @@ def get_upcoming_reminders() -> List[sqlite3.Row]:
     """)
     rows = cursor.fetchall()
     conn.close()
-    return rows
+    from app.services.crypto_service import decrypt_token
+    result = []
+    for row in rows:
+        r = dict(row)
+        r['token_wa'] = decrypt_token(r.get('token_wa', ''))
+        result.append(r)
+    return result
 
 def mark_reminder_sent(res_id: int):
     """Marque une réservation comme ayant reçu son rappel."""

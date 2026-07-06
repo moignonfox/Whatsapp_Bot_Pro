@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../models/conversation.dart';
 import '../repositories/chat_repository.dart';
 import '../core/api/socket_client.dart';
+import 'package:flutter/foundation.dart';
 
 final chatNotifierProvider = AsyncNotifierProvider<ChatNotifier, List<Conversation>>(ChatNotifier.new);
 
@@ -30,7 +31,9 @@ class ChatNotifier extends AsyncNotifier<List<Conversation>> {
 
     ref.onDispose(() {
       _msgSub?.cancel();
-      _audioPlayer.dispose();
+      _audioPlayer.dispose().catchError((e) {
+        debugPrint('Ignored dispose error: $e');
+      });
     });
 
     return _fetchConversations();

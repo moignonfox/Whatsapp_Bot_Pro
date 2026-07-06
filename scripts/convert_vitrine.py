@@ -69,10 +69,17 @@ replacement = r'''<!-- PRODUCTS GRID -->
 <!-- INFO STRIP -->'''
 content = re.sub(pattern, replacement, content, flags=re.DOTALL)
 
-# Replace the whatsapp number
+# Replace the whatsapp number (JavaScript)
 content = re.sub(
     r"const WA_NUMBER = '22890000000';",
-    r"const WA_NUMBER = '{{ business.owner_phone|replace('+', '') if business.owner_phone else '' }}';",
+    r"const WA_NUMBER = '{{ business.requested_bot_phone|replace('+', '') if business.requested_bot_phone else (business.owner_phone|replace('+', '') if business.owner_phone else '') }}';",
+    content
+)
+
+# Replace the whatsapp number (Footer link)
+content = re.sub(
+    r'<a href="https://wa\.me/22890000000" class="footer-wa">',
+    '<a href="https://wa.me/{{ business.requested_bot_phone|replace(\'+\', \'\') if business.requested_bot_phone else (business.owner_phone|replace(\'+\', \'\') if business.owner_phone else \'\') }}" class="footer-wa">',
     content
 )
 

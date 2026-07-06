@@ -18,6 +18,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <style>
+
+@keyframes ring {
+    0% { transform: rotate(0); }
+    5% { transform: rotate(15deg); }
+    10% { transform: rotate(-10deg); }
+    15% { transform: rotate(5deg); }
+    20% { transform: rotate(-5deg); }
+    25% { transform: rotate(0); }
+    100% { transform: rotate(0); }
+}
+
         /* Styles spécifiques au Master Dashboard */
         .card {
             background: var(--card);
@@ -144,7 +155,32 @@
             .main { margin-left: 0; }
             .content { padding: 16px; }
         }
+
+        .tab-btn { background: transparent; border: none; padding: 6px 12px; border-radius: 6px; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { background: var(--border); color: var(--text); }
+        .business-row { transition: opacity 0.3s; }
+        .status-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .status-modal-content { background: var(--card); padding: 24px; border-radius: 12px; border: 1px solid var(--border); width: 90%; max-width: 400px; box-shadow: var(--shadow); }
     </style>
+
+<style>
+
+@keyframes ring {
+    0% { transform: rotate(0); }
+    5% { transform: rotate(15deg); }
+    10% { transform: rotate(-10deg); }
+    15% { transform: rotate(5deg); }
+    20% { transform: rotate(-5deg); }
+    25% { transform: rotate(0); }
+    100% { transform: rotate(0); }
+}
+
+@keyframes slideInGlobalToast {
+    0% { transform: translateY(100px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+</style>
 </head>
 <body>
 
@@ -164,7 +200,13 @@
             </div>
         </div>
         <div class="topbar-right">
-            <span style="font-size:11px;font-weight:600;background:rgba(248,81,73,0.10);border:1px solid rgba(248,81,73,0.28);color:#F85149;padding:4px 12px;border-radius:20px;">🔐 Accès Master</span>
+            <div style="position: relative; cursor: pointer; margin-right: 15px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;" onclick="toggleMasterNotifPanel()" title="Notifications">
+                <i class="fas fa-bell" style="font-size: 20px; color: var(--text); {% if master_pending_count and master_pending_count > 0 %}animation: ring 2s infinite;{% endif %}"></i>
+                {% if master_pending_count and master_pending_count > 0 %}
+                <span id="notif-badge" style="position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; line-height: 1; border: 2px solid var(--bg); min-width: 14px; text-align: center;">{{ master_pending_count }}</span>
+                {% endif %}
+            </div>
+            <span style="font-size:11px;font-weight:600;background:rgba(248,81,73,0.10);border:1px solid rgba(248,81,73,0.28);color:#F85149;padding:4px 12px;border-radius:20px;">🛡️ Accès Master</span>
         </div>
     </header>
 
@@ -280,7 +322,15 @@
         <!-- Card: Businesses -->
         <div class="card">
             <div class="header-card">
-                <h2>🏢 Clients (Businesses)</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <h2 id="clients-section">🏢 Clients (Businesses)</h2>
+                  <div style="display: flex; background: var(--surface); padding: 4px; border-radius: 8px; border: 1px solid var(--border); margin-left: 15px;">
+                      <button class="tab-btn active" onclick="filterBusinesses('all', this)">Tous</button>
+                      <button class="tab-btn" onclick="filterBusinesses('active', this)">Actifs</button>
+                      <button class="tab-btn" onclick="filterBusinesses('archived', this)">Archivés</button>
+                      <button class="tab-btn" onclick="filterBusinesses('deleted', this)">Supprimés</button>
+                  </div>
+              </div>
                 <a href="{{ url_for('master.view_add_business') }}" class="btn">+ Ajouter un client</a>
             </div>
             <table>
@@ -298,7 +348,11 @@
                 </thead>
                 <tbody>
                     {% for b in businesses %}
-                    <tr>
+                    {% set computed_status = b.status|default('active') %}
+                    {% if dict(b).get('is_active') == 0 and dict(b).get('deletion_scheduled_at') %}
+                        {% set computed_status = 'deleted' %}
+                    {% endif %}
+                    <tr class="business-row" data-status="{{ computed_status }}">
                         <td style="font-weight: 600;">{{ b.nom }}</td>
                         <td style="color: var(--muted); text-transform: capitalize;">{{ b.business_type }}</td>
                         <td>
@@ -346,6 +400,20 @@
                             <a href="{{ url_for('master.view_edit_business', biz_id=b.id) }}" class="action-link">Modifier</a>
                             &nbsp;|&nbsp;
                             <a href="{{ url_for('dashboard.admin_dashboard', biz_id=b.id) }}" class="action-link" style="color:var(--muted);">Dashboard →</a>
+                            
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                            {% if computed_status == 'archived' %}
+                                <a href="javascript:void(0)" onclick="openStatusModal('{{ b.id }}', 'active')" class="action-link" style="color:#25D366;"><i class="fas fa-undo"></i> Restaurer</a> &nbsp;|&nbsp;
+                                <a href="javascript:void(0)" onclick="openStatusModal('{{ b.id }}', 'deleted')" class="action-link" style="color:#ef4444;"><i class="fas fa-trash"></i> Supprimer</a>
+                            {% elif computed_status == 'deleted' %}
+                                <a href="javascript:void(0)" onclick="openStatusModal('{{ b.id }}', 'active')" class="action-link" style="color:#25D366;"><i class="fas fa-undo"></i> Restaurer</a> &nbsp;|&nbsp;
+                                <a href="javascript:void(0)" onclick="deleteImmediate('{{ b.id }}')" class="action-link" style="color:#ef4444;" title="Purger immédiatement"><i class="fas fa-times-circle"></i> Purger</a>
+                                <br><span style="font-size: 10px; color: #ef4444; font-weight: bold; margin-top: 4px; display:inline-block;"><i class="fas fa-clock"></i> Suppression prévue le {{ (b.deletion_scheduled_at|string)[:10] if b.deletion_scheduled_at else '???' }}</span>
+                            {% else %}
+                                <a href="javascript:void(0)" onclick="openStatusModal('{{ b.id }}', 'archived')" class="action-link" style="color:#F0B429;"><i class="fas fa-archive"></i> Archiver</a> &nbsp;|&nbsp;
+                                <a href="javascript:void(0)" onclick="openStatusModal('{{ b.id }}', 'deleted')" class="action-link" style="color:#ef4444;"><i class="fas fa-trash"></i> Supprimer</a>
+                            {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -410,5 +478,349 @@
         });
     }
     </script>
+
+<div id="master-notif-overlay" onclick="closeMasterNotifPanel()" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.5); backdrop-filter: blur(4px); transition: opacity 0.3s;"></div>
+<div id="master-notif-panel" style="display:none; position:fixed; top:0; right:0; height:100vh; width:400px; max-width:100vw; background:var(--surface); border-left:1px solid var(--border); z-index:9999; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,0.4); transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+    <div style="padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--bg);">
+        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-bell" style="color:#58A6FF;"></i> Notifications
+        </h3>
+        <div style="display:flex; gap:12px;">
+            <button onclick="clearAllNotifications()" style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); color:#F85149; cursor:pointer; font-size:12px; font-weight:600; padding:6px 12px; border-radius:6px; transition:0.2s;" onmouseover="this.style.background='rgba(248,81,73,0.2)'" onmouseout="this.style.background='rgba(248,81,73,0.1)'">Tout effacer</button>
+            <button onclick="closeMasterNotifPanel()" style="background:var(--card); border:1px solid var(--border); color:var(--muted); cursor:pointer; font-size:14px; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    <div id="notif-list-container" style="padding:24px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:16px; background:var(--bg);">
+        {% if master_notifications and master_notifications|length > 0 %}
+            {% for notif in master_notifications %}
+            <div id="notif-{{ notif.id }}" class="notif-card" style="padding:16px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; position: relative; display:flex; gap:12px; {% if not notif.is_read %}border-left:4px solid #58A6FF;{% endif %}">
+                {% if notif.type == 'alerte' %}
+                    <div style="min-width:32px; height:32px; border-radius:50%; background:rgba(248,81,73,0.1); color:#F85149; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-exclamation-triangle"></i></div>
+                {% elif notif.type == 'inscription' %}
+                    <div style="min-width:32px; height:32px; border-radius:50%; background:rgba(37,211,102,0.1); color:#25D366; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-user-plus"></i></div>
+                {% else %}
+                    <div style="min-width:32px; height:32px; border-radius:50%; background:rgba(88,166,255,0.1); color:#58A6FF; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-info"></i></div>
+                {% endif %}
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:600; color:var(--text);">{{ notif.title }}</h4>
+                        <button class="notif-delete-btn" onclick="deleteNotification({{ notif.id }})" style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.2); color:#F85149; cursor:pointer; padding:6px; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center;" title="Supprimer"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                    </div>
+                    <p style="margin:0 0 8px 0; font-size:14px; color:var(--text); line-height:1.5;">{{ notif.message }}</p>
+                    <div style="font-size:11px; color:var(--muted); font-weight:500;">
+                        <i class="far fa-clock" style="margin-right:4px;"></i> {{ notif.created_at|truncate(16, true, '') }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div id="no-notif-text" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); gap:16px;">
+                <i class="far fa-bell-slash" style="font-size:32px; opacity:0.5;"></i>
+                <p style="font-size:14px; font-weight:500;">Aucune notification pour le moment.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="statusModal"  class="status-modal">
+    <div class="status-modal-content">
+        <h3 style="margin-top:0; color:var(--text); font-size:16px;">Vérification de sécurité</h3>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;" id="statusModalText">Veuillez entrer votre mot de passe Master pour confirmer l'action.</p>
+        <input type="password" id="masterPasswordInput" placeholder="Mot de passe Master" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); margin-bottom:16px;">
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="closeStatusModal()" style="padding:8px 16px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer;">Annuler</button>
+            <button onclick="confirmStatusChange()" style="padding:8px 16px; border-radius:6px; border:none; background:var(--green); color:white; cursor:pointer; font-weight:bold;">Confirmer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBizId = null;
+let currentTargetStatus = null;
+
+function filterBusinesses(status, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    
+    document.querySelectorAll('.business-row').forEach(row => {
+        if(status === 'all' || row.getAttribute('data-status') === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function openStatusModal(bizId, targetStatus) {
+    currentBizId = bizId;
+    currentTargetStatus = targetStatus;
+    let actionName = targetStatus === 'archived' ? "l'archivage" : (targetStatus === 'deleted' ? "la suppression (délai 7 jours)" : "la restauration");
+    document.getElementById('statusModalText').innerText = `Veuillez entrer votre mot de passe Master pour confirmer ${actionName}.`;
+    document.getElementById('masterPasswordInput').value = '';
+    document.getElementById('statusModal').style.display = 'flex';
+}
+
+function closeStatusModal() {
+    document.getElementById('statusModal').style.display = 'none';
+    currentBizId = null;
+    currentTargetStatus = null;
+}
+
+async function confirmStatusChange() {
+    const pwd = document.getElementById('masterPasswordInput').value;
+    if(!pwd) return alert('Mot de passe requis');
+    try {
+        const csrfToken = "{{ csrf_token() }}";
+        const r = await fetch(`/master/business/${currentBizId}/change_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({master_password: pwd, status: currentTargetStatus})
+        });
+        const data = await r.json();
+        if(data.success) {
+            window.location.reload();
+        } else {
+            alert("Erreur: " + data.error);
+        }
+    } catch(e) {
+        alert("Erreur réseau.");
+    }
+}
+
+async function deleteImmediate(bizId) {
+    if(!confirm("Êtes-vous sûr de vouloir purger immédiatement ce compte de test ? Cette action est irréversible et ne requiert pas le mot de passe Master pour les tests.")) return;
+    try {
+        const csrfToken = "{{ csrf_token() }}";
+        const r = await fetch(`/master/business/${bizId}?immediate=true`, { 
+            method: 'DELETE',
+            headers: {'X-CSRFToken': csrfToken}
+        });
+        const data = await r.json();
+        if(data.success) {
+            window.location.reload();
+        } else {
+            alert("Erreur: " + data.error);
+        }
+    } catch(e) {
+        alert("Erreur réseau.");
+    }
+}
+
+function toggleMasterNotifPanel() {
+    let p = document.getElementById('master-notif-panel');
+    let o = document.getElementById('master-notif-overlay');
+    if(p.style.display === 'none' || p.style.display === '') {
+        p.style.display = 'flex';
+        o.style.display = 'block';
+        setTimeout(() => { p.style.transform = 'translateX(0)'; }, 10);
+        
+        fetch('/master/notifications/mark-read', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        }).then(() => {
+            let badge = document.getElementById('notif-badge');
+            if (badge) badge.remove();
+            document.querySelector('.fa-bell').style.animation = 'none';
+            document.querySelectorAll('.notif-card').forEach(el => el.style.borderLeft = '1px solid var(--border)');
+        });
+    } else {
+        closeMasterNotifPanel();
+    }
+}
+function closeMasterNotifPanel() {
+    let p = document.getElementById('master-notif-panel');
+    let o = document.getElementById('master-notif-overlay');
+    p.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        p.style.display = 'none';
+        o.style.display = 'none';
+    }, 300);
+}
+
+async function deleteNotification(id) {
+    if(!confirm("Effacer cette notification ?")) return;
+    try {
+        const r = await fetch(`/master/notifications/${id}`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        });
+        if(r.ok) {
+            let card = document.getElementById(`notif-${id}`);
+            card.style.transform = 'translateX(100%)';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function clearAllNotifications() {
+    if(!confirm("Effacer toutes les notifications ?")) return;
+    try {
+        const r = await fetch(`/master/notifications/clear-all`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        });
+        if(r.ok) {
+            document.getElementById('notif-list-container').innerHTML = `
+            <div id="no-notif-text" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); gap:16px;">
+                <i class="far fa-bell-slash" style="font-size:32px; opacity:0.5;"></i>
+                <p style="font-size:14px; font-weight:500;">Aucune notification pour le moment.</p>
+            </div>`;
+        }
+    } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    let firstBtn = document.querySelector('.tab-btn.active');
+    if(firstBtn) filterBusinesses('all', firstBtn);
+});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    var socket = io();
+    
+    let globalAudioCtx = null;
+
+    function initAudioContext() {
+        if (!globalAudioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            globalAudioCtx = new AudioContext();
+        }
+        if (globalAudioCtx.state === 'suspended') {
+            globalAudioCtx.resume();
+        }
+    }
+
+    // Autoriser le navigateur à jouer du son lors du moindre clic sur le Dashboard
+    document.addEventListener('click', initAudioContext);
+    document.addEventListener('keydown', initAudioContext);
+
+    function playBeep() {
+        if (!globalAudioCtx) return;
+        if (globalAudioCtx.state === 'suspended') globalAudioCtx.resume();
+
+        try {
+            const osc = globalAudioCtx.createOscillator();
+            const gainNode = globalAudioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(globalAudioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, globalAudioCtx.currentTime); 
+            osc.frequency.setValueAtTime(1108.73, globalAudioCtx.currentTime + 0.1); 
+            
+            gainNode.gain.setValueAtTime(0, globalAudioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, globalAudioCtx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, globalAudioCtx.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.5, globalAudioCtx.currentTime + 0.15);
+            gainNode.gain.linearRampToValueAtTime(0, globalAudioCtx.currentTime + 0.25);
+            
+            osc.start(globalAudioCtx.currentTime);
+            osc.stop(globalAudioCtx.currentTime + 0.3);
+        } catch(e) {
+            console.log('Audio error:', e);
+        }
+    }
+
+    socket.on('connect', function() {
+        socket.emit('rejoindre_room', {room: 'master'});
+    });
+
+    function showToastMaster(data) {
+        const existing = document.getElementById('global-notif-toast');
+        if (existing) existing.remove();
+
+        let color = '#58A6FF';
+        let iconClass = 'fa-info';
+        if(data.type === 'alerte') { color = '#F85149'; iconClass = 'fa-exclamation-triangle'; }
+        else if (data.type === 'inscription') { color = '#25D366'; iconClass = 'fa-user-plus'; }
+
+        const title = data.title || data.type;
+        const body = data.message || '';
+
+        const toast = document.createElement('div');
+        toast.id = 'global-notif-toast';
+        toast.style.cssText = [
+            'position:fixed','bottom:24px','right:24px','z-index:99999',
+            'background:var(--surface,#1a2233)',`border:1.5px solid ${color}`,
+            'border-radius:14px','padding:14px 16px','max-width:340px','min-width:260px',
+            'box-shadow:0 10px 40px rgba(0,0,0,0.5)',
+            'cursor:pointer','display:flex','align-items:flex-start','gap:12px',
+            'animation:slideInGlobalToast 0.35s cubic-bezier(.22,.68,0,1.2)'
+        ].join(';');
+        
+        toast.innerHTML = `
+            <div style="width:40px;height:40px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid ${color};">
+                <i class="fas ${iconClass}" style="color:${color};font-size:16px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:var(--text,#e0e6f0);margin-bottom:3px;">${title}</div>
+                <div style="font-size:12px;color:var(--muted,#8892a4);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${body}</div>
+                <div style="font-size:11px;color:${color};margin-top:6px;font-weight:600;">
+                    <i class="fas fa-arrow-right" style="font-size:9px;margin-right:3px;"></i>Ouvrir le panneau
+                </div>
+            </div>
+            <button id="global-notif-toast-close" style="background:none;border:none;color:var(--muted,#8892a4);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;">&times;</button>
+        `;
+        toast.addEventListener('click', function(e) {
+            if (e.target.id === 'global-notif-toast-close') { toast.remove(); return; }
+            toast.remove();
+            toggleMasterNotifPanel();
+        });
+        document.body.appendChild(toast);
+        setTimeout(() => toast && toast.remove(), 8000);
+    }
+
+    socket.on('master_notification', function(data) {
+        playBeep();
+        showToastMaster(data);
+        
+        const bellIcon = document.querySelector('.fa-bell');
+        let badge = document.getElementById('notif-badge');
+        if (!badge) {
+            bellIcon.style.animation = 'ring 2s infinite';
+            const container = bellIcon.parentElement;
+            container.insertAdjacentHTML('beforeend', '<span id="notif-badge" style="position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; line-height: 1; border: 2px solid var(--bg); min-width: 14px; text-align: center;">1</span>');
+        } else {
+            badge.innerText = parseInt(badge.innerText) + 1;
+        }
+
+        const notifContainer = document.getElementById('notif-list-container');
+        const noNotif = document.getElementById('no-notif-text');
+        if (noNotif) noNotif.remove();
+
+        const d = new Date();
+        const timeStr = d.toISOString().substring(0, 16).replace('T', ' ');
+        
+        let iconHtml = `<div style="min-width:32px; height:32px; border-radius:50%; background:rgba(88,166,255,0.1); color:#58A6FF; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-info"></i></div>`;
+        if(data.type === 'alerte') {
+            iconHtml = `<div style="min-width:32px; height:32px; border-radius:50%; background:rgba(248,81,73,0.1); color:#F85149; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-exclamation-triangle"></i></div>`;
+        } else if (data.type === 'inscription') {
+            iconHtml = `<div style="min-width:32px; height:32px; border-radius:50%; background:rgba(37,211,102,0.1); color:#25D366; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-user-plus"></i></div>`;
+        }
+
+        const newNotifHTML = `
+            <div id="notif-${data.id}" class="notif-card" style="padding:16px; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; position: relative; display:flex; gap:12px; border-left:4px solid #58A6FF;">
+                ${iconHtml}
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:600; color:var(--text);">${data.title || data.type}</h4>
+                        <button class="notif-delete-btn" onclick="deleteNotification(${data.id})" style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.2); color:#F85149; cursor:pointer; padding:6px; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center;" title="Supprimer"><i class="fas fa-trash" style="font-size:12px;"></i></button>
+                    </div>
+                    <p style="margin:0 0 8px 0; font-size:14px; color:var(--text); line-height:1.5;">${data.message}</p>
+                    <div style="font-size:11px; color:var(--muted); font-weight:500;">
+                        <i class="far fa-clock" style="margin-right:4px;"></i> ${timeStr}
+                    </div>
+                </div>
+            </div>
+        `;
+        notifContainer.insertAdjacentHTML('afterbegin', newNotifHTML);
+    });
+</script>
 </body>
 </html>

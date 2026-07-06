@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import '../../../core/api/api_client.dart';
 import '../../../viewmodels/profile_notifier.dart';
+import '../../../models/business_profile.dart';
 
 class BusinessSettingsScreen extends ConsumerStatefulWidget {
   const BusinessSettingsScreen({super.key});
@@ -32,6 +36,7 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
   bool _isEditing = false;
   bool _isSaving = false;
   bool _isInitialized = false;
+  bool _isActive = true;
 
   @override
   void dispose() {
@@ -40,10 +45,11 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
     super.dispose();
   }
 
-  void _populateControllers(profile) {
+  void _populateControllers(BusinessProfile profile) {
     if (!_isEditing && !_isInitialized) {
       _promptController.text = profile.prompt;
       _welcomeMsgController.text = profile.msgConfirm;
+      _isActive = profile.isActive;
       
       try {
         String rawJson = profile.horairesJson.replaceAll("'", '"');
@@ -83,6 +89,7 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
       'prompt': _promptController.text,
       'msg_confirm': _welcomeMsgController.text,
       'horaires_json': jsonEncode(horairesMap),
+      'is_active': _isActive ? 1 : 0,
     });
     setState(() {
       _isSaving = false;
@@ -169,11 +176,108 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Activer le Bot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Switch(
+                              value: _isActive,
+                              activeThumbColor: Theme.of(context).colorScheme.primary,
+                              onChanged: _isEditing ? (val) {
+                                setState(() => _isActive = val);
+                              } : null,
+                            ),
+                          ],
+                        ),
+                        if (!_isActive)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Text(
+                              'Le bot est actuellement désactivé. Vous recevrez les messages mais le bot ne répondra pas automatiquement.',
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error),
+                            ),
+                          ),
+                        const Divider(),
+                        const SizedBox(height: 8),
                         const Text('Informations du commerce', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 16),
                         _buildInfoRow('Nom', profile.nom),
                         const Divider(),
                         _buildInfoRow('Devise', 'FCFA'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                const Padding(
+                  padding: EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text('Votre Site Web / Catalogue', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ),
+                _buildContainer(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Partagez ce lien avec vos clients pour qu\'ils puissent voir vos produits et commander en ligne.',
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.link, color: Theme.of(context).colorScheme.primary, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${apiClient.options.baseUrl.replaceAll('/api/v1', '')}/v/${profile.id}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: '${apiClient.options.baseUrl.replaceAll('/api/v1', '')}/v/${profile.id}'));
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lien copié dans le presse-papier !')));
+                                },
+                                icon: const Icon(Icons.copy, size: 18),
+                                label: const Text('Copier'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async{
+                                  final url = Uri.parse('${apiClient.options.baseUrl.replaceAll('/api/v1', '')}/v/${profile.id}');
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible d\'ouvrir le lien.')));
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.open_in_browser, size: 18),
+                                label: const Text('Ouvrir'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -200,7 +304,7 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
                                   scale: 0.8,
                                   child: Switch(
                                     value: h['isOpen'] as bool,
-                                    activeColor: Theme.of(context).colorScheme.secondary,
+                                    activeThumbColor: Theme.of(context).colorScheme.secondary,
                                     onChanged: _isEditing ? (val) {
                                       setState(() { h['isOpen'] = val; });
                                     } : null,

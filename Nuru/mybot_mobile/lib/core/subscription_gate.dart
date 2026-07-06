@@ -55,9 +55,9 @@ extension AppFeatureExtension on AppFeature {
       case AppFeature.catalogue:
         return SubscriptionPlan.basic;
       case AppFeature.statistiques:
-      case AppFeature.paiements:
       case AppFeature.campagnes:
         return SubscriptionPlan.pro;
+      case AppFeature.paiements:
       case AppFeature.multiEmployes:
       case AppFeature.crm:
       case AppFeature.marketingAvance:

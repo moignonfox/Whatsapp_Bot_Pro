@@ -57,3 +57,33 @@ def get_queue_stats(business_id: str) -> Dict[str, int]:
         if status in stats:
             stats[status] = count
     return stats
+
+def get_today_campaigns_count(business_id: str) -> int:
+    """Compte le nombre de campagnes uniques envoyées aujourd'hui."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(DISTINCT message)
+        FROM campaign_queue
+        WHERE business_id = ? AND date(created_at) = date('now')
+    """, (business_id,))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+def enqueue_campaign(business_id: str, clients: List[Dict], message_template: str) -> int:
+    """Ajoute une campagne en masse dans la file d'attente. Retourne le nombre ajouté."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    count = 0
+    for client in clients:
+        prenom = client.get('client_name', 'Client').split()[0]
+        msg = message_template.replace('{prenom}', prenom)
+        cursor.execute(
+            "INSERT INTO campaign_queue (business_id, wa_id, message, status) VALUES (?, ?, ?, 'pending')",
+            (business_id, client['wa_id'], msg)
+        )
+        count += 1
+    conn.commit()
+    conn.close()
+    return count

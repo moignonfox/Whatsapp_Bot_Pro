@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../viewmodels/chat_detail_notifier.dart';
+import '../../viewmodels/chat_notifier.dart';
+import '../../repositories/chat_repository.dart';
+import '../../models/conversation.dart';
+import 'widgets/client_profile_sheet.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   final String waId;
@@ -19,6 +23,43 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _showAttachmentPanel = false;
   bool _showEmojiPanel = false;
+  
+  String _currentClientName = '';
+
+
+  Widget _buildDateSeparator(BuildContext context, String timestamp) {
+    try {
+      final date = DateTime.parse(timestamp).toLocal();
+      final now = DateTime.now();
+      final yesterday = now.subtract(const Duration(days: 1));
+      
+      String text;
+      if (date.year == now.year && date.month == now.month && date.day == now.day) {
+        text = 'Aujourd\'hui';
+      } else if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+        text = 'Hier';
+      } else {
+        text = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      }
+      
+      return Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+          ),
+        ),
+      );
+    } catch (e) {
+      return const SizedBox.shrink();
+    }
+  }
 
   String _formatTime(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty || timestamp == 'now') return '';
@@ -33,6 +74,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _currentClientName = widget.clientName;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatDetailNotifierProvider.notifier).fetchMessages(widget.waId);
     });
@@ -202,22 +244,32 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         titleSpacing: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              child: Text(widget.clientName.substring(0, 1).toUpperCase(), style: const TextStyle(color: Colors.white)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.clientName, style: const TextStyle(fontSize: 16)),
-                ],
+        title: GestureDetector(
+          onTap: () {
+             final chatListState = ref.read(chatNotifierProvider).value;
+             final conv = chatListState?.firstWhere((c) => c.id == widget.waId, orElse: () => Conversation(id: widget.waId, clientName: _currentClientName, lastMessage: '', lastTimestamp: ''));
+             ClientProfileSheet.show(context, ref, conv!, onNameUpdated: (newName) {
+                setState(() => _currentClientName = newName);
+             });
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                child: Text(_currentClientName.isNotEmpty ? _currentClientName.substring(0, 1).toUpperCase() : '?', style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_currentClientName, style: const TextStyle(fontSize: 16)),
+                    const Text('Appuyez pour voir le profil', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           Row(
@@ -263,13 +315,29 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           itemBuilder: (context, index) {
                             // Reverse the index so the newest message is at the bottom visually
                             final reversedIndex = state.messages.length - 1 - index;
-                            final msg = state.messages[reversedIndex];
+                              final msg = state.messages[reversedIndex];
+                              
+                              bool showDateSeparator = false;
+                              if (reversedIndex == 0) {
+                                showDateSeparator = true;
+                              } else {
+                                try {
+                                  final prevMsg = state.messages[reversedIndex - 1];
+                                  final currentDate = DateTime.parse(msg.timestamp).toLocal();
+                                  final prevDate = DateTime.parse(prevMsg.timestamp).toLocal();
+                                  if (currentDate.year != prevDate.year || currentDate.month != prevDate.month || currentDate.day != prevDate.day) {
+                                    showDateSeparator = true;
+                                  }
+                                } catch (_) {
+                                  showDateSeparator = true;
+                                }
+                              }
                             final isMe = !msg.isFromUser;
                               final isDark = Theme.of(context).brightness == Brightness.dark;
                             
                             final textColor = isMe ? Colors.white : (isDark ? Colors.white : Colors.black87);
 
-                            return Align(
+                              Widget messageWidget = Align(
                               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                               child: Container(
                                 constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
@@ -338,6 +406,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                 ),
                               ),
                             );
+
+                              if (showDateSeparator) {
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildDateSeparator(context, msg.timestamp),
+                                    messageWidget,
+                                  ],
+                                );
+                              }
+                              return messageWidget;
                           },
                         ),
                       ),

@@ -68,7 +68,17 @@ def init_db() -> None:
             devise            TEXT DEFAULT 'FCFA',
             is_approved       INTEGER DEFAULT 0,
             date_debut_abonnement DATETIME DEFAULT CURRENT_TIMESTAMP,
-            date_fin_abonnement   DATETIME
+            date_fin_abonnement   DATETIME,
+            deletion_scheduled_at DATETIME,
+            deletion_reason       TEXT,
+            google_access_token   TEXT,
+            google_refresh_token  TEXT,
+            google_drive_folder_id TEXT,
+            last_backup_at        DATETIME,
+            backup_enabled        INTEGER DEFAULT 0,
+            daily_report_time     TEXT DEFAULT '19:00',
+            status                TEXT DEFAULT 'active',
+            archived_at           DATETIME
         )
     """)
 
@@ -178,6 +188,36 @@ def init_db() -> None:
             FOREIGN KEY (wa_id, business_id) REFERENCES clients (wa_id, business_id) ON DELETE CASCADE,
             FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
             PRIMARY KEY (wa_id, business_id, tag_id)
+        )
+    ''')
+
+    # Table blocklist JWT — stocke les tokens révoqués (logout)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS jwt_blocklist (
+            jti        TEXT PRIMARY KEY,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications_master (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            type       TEXT NOT NULL,
+            title      TEXT NOT NULL,
+            message    TEXT NOT NULL,
+            business_id TEXT,
+            is_read    INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses(id)
+        )
+    ''')
+
+    # Table anti-rejeu webhook Meta — stocke les wam_id 24h
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS webhook_seen_ids (
+            wam_id     TEXT PRIMARY KEY,
+            seen_at    DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -299,6 +339,94 @@ def update_schema() -> None:
         cursor.execute("ALTER TABLE businesses ADD COLUMN is_approved INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN deletion_scheduled_at DATETIME")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN deletion_reason TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    # Colonnes CinetPay multi-tenant (chiffrées via crypto_service)
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN cinetpay_site_id TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN cinetpay_apikey TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    # Google Drive Backup
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN google_access_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN google_refresh_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN google_drive_folder_id TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN last_backup_at DATETIME")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN backup_enabled INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN daily_report_time TEXT DEFAULT '19:00'")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'active'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN archived_at DATETIME")
+    except sqlite3.OperationalError:
+        pass
+
+    # Blocklist JWT
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS jwt_blocklist (
+            jti        TEXT PRIMARY KEY,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Notifications Master
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications_master (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            type       TEXT NOT NULL,
+            title      TEXT NOT NULL,
+            message    TEXT NOT NULL,
+            business_id TEXT,
+            is_read    INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses(id)
+        )
+    ''')
+
+    # Anti-rejeu webhook Meta
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS webhook_seen_ids (
+            wam_id     TEXT PRIMARY KEY,
+            seen_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     # Migration V9 : Renommage de permissions_json en agent_settings_json pour plus de clarté
     try:

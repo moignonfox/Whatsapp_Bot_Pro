@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../viewmodels/auth_notifier.dart';
 import '../../viewmodels/profile_notifier.dart';
+import '../../core/subscription_gate.dart';
+import '../../core/feature_gate_widget.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -105,6 +107,90 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
 
+          const SizedBox(height: 20),
+
+          // Pro & Premium Features Section
+          const Text(
+            ' Outils Avancés',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+
+          _buildMenuCard(
+            context: context,
+            children: [
+              FeatureGate(
+                feature: AppFeature.statistiques,
+                currentPlan: SubscriptionPlanExtension.fromString(profileState.value?.planAbonnement ?? 'BASIC'),
+                child: _buildMenuItem(
+                  context: context,
+                  icon: Icons.analytics_outlined,
+                  title: 'Statistiques avancées',
+                  subtitle: 'Analyse des ventes, clients et IA',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bientôt disponible !'))),
+                ),
+              ),
+              _buildDivider(),
+              FeatureGate(
+                feature: AppFeature.campagnes,
+                currentPlan: SubscriptionPlanExtension.fromString(profileState.value?.planAbonnement ?? 'BASIC'),
+                child: _buildMenuItem(
+                  context: context,
+                  icon: Icons.campaign_outlined,
+                  title: 'Campagnes & Marketing',
+                  subtitle: 'Newsletter, relances IA',
+                  onTap: () => context.push('/marketing'),
+                ),
+              ),
+              _buildDivider(),
+              FeatureGate(
+                feature: AppFeature.multiEmployes,
+                currentPlan: SubscriptionPlanExtension.fromString(profileState.value?.planAbonnement ?? 'BASIC'),
+                child: _buildMenuItem(
+                  context: context,
+                  icon: Icons.people_outline,
+                  title: 'Multi-Employés',
+                  subtitle: 'Gestion de l\'équipe et des accès',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bientôt disponible !'))),
+                ),
+              ),
+              _buildDivider(),
+              FeatureGate(
+                feature: AppFeature.crm,
+                currentPlan: SubscriptionPlanExtension.fromString(profileState.value?.planAbonnement ?? 'BASIC'),
+                child: _buildMenuItem(
+                  context: context,
+                  icon: Icons.contact_page_outlined,
+                  title: 'CRM Complet',
+                  subtitle: 'Gestion poussée des fiches clients',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bientôt disponible !'))),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Sauvegarde & Export
+          const Text(
+            ' Sauvegarde & Export',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+
+          _buildMenuCard(
+            context: context,
+            children: [
+              _buildMenuItem(
+                context: context,
+                icon: Icons.cloud_upload_outlined,
+                title: 'Google Drive & Exports',
+                subtitle: 'Sauvegarde automatique et exports CSV',
+                onTap: () => context.go('/profile/backup'),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 32),
 
           // Logout Button
@@ -120,7 +206,31 @@ class ProfileScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          
+
+          const SizedBox(height: 32),
+
+          // Zone dangereuse
+          const Text(
+            ' Zone dangereuse',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+
+          _buildMenuCard(
+            context: context,
+            children: [
+              _buildMenuItem(
+                context: context,
+                icon: Icons.delete_forever_outlined,
+                title: 'Supprimer mon compte',
+                subtitle: 'Libère votre numéro WhatsApp immédiatement.',
+                onTap: () => context.go('/profile/delete_account'),
+                iconColor: Colors.red,
+                textColor: Colors.red,
+              ),
+            ],
+          ),
+
           const SizedBox(height: 40),
         ],
       ),
@@ -153,18 +263,22 @@ class ProfileScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Color? iconColor,
+    Color? textColor,
   }) {
+    final themeColor = iconColor ?? Theme.of(context).colorScheme.primary;
+    
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          color: themeColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+        child: Icon(icon, color: themeColor, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: textColor)),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

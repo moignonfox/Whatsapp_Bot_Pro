@@ -16,13 +16,13 @@ class ProfileNotifier extends AsyncNotifier<BusinessProfile?> {
     return repository.getProfile();
   }
 
-  Future<void> fetchProfile() async {
-    state = const AsyncValue.loading();
+  Future<void> fetchProfile({bool silent = false}) async {
+    if (!silent) state = const AsyncValue.loading();
     try {
       final profile = await _fetchProfile();
       state = AsyncValue.data(profile);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (!silent) state = AsyncValue.error(e, st);
     }
   }
 

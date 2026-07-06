@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +23,7 @@ class SocketClient {
     final token = await _storage.read(key: 'jwt_token');
     if (token == null) return;
 
-    // Récupère l'URL de base (sans /api/v1)
+    // RÃ©cupÃ¨re l'URL de base (sans /api/v1)
     String baseUrl = apiClient.options.baseUrl.replaceAll('/api/v1', '');
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.substring(0, baseUrl.length - 1);
@@ -37,26 +37,23 @@ class SocketClient {
     );
 
     _socket?.onConnect((_) {
-      debugPrint('✅ Connecté au Socket.IO backend');
+      debugPrint('âœ… ConnectÃ© au Socket.IO backend');
       _socket?.emit('authenticate_jwt', {'token': token});
     });
 
     _socket?.on('nouveau_message', (data) {
-      debugPrint('📨 SOCKET: nouveau_message reçu: $data');
       if (data is Map) {
         try {
           final safeData = <String, dynamic>{};
           for (var k in data.keys) { safeData[k.toString()] = data[k]; }
-          debugPrint('📨 Ajout au Stream onNewMessage: $safeData');
           _messageController.add(safeData);
         } catch(e) {
-          debugPrint('❌ Erreur Stream nouveau_message: $e');
+          debugPrint('âŒ Erreur Stream nouveau_message: $e');
         }
       }
     });
 
     _socket?.on('nouvelle_commande', (data) {
-      debugPrint('📦 SOCKET: nouvelle_commande reçue: $data');
       if (data is Map) {
         final safeData = <String, dynamic>{};
         for (var k in data.keys) { safeData[k.toString()] = data[k]; }
@@ -65,7 +62,6 @@ class SocketClient {
     });
 
     _socket?.on('statut_commande', (data) {
-      debugPrint('🔄 SOCKET: statut_commande reçu: $data');
       if (data is Map) {
         final safeData = <String, dynamic>{};
         for (var k in data.keys) { safeData[k.toString()] = data[k]; }
@@ -81,7 +77,7 @@ class SocketClient {
       }
     });
 
-    _socket?.onDisconnect((_) => debugPrint('❌ Déconnecté du Socket.IO'));
+    _socket?.onDisconnect((_) => debugPrint('âŒ DÃ©connectÃ© du Socket.IO'));
     
     _socket?.connect();
   }
@@ -98,6 +94,9 @@ class SocketClient {
   final _humanModeController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onHumanModeToggled => _humanModeController.stream;
 
+  final _accountApprovedController = StreamController<bool>.broadcast();
+  Stream<bool> get onAccountApproved => _accountApprovedController.stream;
+
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();
@@ -106,6 +105,7 @@ class SocketClient {
     _orderController.close();
     _orderStatusController.close();
     _humanModeController.close();
+    _accountApprovedController.close();
   }
 
   void on(String event, Function(dynamic) handler) {
@@ -116,4 +116,7 @@ class SocketClient {
     _socket?.off(event);
   }
 }
+
+
+
 

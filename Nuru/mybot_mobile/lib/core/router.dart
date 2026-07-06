@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/auth/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/marketing/marketing_screen.dart';
 import '../screens/auth/pending_validation_screen.dart';
 import '../screens/home_layout.dart';
 import '../screens/chat/chat_screen.dart';
@@ -17,16 +18,18 @@ import '../screens/profile/subscreens/business_settings_screen.dart';
 import '../screens/profile/subscreens/security_settings_screen.dart';
 import '../screens/profile/subscreens/subscription_settings_screen.dart';
 import '../screens/profile/subscreens/display_settings_screen.dart';
+import '../screens/profile/delete_account_screen.dart';
+import '../screens/profile/backup_screen.dart';
 import '../screens/money/money_screen.dart';
 import '../viewmodels/auth_notifier.dart';
 import '../viewmodels/profile_notifier.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/today',
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
       
@@ -57,6 +60,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/marketing',
+        builder: (context, state) => const MarketingScreen(),
+      ),
       GoRoute(
         path: '/welcome',
         builder: (context, state) => const WelcomeScreen(),
@@ -149,6 +156,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'display',
                     builder: (context, state) => const DisplaySettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'delete_account',
+                    builder: (context, state) => const DeleteAccountScreen(),
+                  ),
+                  GoRoute(
+                    path: 'backup',
+                    builder: (context, state) => const BackupScreen(),
                   ),
                 ],
               ),

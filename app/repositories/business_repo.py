@@ -2,12 +2,15 @@
 business_repo.py — Accès aux données des entreprises (businesses).
 
 Fournit les fonctions CRUD pour la table 'businesses'.
+Les champs sensibles (token_wa, cinetpay_apikey) sont automatiquement
+chiffrés à l'écriture et déchiffrés à la lecture via crypto_service.
 """
 
 import sqlite3
 from typing import List, Optional
 
 from app.models.schema import get_db_path
+from app.services.crypto_service import encrypt_token, decrypt_token
 
 
 def add_or_update(
@@ -27,42 +30,47 @@ def add_or_update(
     drip_j3_enabled: int = 0,
     drip_j3_msg: str = None,
     debounce_delay: int = 3,
-    buffer_minutes: int = 0
+    buffer_minutes: int = 0,
+    email: str = None
 ) -> None:
-    """Ajoute ou met à jour un business dans la base."""
+    """Ajoute ou met à jour un business dans la base (token_wa chiffré)."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
-    
+
+    # Chiffrer le token WhatsApp avant stockage
+    encrypted_token = encrypt_token(token) if token else ''
+
     # Vérifier si le business existe déjà
     cursor.execute("SELECT id FROM businesses WHERE id = ?", (biz_id,))
     exists = cursor.fetchone()
-    
+
     if exists:
         cursor.execute(
-            """UPDATE businesses SET 
+            """UPDATE businesses SET
                nom = ?, whatsapp_phone_id = ?, token_wa = ?, password = ?,
-               prompt = ?, msg_confirm = ?, msg_cancel = ?, msg_ready = ?, 
-               business_type = ?, plan_abonnement = ?, is_active = ?, 
+               prompt = ?, msg_confirm = ?, msg_cancel = ?, msg_ready = ?,
+               business_type = ?, plan_abonnement = ?, is_active = ?,
                owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?, email = ?
                WHERE id = ?""",
-            (nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, None, biz_id)
+            (nom, phone_id, encrypted_token, password, prompt, msg_confirm, msg_cancel, msg_ready,
+             business_type, plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg,
+             debounce_delay, buffer_minutes, email, biz_id)
         )
     else:
         cursor.execute(
             """INSERT INTO businesses
                (id, nom, whatsapp_phone_id, token_wa, password,
-                prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone, 
+                prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone,
                 drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, email)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (biz_id, nom, phone_id, token, password, prompt, msg_confirm, msg_cancel, msg_ready, business_type, 
-             plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, None),
+            (biz_id, nom, phone_id, encrypted_token, password, prompt, msg_confirm, msg_cancel, msg_ready,
+             business_type, plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg,
+             debounce_delay, buffer_minutes, email),
         )
-        
-    conn.commit()
-        
+
     conn.commit()
     conn.close()
+
 
 def create_business_registration(
     biz_id: str,
@@ -138,6 +146,17 @@ def set_business_horaires(biz_id: str, horaires_json: str) -> None:
     conn.commit()
     conn.close()
 
+def set_daily_report_time(biz_id: str, time_str: str) -> None:
+    """Met à jour l'heure d'envoi du rapport quotidien."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE businesses SET daily_report_time = ? WHERE id = ?",
+        (time_str, biz_id)
+    )
+    conn.commit()
+    conn.close()
+
 def set_requested_bot_phone(biz_id: str, phone: str) -> None:
     """Met à jour le numéro de téléphone demandé pour le bot."""
     conn = sqlite3.connect(get_db_path())
@@ -181,7 +200,7 @@ def set_vitrine_settings(biz_id: str, color: str, logo_url: str = None) -> None:
 
 
 def get_by_phone_id(phone_id: str) -> Optional[sqlite3.Row]:
-    """Recherche un business par son WhatsApp Phone Number ID."""
+    """Recherche un business par son WhatsApp Phone Number ID (token_wa déchiffré)."""
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -191,11 +210,16 @@ def get_by_phone_id(phone_id: str) -> Optional[sqlite3.Row]:
     )
     row = cursor.fetchone()
     conn.close()
-    return row
+    if row:
+        # Déchiffrer le token WhatsApp avant de retourner la ligne
+        row_dict = dict(row)
+        row_dict['token_wa'] = decrypt_token(row_dict.get('token_wa', ''))
+        return row_dict
+    return None
 
 
 def get_by_id(biz_id: str) -> Optional[sqlite3.Row]:
-    """Recherche un business par son identifiant unique."""
+    """Recherche un business par son identifiant unique (token_wa déchiffré)."""
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -205,7 +229,11 @@ def get_by_id(biz_id: str) -> Optional[sqlite3.Row]:
     )
     row = cursor.fetchone()
     conn.close()
-    return row
+    if row:
+        row_dict = dict(row)
+        row_dict['token_wa'] = decrypt_token(row_dict.get('token_wa', ''))
+        return row_dict
+    return None
 
 def get_by_email(email: str) -> Optional[sqlite3.Row]:
     """Recherche un business par son adresse email."""

@@ -335,8 +335,8 @@ def process_debounced_messages(wa_id, business, phone_id):
         # Sauvegarder IMMEDIATEMENT la reponse generee par l'IA
         conversation_repo.save_message(wa_id, 'assistant', agent_reply, biz_id, agent_id)
         
-        # 2. Capture du Nom (CRM)
-        agent_reply = crm_service.extract_and_save_client_name(agent_reply, wa_id, biz_id)
+        # 2. Capture du Nom et/ou Display Name (CRM)
+        agent_reply = crm_service.extract_and_save_client_info(agent_reply, wa_id, biz_id)
         
         # 3. Extraction de la Reservation
         agent_reply = order_service.extract_and_save_reservation(agent_reply, wa_id, biz_id)

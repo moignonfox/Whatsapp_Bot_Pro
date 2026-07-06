@@ -96,15 +96,29 @@ def generate_daily_report_for_business(biz_id: str, owner_phone: str, biz_nom: s
 
 
 def generate_all_daily_reports():
-    """Tâche Cron : Boucle sur tous les business et envoie le rapport s'ils ont un owner_phone."""
+    """Tâche Cron : Boucle sur tous les business et envoie le rapport s'ils ont un owner_phone et s'il est l'heure de leur rapport."""
+    current_time_str = datetime.now().strftime('%H:%M')
+    
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, nom, owner_phone, token_wa, whatsapp_phone_id FROM businesses WHERE is_active = 1")
-    businesses = cursor.fetchall()
+    cursor.execute("SELECT id, nom, owner_phone, token_wa, whatsapp_phone_id, daily_report_time FROM businesses WHERE is_active = 1")
+    raw_businesses = cursor.fetchall()
     conn.close()
 
-    for biz in businesses:
+    from app.services.crypto_service import decrypt_token
+    for raw_biz in raw_businesses:
+        biz = dict(raw_biz)
+        
+        biz_time = biz.get('daily_report_time')
+        if not biz_time:
+            biz_time = '19:00'
+            
+        if biz_time != current_time_str:
+            continue
+            
+        biz['token_wa'] = decrypt_token(biz.get('token_wa', ''))
+
         owner_phone = biz['owner_phone']
         if owner_phone and owner_phone.strip():
             # Nettoyage rudimentaire du numéro (retirer les espaces, + etc)
@@ -113,6 +127,7 @@ def generate_all_daily_reports():
                 clean_phone = clean_phone[2:]
             if len(clean_phone) == 8:
                 clean_phone = f"228{clean_phone}"
-                
+
             if clean_phone:
                 generate_daily_report_for_business(biz['id'], clean_phone, biz['nom'], biz['token_wa'], biz['whatsapp_phone_id'])
+

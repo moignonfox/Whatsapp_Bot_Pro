@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
-
-  Future<void> _launchRegistration() async {
-    final Uri url = Uri.parse('https://tidal-unseen-abrasive.ngrok-free.dev/register');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint('Could not launch $url');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +97,7 @@ class WelcomeScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                             _buildPaintedButton(
                               text: 'Créer un compte',
-                              onTap: _launchRegistration,
+                              onTap: () => context.push('/register'),
                               isPrimary: false,
                               colorScheme: colorScheme,
                             ),

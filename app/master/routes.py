@@ -1,9 +1,10 @@
 """Routes Master Admin — Gestion des businesses par le super-administrateur."""
-from flask import Blueprint, request, render_template, redirect, url_for, session, current_app, jsonify, make_response
+from flask import Blueprint, request, render_template, redirect, url_for, session, current_app, jsonify, make_response, flash
 from werkzeug.security import generate_password_hash
 from app.repositories import business_repo, sector_repo, employee_repo
 from app import limiter
 import json
+from datetime import datetime, timedelta
 
 master_bp = Blueprint('master', __name__, url_prefix='/master')
 
@@ -67,7 +68,21 @@ def master_dashboard():
         
         businesses_list.append(biz_dict)
     
-    response = make_response(render_template('master/dashboard.html', businesses=businesses_list, sectors=sectors, metrics=metrics, global_settings=global_settings))
+    
+    import sqlite3
+    from app.models.schema import get_db_path
+    
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM notifications_master ORDER BY created_at DESC LIMIT 50")
+    master_notifications = [dict(row) for row in cursor.fetchall()]
+    
+    cursor.execute("SELECT COUNT(*) FROM notifications_master WHERE is_read = 0")
+    master_pending_count = cursor.fetchone()[0]
+    conn.close()
+    
+    response = make_response(render_template('master/dashboard.html', businesses=businesses_list, sectors=sectors, metrics=metrics, global_settings=global_settings, master_notifications=master_notifications, master_pending_count=master_pending_count))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
@@ -264,3 +279,121 @@ def delete_employee(biz_id, emp_id):
 
     employee_repo.delete(emp_id)
     return redirect(url_for('master.view_edit_business', biz_id=biz_id))
+
+
+@master_bp.route('/business/<biz_id>/change_status', methods=['POST'])
+def change_business_status(biz_id):
+    if not session.get('is_master'):
+        return jsonify({"success": False, "error": "Non autorisé"}), 403
+    
+    data = request.get_json() or {}
+    master_password = data.get('master_password')
+    new_status = data.get('status')
+    
+    from werkzeug.security import check_password_hash
+    if not master_password or not check_password_hash(current_app.config.get('MASTER_PASSWORD_HASH', ''), master_password):
+        return jsonify({"success": False, "error": "Mot de passe incorrect"}), 401
+    
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return jsonify({"success": False, "error": "Business introuvable"}), 404
+        
+    biz_dict = dict(business)
+    now = datetime.now()
+    
+    import sqlite3
+    from app.models.schema import get_db_path
+    from app.services import whatsapp_disconnect_service
+    from app.services.notification_master_service import create_master_notification
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    
+    msg = "Statut mis à jour."
+    if new_status == 'archived':
+        cursor.execute("UPDATE businesses SET status = 'archived', archived_at = ?, deletion_scheduled_at = NULL WHERE id = ?", (now.isoformat(), biz_id))
+        try:
+            whatsapp_disconnect_service.disconnect_whatsapp_number(biz_dict.get('token_wa'), biz_dict.get('whatsapp_phone_id'))
+        except:
+            pass
+        create_master_notification('alerte', 'Archivage', f'Business {biz_id} archivé', biz_id)
+        msg = "Business archivé."
+    elif new_status == 'deleted':
+        deletion_date = now + timedelta(days=7)
+        cursor.execute("UPDATE businesses SET status = 'deleted', deletion_scheduled_at = ?, archived_at = NULL WHERE id = ?", (deletion_date.isoformat(), biz_id))
+        create_master_notification('alerte', 'Suppression compte', f'Business {biz_id} supprimé (Programmé dans 7j)', biz_id)
+        msg = "Business supprimé (programmé dans 7 jours)."
+    elif new_status == 'active':
+        cursor.execute("UPDATE businesses SET status = 'active', archived_at = NULL, deletion_scheduled_at = NULL WHERE id = ?", (biz_id,))
+        create_master_notification('info', 'Restauration', f'Business {biz_id} restauré en actif', biz_id)
+        msg = "Business restauré. Le gérant doit reconnecter son numéro WhatsApp."
+    
+    conn.commit()
+    conn.close()
+    
+    flash(msg, 'success')
+    return jsonify({"success": True, "message": msg})
+
+
+@master_bp.route('/business/<biz_id>', methods=['DELETE'])
+def delete_business_immediate(biz_id):
+    if not session.get('is_master'):
+        return jsonify({"success": False, "error": "Non autorisé"}), 403
+    
+    immediate = request.args.get('immediate') == 'true'
+    if not immediate:
+        return jsonify({"success": False, "error": "Paramètre immediate=true requis pour la purge"}), 400
+        
+    import sqlite3
+    from app.models.schema import get_db_path
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM businesses WHERE id = ?", (biz_id,))
+    conn.commit()
+    conn.close()
+    
+    try:
+        from app.services.notification_master_service import create_master_notification
+        create_master_notification('info', 'Purge compte', f'Business {biz_id} purgé définitivement', biz_id)
+    except Exception:
+        pass
+        
+    flash("Le compte de test a été purgé définitivement.", "success")
+    return jsonify({"success": True, "message": "Purgé"})
+
+
+
+@master_bp.route('/notifications/mark-read', methods=['POST'])
+def mark_notifications_read():
+    if not session.get('is_master'):
+        return jsonify({"success": False}), 403
+    import sqlite3
+    from app.models.schema import get_db_path
+    conn = sqlite3.connect(get_db_path())
+    conn.cursor().execute("UPDATE notifications_master SET is_read = 1 WHERE is_read = 0")
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@master_bp.route('/notifications/<int:notif_id>', methods=['DELETE'])
+def delete_notification(notif_id):
+    if not session.get('is_master'):
+        return jsonify({"success": False}), 403
+    import sqlite3
+    from app.models.schema import get_db_path
+    conn = sqlite3.connect(get_db_path())
+    conn.cursor().execute("DELETE FROM notifications_master WHERE id = ?", (notif_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@master_bp.route('/notifications/clear-all', methods=['DELETE'])
+def clear_all_notifications():
+    if not session.get('is_master'):
+        return jsonify({"success": False}), 403
+    import sqlite3
+    from app.models.schema import get_db_path
+    conn = sqlite3.connect(get_db_path())
+    conn.cursor().execute("DELETE FROM notifications_master")
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})

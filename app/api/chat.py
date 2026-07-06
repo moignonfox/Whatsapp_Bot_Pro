@@ -30,9 +30,16 @@ def get_conversations():
         wa_id = c['wa_id']
         client = client_repo.get_or_create(company_id, wa_id)
         
+        client_dict = dict(client) if client else {}
+        display_name = client_dict.get('display_name')
+        real_name = client_dict.get('nom')
+        final_name = display_name if display_name else (real_name if real_name else wa_id)
+        
         conversations.append({
             "wa_id": wa_id,
-            "client_name": client['nom'] if client else wa_id,
+            "client_name": final_name,
+            "client_real_name": real_name,
+            "client_display_name": display_name,
             "last_message": c['last_message'],
             "last_timestamp": c['last_timestamp'],
             "unread_count": unread_counts.get(wa_id, 0),
@@ -151,3 +158,23 @@ def toggle_human_mode(wa_id):
         "wa_id": wa_id,
         "is_human_mode": activate
     }), 200
+
+@api_bp.route('/conversations/<wa_id>/client', methods=['PUT'])
+@jwt_required()
+def update_client_profile(wa_id):
+    company_id = get_jwt_identity()
+    
+    data = request.get_json() or {}
+    
+    nom = data.get('nom', '').strip()
+    display_name = data.get('display_name', '').strip()
+
+    try:
+        if nom:
+            client_repo.update_name(company_id, wa_id, nom)
+        if display_name is not None:
+            client_repo.set_display_name(company_id, wa_id, display_name)
+            
+        return jsonify({"success": True, "message": "Profil mis à jour"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
