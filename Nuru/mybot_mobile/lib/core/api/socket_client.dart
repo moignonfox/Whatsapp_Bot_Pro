@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,8 +37,19 @@ class SocketClient {
     );
 
     _socket?.onConnect((_) {
-      debugPrint('âœ… ConnectÃ© au Socket.IO backend');
+      debugPrint('✅ Connecté au Socket.IO backend');
       _socket?.emit('authenticate_jwt', {'token': token});
+    });
+
+    _socket?.on('force_logout', (data) {
+      debugPrint('🛑 Déconnexion forcée par le serveur via Socket');
+      String reason = 'Votre compte a été suspendu par l\'administrateur.';
+      if (data != null && data is Map && data['reason'] != null) {
+        reason = data['reason'].toString();
+      }
+      if (ApiClient.onUnauthorized != null) {
+        ApiClient.onUnauthorized!(reason, true);
+      }
     });
 
     _socket?.on('nouveau_message', (data) {

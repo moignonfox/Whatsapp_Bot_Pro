@@ -10,7 +10,7 @@ const String _baseUrl = String.fromEnvironment(
 );
 
 class ApiClient {
-  static void Function()? onUnauthorized;
+  static void Function(String message, bool isSuspended)? onUnauthorized;
   final Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -35,13 +35,27 @@ class ApiClient {
         return handler.next(response);
       },
       onError: (DioException e, handler) async {
-        // Si le token est expiré (401), tenter un refresh automatique
-        // Mais ignorer l'erreur 401 si elle provient de la tentative de login
+        // Cas 1 : Compte bloqué / inactif (403)
+        if (e.response?.statusCode == 403) {
+          final msg = (e.response?.data is Map) ? e.response?.data['error'] : 'Votre compte a été suspendu.';
+          await _storage.delete(key: 'jwt_token');
+          await _storage.delete(key: 'refresh_token');
+          if (onUnauthorized != null) onUnauthorized!(msg?.toString() ?? 'Votre compte a été suspendu.', true);
+          return handler.next(e);
+        }
+
+        // Cas 2 : Token expiré (401)
         if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('/auth/login')) {
           final refreshToken = await _storage.read(key: 'refresh_token');
           if (refreshToken != null) {
             try {
-              final refreshDio = Dio(BaseOptions(baseUrl: '$_baseUrl/api/v1'));
+              final refreshDio = Dio(BaseOptions(
+                baseUrl: '$_baseUrl/api/v1',
+                headers: {
+                  'ngrok-skip-browser-warning': 'true',
+                  'Accept': 'application/json',
+                },
+              ));
               final resp = await refreshDio.post(
                 '/auth/refresh',
                 options: Options(headers: {'Authorization': 'Bearer $refreshToken'}),
@@ -58,16 +72,15 @@ class ApiClient {
                 final retryResponse = await _dio.fetch(e.requestOptions);
                 return handler.resolve(retryResponse);
               }
-            } catch (_) {
-              // Refresh échoué
+            } catch (refreshErr) {
+              await _storage.delete(key: 'jwt_token');
+              await _storage.delete(key: 'refresh_token');
+              if (onUnauthorized != null) onUnauthorized!('Votre session a expiré ou a été invalidée.', false);
+              return handler.next(e);
             }
-          }
-          
-          // Refresh échoué ou absent → supprimer les tokens (session expirée)
-          await _storage.delete(key: 'jwt_token');
-          await _storage.delete(key: 'refresh_token');
-          if (ApiClient.onUnauthorized != null) {
-            ApiClient.onUnauthorized!();
+          } else {
+            await _storage.delete(key: 'jwt_token');
+            if (onUnauthorized != null) onUnauthorized!('Veuillez vous reconnecter.', false);
           }
         }
         return handler.next(e);

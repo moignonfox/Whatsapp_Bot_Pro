@@ -23,9 +23,9 @@ class Config:
     JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY', 'fallback-jwt-secret-key-change-me')
     ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '')
 
-    # JWT : access token de courte durée (15 min), refresh de longue durée (30 jours)
-    JWT_ACCESS_TOKEN_EXPIRES: int = 900       # 15 minutes
-    JWT_REFRESH_TOKEN_EXPIRES: int = 2592000  # 30 jours
+    # JWT : access token de courte durée (15 min), refresh indéfini (10 ans)
+    JWT_ACCESS_TOKEN_EXPIRES: int = 900
+    JWT_REFRESH_TOKEN_EXPIRES: int = 315360000
 
     # Activer la vérification de la blocklist JWT
     JWT_BLACKLIST_ENABLED: bool = True

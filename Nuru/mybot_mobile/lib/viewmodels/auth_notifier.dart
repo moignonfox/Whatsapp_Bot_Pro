@@ -11,18 +11,63 @@ import 'chat_detail_notifier.dart';
 import 'stats_notifier.dart';
 import 'today_notifier.dart';
 
+import 'package:flutter/material.dart';
+
 // État de l'authentification
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
 final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthStatus>(AuthNotifier.new);
 
 class AuthNotifier extends AsyncNotifier<AuthStatus> {
+  static bool _isDialogShowing = false;
+
   @override
   FutureOr<AuthStatus> build() async {
-    ApiClient.onUnauthorized = () {
+    ApiClient.onUnauthorized = (message, isSuspended) {
       state = const AsyncValue.data(AuthStatus.unauthenticated);
-      if (rootNavigatorKey.currentContext != null) {
-        rootNavigatorKey.currentContext!.go('/welcome');
+      final context = rootNavigatorKey.currentContext;
+      
+      if (context != null) {
+        if (isSuspended) {
+          if (!_isDialogShowing) {
+            _isDialogShowing = true;
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.lock_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Accès suspendu'),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(message),
+                    const SizedBox(height: 16),
+                    const Text('Contactez le support Vira pour plus d\'informations.\n📧 support@vira.app'),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      _isDialogShowing = false;
+                      Navigator.of(ctx).pop();
+                      context.go('/welcome');
+                    },
+                    child: const Text('Compris'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          // Expiration normale (401), on redirige sans boîte de dialogue effrayante
+          context.go('/welcome');
+        }
       }
     };
     return _checkToken();

@@ -77,7 +77,12 @@ class AuthRepository {
 
       if (response.data['success'] == true) {
         final token = response.data['access_token'];
+        final refreshToken = response.data['refresh_token'];
+        
         await _storage.write(key: 'jwt_token', value: token);
+        if (refreshToken != null) {
+          await _storage.write(key: 'refresh_token', value: refreshToken);
+        }
         return response.data;
       }
       throw Exception(response.data['error'] ?? 'Erreur inconnue');

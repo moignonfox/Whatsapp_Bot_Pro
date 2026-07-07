@@ -247,6 +247,9 @@ def toggle_business(biz_id):
     
     try:
         business_repo.toggle_active(biz_id, is_active)
+        if is_active == 0:
+            from app import socketio
+            socketio.emit('force_logout', {'reason': 'Votre compte a été suspendu par l\'administrateur.'}, room=biz_id)
         return jsonify({'success': True, 'is_active': is_active})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -311,22 +314,26 @@ def change_business_status(biz_id):
         
         msg = "Statut mis à jour."
         if new_status == 'archived':
-            cursor.execute("UPDATE businesses SET status = 'archived', archived_at = ?, deletion_scheduled_at = NULL WHERE id = ?", (now.isoformat(), biz_id))
+            cursor.execute("UPDATE businesses SET status = 'archived', is_active = 0, archived_at = ?, deletion_scheduled_at = NULL WHERE id = ?", (now.isoformat(), biz_id))
             conn.commit()
             try:
                 whatsapp_disconnect_service.disconnect_whatsapp_number(biz_dict.get('token_wa'), biz_dict.get('whatsapp_phone_id'))
             except:
                 pass
+            from app import socketio
+            socketio.emit('force_logout', {'reason': 'Votre compte a été archivé par l\'administrateur.'}, room=biz_id)
             create_master_notification('alerte', 'Archivage', f'Business {biz_id} archivé', biz_id)
             msg = "Business archivé."
         elif new_status == 'deleted':
             deletion_date = now + timedelta(days=7)
-            cursor.execute("UPDATE businesses SET status = 'deleted', deletion_scheduled_at = ?, archived_at = NULL WHERE id = ?", (deletion_date.isoformat(), biz_id))
+            cursor.execute("UPDATE businesses SET status = 'deleted', is_active = 0, deletion_scheduled_at = ?, archived_at = NULL WHERE id = ?", (deletion_date.isoformat(), biz_id))
             conn.commit()
+            from app import socketio
+            socketio.emit('force_logout', {'reason': 'Votre compte a été supprimé par l\'administrateur.'}, room=biz_id)
             create_master_notification('alerte', 'Suppression compte', f'Business {biz_id} supprimé (Programmé dans 7j)', biz_id)
             msg = "Business supprimé (programmé dans 7 jours)."
         elif new_status == 'active':
-            cursor.execute("UPDATE businesses SET status = 'active', archived_at = NULL, deletion_scheduled_at = NULL WHERE id = ?", (biz_id,))
+            cursor.execute("UPDATE businesses SET status = 'active', is_active = 1, archived_at = NULL, deletion_scheduled_at = NULL WHERE id = ?", (biz_id,))
             conn.commit()
             create_master_notification('info', 'Restauration', f'Business {biz_id} restauré en actif', biz_id)
             msg = "Business restauré. Le gérant doit reconnecter son numéro WhatsApp."

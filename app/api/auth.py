@@ -150,6 +150,10 @@ def login():
 def refresh():
     identity = get_jwt_identity()
     jwt_data = get_jwt()
+    
+    business = business_repo.get_by_id(identity)
+    if not business or not dict(business).get('is_active', 1):
+        return jsonify({"success": False, "error": "Compte inactif ou bloqué"}), 403
 
     # RÃ©voquer l'ancien refresh token (rotation sÃ©curisÃ©e)
     _blocklist_token(jwt_data['jti'], jwt_data.get('exp'))

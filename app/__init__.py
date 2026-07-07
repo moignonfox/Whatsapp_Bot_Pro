@@ -70,15 +70,28 @@ def create_app(config_name=None):
     # ------------------------------------------------------------------ #
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
-        """Retourne True si le token a été révoqué (logout)."""
+        """Retourne True si le token a été révoqué (logout) ou si le compte est inactif."""
         import sqlite3
         from app.models.schema import get_db_path
         jti = jwt_payload.get('jti')
+        biz_id = jwt_payload.get('sub')
+        
         if not jti:
             return False
+            
         try:
             conn = sqlite3.connect(get_db_path())
             cursor = conn.cursor()
+            
+            # 1. Vérification du compte (blocage immédiat)
+            if biz_id:
+                cursor.execute("SELECT is_active FROM businesses WHERE id = ?", (biz_id,))
+                row = cursor.fetchone()
+                if row and row[0] == 0:
+                    conn.close()
+                    return True # Compte inactif -> jeton invalide
+                    
+            # 2. Vérification de la blocklist explicite (logout)
             cursor.execute("SELECT 1 FROM jwt_blocklist WHERE jti = ?", (jti,))
             row = cursor.fetchone()
             conn.close()
