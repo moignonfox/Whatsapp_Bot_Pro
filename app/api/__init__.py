@@ -12,3 +12,4 @@ from . import devices
 from . import marketing
 from . import account
 from . import backup
+from . import clients

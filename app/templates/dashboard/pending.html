@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>En attente d'activation — MyBot SaaS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <style>
+        .iti { width: 100%; margin-bottom: 5px; }
+        .iti__country-list { background-color: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .iti__country.iti__highlight { background-color: var(--surface-hover); }
+        .iti__divider { border-bottom: 1px solid var(--border); }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root, [data-theme="dark"] {
             --bg: #0D1117; --surface: #161B27; --card: #1C2333; --border: #2A3347;
@@ -167,16 +172,16 @@
                 <strong>🚨 Attention :</strong> Le numéro de téléphone que vous soumettez ici pour le bot ne doit pas être actuellement actif sur une application WhatsApp normale ou WhatsApp Business. Il doit être vierge.
             </div>
 
-            <form method="POST">
+            <form method="POST" id="pending-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="field">
                     <label>Votre numéro personnel (pour vous contacter)</label>
-                    <input type="text" name="owner_phone" value="{{ business.owner_phone or '' }}" placeholder="ex: +33612345678" required>
+                    <input type="text" id="owner_phone" name="owner_phone" value="{% if business.owner_phone %}+{{ business.owner_phone }}{% endif %}" placeholder="ex: 33612345678" required>
                 </div>
                 
                 <div class="field">
                     <label>Numéro de téléphone WhatsApp vierge (Bot)</label>
-                    <input type="text" name="requested_bot_phone" value="{{ business.requested_bot_phone or '' }}" placeholder="ex: +33600000000">
+                    <input type="text" id="requested_bot_phone" name="requested_bot_phone" value="{% if business.requested_bot_phone %}+{{ business.requested_bot_phone }}{% endif %}" placeholder="ex: 33600000000">
                 </div>
                 <button type="submit" class="btn-submit">Enregistrer les informations</button>
             </form>
@@ -185,5 +190,30 @@
         <a href="{{ url_for('dashboard.logout') }}" class="logout-link">← Se déconnecter</a>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+<script>
+    const itiOwner = window.intlTelInput(document.querySelector("#owner_phone"), {
+        initialCountry: "auto",
+        geoIpLookup: function(callback) {
+            fetch("https://ipapi.co/json").then(res => res.json()).then(data => callback(data.country_code)).catch(() => callback("tg"));
+        },
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        separateDialCode: true
+    });
+
+    const itiBot = window.intlTelInput(document.querySelector("#requested_bot_phone"), {
+        initialCountry: "auto",
+        geoIpLookup: function(callback) {
+            fetch("https://ipapi.co/json").then(res => res.json()).then(data => callback(data.country_code)).catch(() => callback("tg"));
+        },
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        separateDialCode: true
+    });
+
+    document.getElementById("pending-form").addEventListener("submit", function() {
+        document.querySelector("#owner_phone").value = itiOwner.getNumber();
+        document.querySelector("#requested_bot_phone").value = itiBot.getNumber();
+    });
+</script>
 </body>
 </html>

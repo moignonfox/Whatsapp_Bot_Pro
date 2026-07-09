@@ -49,6 +49,7 @@ dependencies:
   audioplayers: ^6.8.1
   google_fonts: ^6.2.1
   intl: ^0.20.3
+  intl_phone_field: ^3.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

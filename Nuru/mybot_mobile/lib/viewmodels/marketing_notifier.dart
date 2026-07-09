@@ -10,11 +10,21 @@ class MarketingNotifier extends AsyncNotifier<Map<String, dynamic>?> {
     return null;
   }
 
-  Future<bool> sendCampaign(String message, String target) async {
+  Future<bool> sendCampaign({
+    String? message,
+    String? templateName,
+    List<String>? variables,
+    required String target,
+  }) async {
     state = const AsyncValue.loading();
     try {
       final repository = ref.read(marketingRepositoryProvider);
-      final result = await repository.sendCampaign(message: message, target: target);
+      final result = await repository.sendCampaign(
+        message: message,
+        templateName: templateName,
+        variables: variables,
+        target: target,
+      );
       state = AsyncValue.data(result);
       return true;
     } catch (e, st) {

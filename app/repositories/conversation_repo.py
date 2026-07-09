@@ -80,22 +80,27 @@ def get_conversations_for_business(business_id: str) -> List[Dict]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT h.wa_id,
-               h.content AS last_message,
-               h.role AS last_role,
-               h.timestamp AS last_timestamp,
-               c.nom AS client_real_name,
-               c.display_name AS client_display_name,
-               COALESCE(c.display_name, c.nom, h.wa_id) AS client_name
-        FROM history h
-        LEFT JOIN clients c ON h.wa_id = c.wa_id AND c.business_id = ?
-        WHERE h.business_id = ?
-          AND h.id = (
-              SELECT MAX(h2.id) FROM history h2 
-              WHERE h2.wa_id = h.wa_id AND h2.business_id = ?
-          )
-        ORDER BY h.timestamp DESC
-    """, (business_id, business_id, business_id))
+        WITH AllNumbers AS (
+            SELECT wa_id FROM clients WHERE business_id = ?
+            UNION
+            SELECT wa_id FROM history WHERE business_id = ?
+        )
+        SELECT 
+            n.wa_id,
+            h.content AS last_message,
+            h.role AS last_role,
+            COALESCE(h.timestamp, '1970-01-01T00:00:00') AS last_timestamp,
+            c.nom AS client_real_name,
+            c.display_name AS client_display_name,
+            COALESCE(c.display_name, c.nom, n.wa_id) AS client_name
+        FROM AllNumbers n
+        LEFT JOIN clients c ON c.wa_id = n.wa_id AND c.business_id = ?
+        LEFT JOIN history h ON h.wa_id = n.wa_id AND h.business_id = ?
+            AND h.id = (
+                SELECT MAX(id) FROM history WHERE wa_id = n.wa_id AND business_id = ?
+            )
+        ORDER BY last_timestamp DESC
+    """, (business_id, business_id, business_id, business_id, business_id))
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]

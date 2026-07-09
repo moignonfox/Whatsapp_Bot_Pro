@@ -12,12 +12,16 @@ class MarketingRepository {
   MarketingRepository(this._dio);
 
   Future<Map<String, dynamic>> sendCampaign({
-    required String message,
+    String? message,
+    String? templateName,
+    List<String>? variables,
     required String target,
   }) async {
     try {
       final response = await _dio.post('/marketing/send-campaign', data: {
-        'message': message,
+        if (message != null) 'message': message,
+        if (templateName != null) 'template_name': templateName,
+        if (variables != null) 'variables': variables,
         'target': target,
       });
       return response.data;

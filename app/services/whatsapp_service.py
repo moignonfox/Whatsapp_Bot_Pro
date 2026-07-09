@@ -56,3 +56,48 @@ def send_text_message(to_number, message_text, phone_number_id, access_token):
         safe_number = f"****{to_number[-4:]}" if len(to_number) >= 4 else "****"
         logger.error("❌ Erreur API Meta lors de l'envoi à %s: %s", safe_number, type(e).__name__)
         return None
+
+def send_template_message(to_number, template_name, variables, phone_number_id, access_token, language_code="fr"):
+    """
+    Envoie un message modèle (template) approuvé via l'API Cloud de WhatsApp.
+    variables est une liste de strings qui viendront remplacer {{1}}, {{2}}...
+    """
+    url = f"https://graph.facebook.com/v21.0/{phone_number_id}/messages"
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    parameters = [{"type": "text", "text": str(var)} for var in variables]
+    
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to_number,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {
+                "code": language_code
+            }
+        }
+    }
+    
+    if parameters:
+        payload["template"]["components"] = [
+            {
+                "type": "body",
+                "parameters": parameters
+            }
+        ]
+        
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        safe_number = f"****{to_number[-4:]}" if len(to_number) >= 4 else "****"
+        error_msg = response.text if 'response' in locals() and response else str(e)
+        logger.error("❌ Erreur API Meta (Template %s) à %s: %s", template_name, safe_number, error_msg)
+        return None

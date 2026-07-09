@@ -6,6 +6,7 @@
     <title>Paramètres — {{ business.nom }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
 
     <!-- Injection du thème AVANT le rendu pour éviter le flash -->
     <script>
@@ -19,6 +20,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <style>
+        .iti { width: 100%; }
+        .iti__country-list { background-color: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .iti__country.iti__highlight { background-color: var(--surface-hover); }
+        .iti__divider { border-bottom: 1px solid var(--border); }
 
         /* ══════════════════════════════════════════════
            Transition douce entre les thèmes
@@ -333,7 +338,7 @@
             <h1 class="card-title">⚙️ Réglages du Bot</h1>
             <p class="card-subtitle">Personnalisez le comportement et les messages de votre assistant WhatsApp.</p>
 
-            <form method="POST">
+            <form method="POST" id="settings-form">
 
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <!-- Section : Identité -->
@@ -346,7 +351,7 @@
 
                 <div class="field">
                     <label>Numéro WhatsApp du Gérant 📱</label>
-                    <input type="text" name="owner_phone" value="{{ business['owner_phone'] or '' }}" placeholder="ex: 22890000000 (Pour le rapport quotidien)">
+                    <input type="text" id="owner_phone" name="owner_phone" value="{% if business['owner_phone'] %}+{{ business['owner_phone'] }}{% endif %}" placeholder="ex: 22890000000">
                     <div style="margin-top: 8px;">
                         <a href="{{ url_for('dashboard.test_report', biz_id=business.id) }}" class="back-link" style="font-size:11px; padding: 4px 8px;">
                             <i class="fas fa-paper-plane"></i> Tester l'envoi du rapport maintenant
@@ -678,6 +683,26 @@
         </div>
     </div> <!-- /content -->
 </div> <!-- /main -->
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+<script>
+    const phoneInput = document.querySelector("#owner_phone");
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "auto",
+        geoIpLookup: function(callback) {
+            fetch("https://ipapi.co/json")
+              .then(res => res.json())
+              .then(data => callback(data.country_code))
+              .catch(() => callback("tg"));
+        },
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        separateDialCode: true
+    });
+
+    document.getElementById("settings-form").addEventListener("submit", function() {
+        phoneInput.value = iti.getNumber();
+    });
+</script>
 
 <!-- Fichier JS partagé (toggle + persistance) -->
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>

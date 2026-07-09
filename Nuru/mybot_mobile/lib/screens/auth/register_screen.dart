@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../repositories/auth_repository.dart';
 
 const List<Map<String, String>> kBusinessTypes = [
@@ -37,9 +38,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKeyStep1 = GlobalKey<FormState>();
   final _ownerNameController = TextEditingController();
   final _ownerPhoneController = TextEditingController();
+  String _fullOwnerPhone = '';
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _botPhoneController = TextEditingController();
+  String _fullBotPhone = '';
   bool _isPasswordVisible = false;
 
   // Step 2 : Identité
@@ -95,8 +98,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         password: _passwordController.text,
         nom: _nomController.text.trim(),
         ownerName: _ownerNameController.text.trim(),
-        ownerPhone: _ownerPhoneController.text.trim(),
-        requestedBotPhone: _botPhoneController.text.trim(),
+        ownerPhone: _fullOwnerPhone,
+        requestedBotPhone: _fullBotPhone,
         businessType: _selectedBusinessType,
         devise: _selectedDevise,
         ville: _locationController.text.trim(),
@@ -229,13 +232,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           children: [
                             _buildField(controller: _ownerNameController, label: 'Nom complet (Gérant)', icon: Icons.person_outline),
                             const SizedBox(height: 12),
-                            _buildField(controller: _ownerPhoneController, label: 'Votre téléphone', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+                            IntlPhoneField(
+                              controller: _ownerPhoneController,
+                              decoration: InputDecoration(
+                                labelText: 'Votre téléphone',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              initialCountryCode: 'TG',
+                              onChanged: (phone) {
+                                _fullOwnerPhone = phone.completeNumber;
+                              },
+                            ),
                             const SizedBox(height: 12),
                             _buildField(controller: _emailController, label: 'Adresse Email', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
                             const SizedBox(height: 12),
                             _buildPasswordField(controller: _passwordController, label: 'Mot de passe'),
                             const SizedBox(height: 12),
-                            _buildField(controller: _botPhoneController, label: 'Numéro WhatsApp dédié au Bot', icon: Icons.smart_toy_outlined, keyboardType: TextInputType.phone),
+                            IntlPhoneField(
+                              controller: _botPhoneController,
+                              decoration: InputDecoration(
+                                labelText: 'Numéro WhatsApp dédié au Bot',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              initialCountryCode: 'TG',
+                              onChanged: (phone) {
+                                _fullBotPhone = phone.completeNumber;
+                              },
+                            ),
                           ],
                         ),
                       ),

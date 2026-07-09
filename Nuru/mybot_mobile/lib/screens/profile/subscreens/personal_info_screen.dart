@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../viewmodels/profile_notifier.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -12,6 +13,7 @@ class PersonalInfoScreen extends ConsumerStatefulWidget {
 class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _managerPhoneController = TextEditingController();
+  String _fullManagerPhone = '';
   
   bool _isEditing = false;
   bool _isSaving = false;
@@ -32,6 +34,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
       if (_managerPhoneController.text != profile.ownerPhone) {
         _managerPhoneController.text = profile.ownerPhone;
       }
+      if (!_isInitialized) {
+        _fullManagerPhone = profile.ownerPhone;
+      }
       _isInitialized = true;
     }
   }
@@ -41,7 +46,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     
     final success = await ref.read(profileNotifierProvider.notifier).updateProfile({
       'email': _emailController.text,
-      'owner_phone': _managerPhoneController.text,
+      'owner_phone': _fullManagerPhone,
     });
     
     setState(() {
@@ -95,8 +100,23 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               _buildField(context, 'Nom du compte', profile.nom, enabled: false),
               const SizedBox(height: 16),
               _buildField(context, 'Adresse Email', _emailController.text, controller: _emailController, enabled: _isEditing),
-              const SizedBox(height: 16),
-              _buildField(context, 'Numéro du gérant', _managerPhoneController.text, controller: _managerPhoneController, enabled: _isEditing),
+              const Text('Numéro du gérant', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+              const SizedBox(height: 8),
+              IntlPhoneField(
+                initialValue: profile.ownerPhone.isNotEmpty 
+                  ? (profile.ownerPhone.startsWith('+') ? profile.ownerPhone : '+${profile.ownerPhone}') 
+                  : '',
+                enabled: _isEditing,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                initialCountryCode: 'TG',
+                onChanged: (phone) {
+                  _fullManagerPhone = phone.completeNumber;
+                },
+              ),
               const SizedBox(height: 16),
               _buildField(context, 'Numéro du bot WhatsApp', profile.requestedBotPhone.isNotEmpty ? profile.requestedBotPhone : 'Non renseigné', enabled: false),
             ],

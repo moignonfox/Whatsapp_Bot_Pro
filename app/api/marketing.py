@@ -19,11 +19,21 @@ def send_campaign():
     plan = dict(business).get('plan_abonnement', 'BASIC')
     
     data = request.get_json() or {}
-    message_template = data.get('message', '').strip()
+    message_text = data.get('message', '').strip()
+    template_name = data.get('template_name', '').strip()
+    variables = data.get('variables', [])
     target = data.get('target', 'all')
     
-    if not message_template:
-        return jsonify({"success": False, "error": "Le message est vide"}), 400
+    if template_name:
+        import json
+        message_template = json.dumps({
+            "template_name": template_name,
+            "variables": variables
+        }, ensure_ascii=False)
+    elif message_text:
+        message_template = message_text
+    else:
+        return jsonify({"success": False, "error": "Le message ou le template est vide"}), 400
 
     # 1. Vérification de la fréquence (1/3 jours BASIC, 1/jour PRO, 3/jour PREMIUM)
     today_count = marketing_repo.get_today_campaigns_count(biz_id)

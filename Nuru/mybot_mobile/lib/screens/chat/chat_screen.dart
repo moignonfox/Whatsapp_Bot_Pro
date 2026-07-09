@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../viewmodels/chat_notifier.dart';
 import 'widgets/client_profile_sheet.dart';
+import 'add_client_bottom_sheet.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -248,9 +249,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () async {
+          final result = await showModalBottomSheet<bool>(
+            context: context,
+            isScrollControlled: true,
+            builder: (context) => const AddClientBottomSheet(),
+          );
+          if (result == true) {
+            ref.read(chatNotifierProvider.notifier).fetchConversations();
+          }
+        },
         backgroundColor: Theme.of(context).colorScheme.secondary,
-        child: const Icon(Icons.message, color: Colors.white),
+        child: const Icon(Icons.person_add, color: Colors.white),
       ),
     );
   }

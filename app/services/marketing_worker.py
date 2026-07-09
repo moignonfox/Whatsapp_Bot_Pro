@@ -31,16 +31,40 @@ def process_campaign_queue():
     plan = dict(business).get('plan_abonnement', 'BASIC')
 
     try:
-        whatsapp_service.send_text_message(
-            to_number=wa_id,
-            message_text=content,
-            phone_number_id=phone_id,
-            access_token=token
-        )
+        import json
+        is_template = False
+        template_name = ""
+        try:
+            payload = json.loads(content)
+            if isinstance(payload, dict) and 'template_name' in payload:
+                is_template = True
+                template_name = payload['template_name']
+                variables = payload.get('variables', [])
+        except:
+            pass
+
+        if is_template:
+            whatsapp_service.send_template_message(
+                to_number=wa_id,
+                template_name=template_name,
+                variables=variables,
+                phone_number_id=phone_id,
+                access_token=token
+            )
+            log_content = f"[CAMPAGNE MARKETING : {template_name}]\nVariables: {variables}"
+        else:
+            whatsapp_service.send_text_message(
+                to_number=wa_id,
+                message_text=content,
+                phone_number_id=phone_id,
+                access_token=token
+            )
+            log_content = f"[CAMPAGNE MARKETING]\n{content}"
+
         marketing_repo.mark_message_status(msg_id, 'sent')
         
         # Log dans l'historique
-        conversation_repo.save_message(wa_id, "assistant", f"[CAMPAGNE MARKETING]\n{content}", biz_id)
+        conversation_repo.save_message(wa_id, "assistant", log_content, biz_id)
         
         logger.info(f"Campagne: Message envoyé à {wa_id} (Biz {biz_id})")
 

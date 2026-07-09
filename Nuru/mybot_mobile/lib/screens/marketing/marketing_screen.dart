@@ -14,68 +14,54 @@ class MarketingScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketingScreenState extends ConsumerState<MarketingScreen> {
-  final TextEditingController _messageController = TextEditingController();
   String _selectedTarget = 'all';
-  bool _isImprovingWithAI = false;
+  int _selectedTemplateIndex = 0;
+  final List<TextEditingController> _variableControllers = [];
+  
+  final List<Map<String, dynamic>> _templates = [
+    {
+      'name': 'vira_campagne_promo',
+      'title': '🎉 Offre promotionnelle',
+      'variables': ['Texte de l\'offre']
+    },
+    {
+      'name': 'vira_rappel_commande',
+      'title': '🔔 Rappel de commande',
+      'variables': ['Nom du produit / commande']
+    },
+    {
+      'name': 'vira_relance_client',
+      'title': '👋 Relance client inactif',
+      'variables': ['Nom du restaurant', 'Texte de la relance']
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _updateVariableControllers();
+  }
+
+  void _updateVariableControllers() {
+    for (var c in _variableControllers) {
+      c.dispose();
+    }
+    _variableControllers.clear();
+    final count = _templates[_selectedTemplateIndex]['variables'].length;
+    for (int i = 0; i < count; i++) {
+      _variableControllers.add(TextEditingController());
+    }
+  }
 
   @override
   void dispose() {
-    _messageController.dispose();
+    for (var c in _variableControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  void _insertPrenom() {
-    final text = _messageController.text;
-    final selection = _messageController.selection;
-    if (selection.start >= 0 && selection.end >= 0) {
-      final newText = text.replaceRange(selection.start, selection.end, '{prenom}');
-      _messageController.text = newText;
-      _messageController.selection = TextSelection.collapsed(offset: selection.start + 8);
-    } else {
-      _messageController.text = text + '{prenom} ';
-    }
-  }
-
-  /// Appelle le backend Gemini pour améliorer le message
-  Future<void> _improveWithAI() async {
-    final msg = _messageController.text.trim();
-    if (msg.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Écrivez d\'abord un message à améliorer.')),
-      );
-      return;
-    }
-    setState(() => _isImprovingWithAI = true);
-    try {
-      final repo = ref.read(marketingRepositoryProvider);
-      final improved = await repo.improveMessageWithAI(message: msg);
-      if (!mounted) return;
-      _messageController.text = improved;
-      _messageController.selection = TextSelection.collapsed(offset: improved.length);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Text('Message amélioré par l\'IA !'),
-            ],
-          ),
-          backgroundColor: Colors.deepPurple,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur : ${e.toString().replaceFirst('Exception: ', '')}'),
-          backgroundColor: Colors.red.shade700,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isImprovingWithAI = false);
-    }
-  }
+  // AI improvement removed due to template constraints
 
   Future<void> _showConfirmationDialog(int count) async {
     final int maxMinutes = (count * 25) ~/ 60;
@@ -139,10 +125,14 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
   }
 
   Future<void> _onLaunchCampaignPressed() async {
-    if (_messageController.text.trim().isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez saisir un message.')));
-      return;
+    for (var i = 0; i < _variableControllers.length; i++) {
+      if (_variableControllers[i].text.trim().isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Veuillez remplir la variable : ${_templates[_selectedTemplateIndex]['variables'][i]}')
+        ));
+        return;
+      }
     }
     try {
       final repo = ref.read(marketingRepositoryProvider);
@@ -161,7 +151,13 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
 
   Future<void> _sendCampaign() async {
     final notifier = ref.read(marketingNotifierProvider.notifier);
-    final success = await notifier.sendCampaign(_messageController.text, _selectedTarget);
+    final templateName = _templates[_selectedTemplateIndex]['name'] as String;
+    final variables = _variableControllers.map((c) => c.text.trim()).toList();
+    final success = await notifier.sendCampaign(
+      templateName: templateName,
+      variables: variables,
+      target: _selectedTarget,
+    );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Campagne lancée avec succès !')));
       context.pop();
@@ -291,28 +287,9 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 26),
-
-                  // ── SECTION : MESSAGE ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _sectionLabel('✍️ Message'),
-                      TextButton.icon(
-                        onPressed: _insertPrenom,
-                        icon: const Icon(Icons.person_add_rounded, size: 15),
-                        label: const Text('{prenom}', style: TextStyle(fontSize: 12)),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // ── SECTION : MODÈLE WHATSAPP ──
+                  _sectionLabel('📄 Modèle WhatsApp'),
                   const SizedBox(height: 10),
-
-                  // Zone de saisie
                   Container(
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1A1A24) : Colors.white,
@@ -320,60 +297,91 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                       border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
-                    child: TextField(
-                      controller: _messageController,
-                      maxLines: 7,
-                      style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
-                      decoration: InputDecoration(
-                        hintText: 'Ex: Bonjour {prenom}, profitez de -20% aujourd\'hui sur notre nouveau catalogue !',
-                        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _selectedTemplateIndex,
+                        isExpanded: true,
+                        dropdownColor: isDark ? const Color(0xFF1A1A24) : Colors.white,
+                        items: List.generate(_templates.length, (index) {
+                          return DropdownMenuItem(
+                            value: index,
+                            child: Text(
+                              _templates[index]['title'],
+                              style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        }),
+                        onChanged: (val) {
+                          if (val != null && val != _selectedTemplateIndex) {
+                            setState(() {
+                              _selectedTemplateIndex = val;
+                              _updateVariableControllers();
+                            });
+                          }
+                        },
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // ── SECTION : VARIABLES ──
+                  if (_templates[_selectedTemplateIndex]['variables'].isNotEmpty) ...[
+                    _sectionLabel('✍️ Variables du message'),
+                    const SizedBox(height: 10),
+                    ...List.generate(_templates[_selectedTemplateIndex]['variables'].length, (index) {
+                      final variableLabel = _templates[_selectedTemplateIndex]['variables'][index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1A1A24) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                          ),
+                          child: TextField(
+                            controller: _variableControllers[index],
+                            style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+                            maxLines: variableLabel.contains('Texte') ? 3 : 1,
+                            decoration: InputDecoration(
+                              labelText: variableLabel,
+                              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
 
                   const SizedBox(height: 12),
 
-                  // ── BOUTON AMÉLIORER PAR IA ──
+                  // Aperçu
                   Container(
                     width: double.infinity,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.deepPurple.withValues(alpha: 0.1),
-                          Colors.purpleAccent.withValues(alpha: 0.05)
-                        ],
-                      ),
-                      border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.3), width: 1.5),
+                      color: isDark ? const Color(0xFF14141B) : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: _isImprovingWithAI ? null : _improveWithAI,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (_isImprovingWithAI)
-                                const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepPurple))
-                              else
-                                const Icon(Icons.auto_awesome_rounded, size: 20, color: Colors.deepPurple),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Text(
-                                  _isImprovingWithAI ? 'Amélioration en cours...' : 'Améliorer par IA',
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.visibility, size: 16, color: colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text('Aperçu du template sélectionné', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Les variables (ex: Nom) seront remplies automatiquement pour chaque client.',
+                          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
+                        ),
+                      ],
                     ),
                   ),
 

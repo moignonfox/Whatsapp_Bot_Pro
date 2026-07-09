@@ -45,6 +45,22 @@ def register():
     if business_repo.get_by_email(email):
         return jsonify({"success": False, "error": "Cet email est dǸj utilisǸ"}), 400
 
+    from app.utils import format_whatsapp_number, validate_whatsapp_number
+    
+    # Validation du owner_phone
+    owner_phone_clean = format_whatsapp_number(data['owner_phone'])
+    is_valid_owner, err_owner = validate_whatsapp_number(owner_phone_clean)
+    if not is_valid_owner:
+        return jsonify({"success": False, "error": f"Numéro du gérant: {err_owner}"}), 400
+    data['owner_phone'] = owner_phone_clean
+
+    # Validation du requested_bot_phone
+    bot_phone_clean = format_whatsapp_number(data['requested_bot_phone'])
+    is_valid_bot, err_bot = validate_whatsapp_number(bot_phone_clean)
+    if not is_valid_bot:
+        return jsonify({"success": False, "error": f"Numéro du bot: {err_bot}"}), 400
+    data['requested_bot_phone'] = bot_phone_clean
+
     biz_id = str(uuid.uuid4())
     password_hash = generate_password_hash(data['password'])
     
@@ -211,6 +227,14 @@ def update_me():
     horaires_json = data.get('horaires_json')
     email = data.get('email')
     owner_phone = data.get('owner_phone')
+
+    if owner_phone:
+        from app.utils import format_whatsapp_number, validate_whatsapp_number
+        owner_phone_clean = format_whatsapp_number(owner_phone)
+        is_valid_owner, err_owner = validate_whatsapp_number(owner_phone_clean)
+        if not is_valid_owner:
+            return jsonify({"success": False, "error": f"Numéro du gérant: {err_owner}"}), 400
+        owner_phone = owner_phone_clean
 
     # Convert is_active to int if provided
     if is_active is not None:

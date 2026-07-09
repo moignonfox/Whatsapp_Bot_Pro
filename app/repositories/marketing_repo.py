@@ -73,12 +73,33 @@ def get_today_campaigns_count(business_id: str) -> int:
 
 def enqueue_campaign(business_id: str, clients: List[Dict], message_template: str) -> int:
     """Ajoute une campagne en masse dans la file d'attente. Retourne le nombre ajouté."""
+    import json
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     count = 0
+    
+    is_json = False
+    try:
+        json_data = json.loads(message_template)
+        is_json = isinstance(json_data, dict) and 'template_name' in json_data
+    except:
+        pass
+
     for client in clients:
         prenom = client.get('client_name', 'Client').split()[0]
-        msg = message_template.replace('{prenom}', prenom)
+        
+        if is_json:
+            client_data = json.loads(message_template)
+            if 'variables' in client_data and isinstance(client_data['variables'], list):
+                # Remplacer {prenom} dans les variables du template
+                client_data['variables'] = [
+                    str(v).replace('{prenom}', prenom) if isinstance(v, str) else v 
+                    for v in client_data['variables']
+                ]
+            msg = json.dumps(client_data, ensure_ascii=False)
+        else:
+            msg = message_template.replace('{prenom}', prenom)
+            
         cursor.execute(
             "INSERT INTO campaign_queue (business_id, wa_id, message, status) VALUES (?, ?, ?, 'pending')",
             (business_id, client['wa_id'], msg)

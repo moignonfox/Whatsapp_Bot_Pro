@@ -7,7 +7,12 @@
     <title>Créer un compte | Vira</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     <style>
+        .iti { width: 100%; margin-bottom: 5px; }
+        .iti__country-list { background-color: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .iti__country.iti__highlight { background-color: var(--surface-hover); }
+        .iti__divider { border-bottom: 1px solid var(--border); }
         :root {
             --bg: #0f111a;
             --surface: #1e2130;
@@ -444,9 +449,22 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
 <script>
     let currentStep = 1;
     const totalSteps = 4;
+    
+    const itiOwner = window.intlTelInput(document.querySelector("#owner_phone"), {
+        initialCountry: "tg",
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        separateDialCode: true
+    });
+    
+    const itiBot = window.intlTelInput(document.querySelector("#bot_phone"), {
+        initialCountry: "tg",
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        separateDialCode: true
+    });
     
     // UI Interactions for options
     document.querySelectorAll('.option-card input[type="checkbox"]').forEach(input => {
@@ -572,10 +590,10 @@
 
         const payload = {
             owner_name: document.getElementById('owner_name').value,
-            owner_phone: document.getElementById('owner_phone').value,
+            owner_phone: itiOwner.getNumber(),
             email: document.getElementById('email').value,
             password: document.getElementById('password').value,
-            requested_bot_phone: document.getElementById('bot_phone').value,
+            requested_bot_phone: itiBot.getNumber(),
             
             nom: document.getElementById('biz_name').value,
             business_type: document.getElementById('biz_type').value,
