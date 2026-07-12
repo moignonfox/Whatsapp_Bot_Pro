@@ -34,12 +34,16 @@ def process_campaign_queue():
         import json
         is_template = False
         template_name = ""
+        variables = []
+        header_image_link = None
+        
         try:
             payload = json.loads(content)
             if isinstance(payload, dict) and 'template_name' in payload:
                 is_template = True
                 template_name = payload['template_name']
                 variables = payload.get('variables', [])
+                header_image_link = payload.get('header_image_link')
         except:
             pass
 
@@ -49,7 +53,8 @@ def process_campaign_queue():
                 template_name=template_name,
                 variables=variables,
                 phone_number_id=phone_id,
-                access_token=token
+                access_token=token,
+                header_image_link=header_image_link
             )
             log_content = f"[CAMPAGNE MARKETING : {template_name}]\nVariables: {variables}"
         else:

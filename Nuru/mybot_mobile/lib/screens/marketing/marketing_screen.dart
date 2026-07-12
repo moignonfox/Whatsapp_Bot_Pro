@@ -17,22 +17,26 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
   String _selectedTarget = 'all';
   int _selectedTemplateIndex = 0;
   final List<TextEditingController> _variableControllers = [];
+  final TextEditingController _imageUrlController = TextEditingController();
   
   final List<Map<String, dynamic>> _templates = [
     {
       'name': 'vira_campagne_promo',
-      'title': '🎉 Offre promotionnelle',
-      'variables': ['Texte de l\'offre']
+      'title': '🎉 Campagne promotionnelle',
+      'variables': ['Nom de votre restaurant', 'Détail de votre offre (ex: -20% sur...)'],
+      'hasImage': false,
     },
     {
       'name': 'vira_rappel_commande',
-      'title': '🔔 Rappel de commande',
-      'variables': ['Nom du produit / commande']
+      'title': '🛍️ Rappel de commande',
+      'variables': ['Nom de votre restaurant'],
+      'hasImage': false,
     },
     {
-      'name': 'vira_relance_client',
+      'name': 'rappel_client_inactif',
       'title': '👋 Relance client inactif',
-      'variables': ['Nom du restaurant', 'Texte de la relance']
+      'variables': ['Nom de votre restaurant', 'Produit mis en avant'],
+      'hasImage': true,
     },
   ];
 
@@ -55,6 +59,7 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
 
   @override
   void dispose() {
+    _imageUrlController.dispose();
     for (var c in _variableControllers) {
       c.dispose();
     }
@@ -125,6 +130,13 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
   }
 
   Future<void> _onLaunchCampaignPressed() async {
+    final hasImage = _templates[_selectedTemplateIndex]['hasImage'] == true;
+    if (hasImage && _imageUrlController.text.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez fournir l\'URL de l\'image.')));
+      return;
+    }
+    
     for (var i = 0; i < _variableControllers.length; i++) {
       if (_variableControllers[i].text.trim().isEmpty) {
         if (!mounted) return;
@@ -152,10 +164,18 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
   Future<void> _sendCampaign() async {
     final notifier = ref.read(marketingNotifierProvider.notifier);
     final templateName = _templates[_selectedTemplateIndex]['name'] as String;
-    final variables = _variableControllers.map((c) => c.text.trim()).toList();
+    
+    // Le backend et Meta attendent les variables dans l'ordre du template.
+    // D'après votre configuration, {{1}} est toujours le prénom.
+    final variables = ["{prenom}", ..._variableControllers.map((c) => c.text.trim())];
+    
+    final hasImage = _templates[_selectedTemplateIndex]['hasImage'] == true;
+    final headerImageLink = hasImage ? _imageUrlController.text.trim() : null;
+
     final success = await notifier.sendCampaign(
       templateName: templateName,
       variables: variables,
+      headerImageLink: headerImageLink,
       target: _selectedTarget,
     );
     if (success && mounted) {
@@ -326,6 +346,32 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                   const SizedBox(height: 20),
 
                   // ── SECTION : VARIABLES ──
+                  if (_templates[_selectedTemplateIndex]['hasImage'] == true) ...[
+                    _sectionLabel('🖼️ Image de la campagne'),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1A1A24) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _imageUrlController,
+                          style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+                          decoration: InputDecoration(
+                            labelText: 'URL de l\'image (ex: https://...)',
+                            labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(16),
+                            prefixIcon: const Icon(Icons.link_rounded),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
                   if (_templates[_selectedTemplateIndex]['variables'].isNotEmpty) ...[
                     _sectionLabel('✍️ Variables du message'),
                     const SizedBox(height: 10),

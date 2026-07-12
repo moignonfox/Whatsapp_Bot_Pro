@@ -57,7 +57,7 @@ def send_text_message(to_number, message_text, phone_number_id, access_token):
         logger.error("❌ Erreur API Meta lors de l'envoi à %s: %s", safe_number, type(e).__name__)
         return None
 
-def send_template_message(to_number, template_name, variables, phone_number_id, access_token, language_code="fr"):
+def send_template_message(to_number, template_name, variables, phone_number_id, access_token, language_code="fr", header_image_link=None):
     """
     Envoie un message modèle (template) approuvé via l'API Cloud de WhatsApp.
     variables est une liste de strings qui viendront remplacer {{1}}, {{2}}...
@@ -84,13 +84,26 @@ def send_template_message(to_number, template_name, variables, phone_number_id, 
         }
     }
     
+    components = []
+    if header_image_link:
+        components.append({
+            "type": "header",
+            "parameters": [
+                {
+                    "type": "image",
+                    "image": {"link": header_image_link}
+                }
+            ]
+        })
+        
     if parameters:
-        payload["template"]["components"] = [
-            {
-                "type": "body",
-                "parameters": parameters
-            }
-        ]
+        components.append({
+            "type": "body",
+            "parameters": parameters
+        })
+        
+    if components:
+        payload["template"]["components"] = components
         
     try:
         response = requests.post(url, headers=headers, json=payload)

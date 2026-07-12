@@ -14,6 +14,7 @@ class MarketingNotifier extends AsyncNotifier<Map<String, dynamic>?> {
     String? message,
     String? templateName,
     List<String>? variables,
+    String? headerImageLink,
     required String target,
   }) async {
     state = const AsyncValue.loading();
@@ -23,6 +24,7 @@ class MarketingNotifier extends AsyncNotifier<Map<String, dynamic>?> {
         message: message,
         templateName: templateName,
         variables: variables,
+        headerImageLink: headerImageLink,
         target: target,
       );
       state = AsyncValue.data(result);

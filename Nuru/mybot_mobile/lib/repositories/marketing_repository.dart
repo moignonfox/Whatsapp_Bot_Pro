@@ -15,6 +15,7 @@ class MarketingRepository {
     String? message,
     String? templateName,
     List<String>? variables,
+    String? headerImageLink,
     required String target,
   }) async {
     try {
@@ -22,6 +23,7 @@ class MarketingRepository {
         if (message != null) 'message': message,
         if (templateName != null) 'template_name': templateName,
         if (variables != null) 'variables': variables,
+        if (headerImageLink != null) 'header_image_link': headerImageLink,
         'target': target,
       });
       return response.data;

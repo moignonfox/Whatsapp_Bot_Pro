@@ -22,14 +22,18 @@ def send_campaign():
     message_text = data.get('message', '').strip()
     template_name = data.get('template_name', '').strip()
     variables = data.get('variables', [])
+    header_image_link = data.get('header_image_link', '').strip()
     target = data.get('target', 'all')
     
     if template_name:
         import json
-        message_template = json.dumps({
+        payload_dict = {
             "template_name": template_name,
             "variables": variables
-        }, ensure_ascii=False)
+        }
+        if header_image_link:
+            payload_dict["header_image_link"] = header_image_link
+        message_template = json.dumps(payload_dict, ensure_ascii=False)
     elif message_text:
         message_template = message_text
     else:
