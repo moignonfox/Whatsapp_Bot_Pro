@@ -59,7 +59,19 @@ class SocketClient {
           for (var k in data.keys) { safeData[k.toString()] = data[k]; }
           _messageController.add(safeData);
         } catch(e) {
-          debugPrint('âŒ Erreur Stream nouveau_message: $e');
+          debugPrint('❌ Erreur Stream nouveau_message: $e');
+        }
+      }
+    });
+
+    _socket?.on('statut_message', (data) {
+      if (data is Map) {
+        try {
+          final safeData = <String, dynamic>{};
+          for (var k in data.keys) { safeData[k.toString()] = data[k]; }
+          _statusMessageController.add(safeData);
+        } catch(e) {
+          debugPrint('❌ Erreur Stream statut_message: $e');
         }
       }
     });
@@ -96,6 +108,9 @@ class SocketClient {
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onNewMessage => _messageController.stream;
 
+  final _statusMessageController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get onStatusMessage => _statusMessageController.stream;
+
   final _orderController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onNewOrder => _orderController.stream;
 
@@ -113,6 +128,7 @@ class SocketClient {
     _socket?.dispose();
     _socket = null;
     _messageController.close();
+    _statusMessageController.close();
     _orderController.close();
     _orderStatusController.close();
     _humanModeController.close();

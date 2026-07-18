@@ -19,6 +19,17 @@ class ChatDetailState {
     required this.isHumanMode,
   });
 
+  bool get isWithin24hWindow {
+    if (messages.isEmpty) return false;
+    try {
+      final lastUserMsg = messages.lastWhere((m) => m.isFromUser);
+      final msgDate = DateTime.parse(lastUserMsg.timestamp).toLocal();
+      return DateTime.now().difference(msgDate).inHours < 24;
+    } catch (e) {
+      return false;
+    }
+  }
+
   ChatDetailState copyWith({
     bool? isLoading,
     String? error,
@@ -37,6 +48,7 @@ class ChatDetailState {
 class ChatDetailNotifier extends Notifier<Map<String, ChatDetailState>> {
   StreamSubscription? _msgSub;
   StreamSubscription? _humanModeSub;
+  StreamSubscription? _statusSub;
   bool _isListening = false;
 
   @override
@@ -44,6 +56,7 @@ class ChatDetailNotifier extends Notifier<Map<String, ChatDetailState>> {
     ref.onDispose(() {
       _msgSub?.cancel();
       _humanModeSub?.cancel();
+      _statusSub?.cancel();
     });
     return {};
   }
@@ -90,6 +103,38 @@ class ChatDetailNotifier extends Notifier<Map<String, ChatDetailState>> {
         };
       }
     });
+
+    _statusSub?.cancel();
+    _statusSub = socketClient.onStatusMessage.listen((data) {
+      final waId = data['wa_id']?.toString();
+      final messageId = data['message_id']?.toString();
+      final newStatus = data['status']?.toString();
+      final mediaUrl = data['media_url']?.toString();
+
+      if (waId != null && messageId != null && state.containsKey(waId)) {
+        final currentState = state[waId]!;
+        final messages = currentState.messages.map((m) {
+          if (m.id == messageId || (m.messageStatus == 'processing' && mediaUrl != null && newStatus == 'sent')) {
+            // Found the message, update it!
+            return Message(
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: m.timestamp,
+              messageType: m.messageType,
+              messageStatus: newStatus ?? m.messageStatus,
+              mediaUrl: mediaUrl ?? m.mediaUrl,
+            );
+          }
+          return m;
+        }).toList();
+
+        state = {
+          ...state,
+          waId: currentState.copyWith(messages: messages),
+        };
+      }
+    });
   }
 
   Future<void> fetchMessages(String waId) async {
@@ -130,6 +175,19 @@ class ChatDetailNotifier extends Notifier<Map<String, ChatDetailState>> {
       // The socket will receive the message and add it instantly, no need to reload
     } catch (e) {
       // Ignorer
+    }
+  }
+
+  Future<void> uploadMedia(String waId, String filePath, String mediaType) async {
+    final currentState = state[waId];
+    if (currentState == null) return;
+    try {
+      final repo = ref.read(chatRepositoryProvider);
+      // Let the UI know it's processing via optimistic UI is handled by socket `nouveau_message` with processing status!
+      // But we can also do it locally if we want. For now, calling the repo will trigger the socket.
+      await repo.uploadMedia(waId, filePath, mediaType);
+    } catch (e) {
+      debugPrint('Error uploading media: $e');
     }
   }
 

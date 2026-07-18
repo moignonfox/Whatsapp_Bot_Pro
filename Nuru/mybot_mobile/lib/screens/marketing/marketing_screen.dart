@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../core/subscription_gate.dart';
 import '../../viewmodels/profile_notifier.dart';
 import '../../viewmodels/marketing_notifier.dart';
@@ -17,7 +19,10 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
   String _selectedTarget = 'all';
   int _selectedTemplateIndex = 0;
   final List<TextEditingController> _variableControllers = [];
-  final TextEditingController _imageUrlController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  String? _selectedImagePath;
+  bool _isImprovingWithAI = false;
+  bool _isUploadingImage = false;
   
   final List<Map<String, dynamic>> _templates = [
     {
@@ -48,25 +53,94 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
 
   void _updateVariableControllers() {
     for (var c in _variableControllers) {
+      c.removeListener(_onVariableChanged);
       c.dispose();
     }
     _variableControllers.clear();
     final count = _templates[_selectedTemplateIndex]['variables'].length;
     for (int i = 0; i < count; i++) {
-      _variableControllers.add(TextEditingController());
+      final controller = TextEditingController();
+      controller.addListener(_onVariableChanged);
+      _variableControllers.add(controller);
     }
+  }
+
+  void _onVariableChanged() {
+    setState(() {});
+  }
+
+  String _getTemplatePreview() {
+    final templateName = _templates[_selectedTemplateIndex]['name'];
+    String preview = "";
+    
+    if (templateName == 'vira_campagne_promo') {
+      final var1 = _variableControllers.isNotEmpty && _variableControllers[0].text.isNotEmpty ? _variableControllers[0].text : "[Nom du restaurant]";
+      final var2 = _variableControllers.length > 1 && _variableControllers[1].text.isNotEmpty ? _variableControllers[1].text : "[Détail de l'offre]";
+      preview = "Bonjour Client,\n\nBonne nouvelle ! $var1 vous propose une offre spéciale :\n$var2\n\nN'hésitez pas à nous contacter ou à commander directement.\n\nÀ très bientôt !";
+    } else if (templateName == 'vira_rappel_commande') {
+      final var1 = _variableControllers.isNotEmpty && _variableControllers[0].text.isNotEmpty ? _variableControllers[0].text : "[Nom du restaurant]";
+      preview = "Bonjour Client,\n\nNous espérons que vous avez apprécié votre dernière commande chez $var1.\nNous serions ravis de vous revoir bientôt pour de nouvelles saveurs.\n\nÀ très vite !";
+    } else if (templateName == 'rappel_client_inactif') {
+      final var1 = _variableControllers.isNotEmpty && _variableControllers[0].text.isNotEmpty ? _variableControllers[0].text : "[Nom du restaurant]";
+      final var2 = _variableControllers.length > 1 && _variableControllers[1].text.isNotEmpty ? _variableControllers[1].text : "[Produit]";
+      preview = "Bonjour Client,\n\nCela fait un moment que nous ne vous avons pas vu chez $var1 !\nPour vous donner l'eau à la bouche, avez-vous essayé notre $var2 ?\n\nNous espérons vous revoir très bientôt pour une délicieuse commande.\n\nExcellente journée !";
+    }
+    
+    return preview;
   }
 
   @override
   void dispose() {
-    _imageUrlController.dispose();
     for (var c in _variableControllers) {
       c.dispose();
     }
     super.dispose();
   }
 
-  // AI improvement removed due to template constraints
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image != null) {
+      setState(() {
+        _selectedImagePath = image.path;
+      });
+    }
+  }
+
+  Future<void> _improveWithAI() async {
+    if (_templates[_selectedTemplateIndex]['name'] != 'vira_campagne_promo' || _variableControllers.length < 2) return;
+    
+    final msg = _variableControllers[1].text.trim();
+    if (msg.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Écrivez d\'abord un détail d\'offre à améliorer.')),
+      );
+      return;
+    }
+    setState(() => _isImprovingWithAI = true);
+    try {
+      final repo = ref.read(marketingRepositoryProvider);
+      final improved = await repo.improveMessageWithAI(message: msg);
+      if (!mounted) return;
+      _variableControllers[1].text = improved;
+      _variableControllers[1].selection = TextSelection.collapsed(offset: improved.length);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+              SizedBox(width: 10),
+              Flexible(child: Text('Message amélioré avec succès !')),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    } finally {
+      if (mounted) setState(() => _isImprovingWithAI = false);
+    }
+  }
 
   Future<void> _showConfirmationDialog(int count) async {
     final int maxMinutes = (count * 25) ~/ 60;
@@ -131,9 +205,9 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
 
   Future<void> _onLaunchCampaignPressed() async {
     final hasImage = _templates[_selectedTemplateIndex]['hasImage'] == true;
-    if (hasImage && _imageUrlController.text.trim().isEmpty) {
+    if (hasImage && _selectedImagePath == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez fournir l\'URL de l\'image.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez sélectionner une image.')));
       return;
     }
     
@@ -170,7 +244,20 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
     final variables = ["{prenom}", ..._variableControllers.map((c) => c.text.trim())];
     
     final hasImage = _templates[_selectedTemplateIndex]['hasImage'] == true;
-    final headerImageLink = hasImage ? _imageUrlController.text.trim() : null;
+    String? headerImageLink;
+
+    if (hasImage && _selectedImagePath != null) {
+      setState(() => _isUploadingImage = true);
+      try {
+        final repo = ref.read(marketingRepositoryProvider);
+        headerImageLink = await repo.uploadCampaignImage(_selectedImagePath!);
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur upload image: $e')));
+        setState(() => _isUploadingImage = false);
+        return;
+      }
+      setState(() => _isUploadingImage = false);
+    }
 
     final success = await notifier.sendCampaign(
       templateName: templateName,
@@ -206,7 +293,6 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
     final marketingState = ref.watch(marketingNotifierProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F0F14) : const Color(0xFFF5F5FA),
       appBar: AppBar(
         title: const Text('Nouvelle Campagne', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -0.4)),
         elevation: 0,
@@ -351,22 +437,30 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A24) : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
-                        ),
-                        child: TextField(
-                          controller: _imageUrlController,
-                          style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
-                          decoration: InputDecoration(
-                            labelText: 'URL de l\'image (ex: https://...)',
-                            labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.all(16),
-                            prefixIcon: const Icon(Icons.link_rounded),
+                      child: InkWell(
+                        onTap: _pickImage,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: double.infinity,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1A1A24) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
                           ),
+                          child: _selectedImagePath != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(File(_selectedImagePath!), fit: BoxFit.cover, width: double.infinity, height: 120),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate_outlined, size: 32, color: colorScheme.primary.withValues(alpha: 0.7)),
+                                    const SizedBox(height: 8),
+                                    Text('Appuyez pour choisir une image', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13)),
+                                  ],
+                                ),
                         ),
                       ),
                     ),
@@ -388,7 +482,7 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                           child: TextField(
                             controller: _variableControllers[index],
                             style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
-                            maxLines: variableLabel.contains('Texte') ? 3 : 1,
+                            maxLines: variableLabel.contains('Texte') ? 3 : (index == 1 && _templates[_selectedTemplateIndex]['name'] == 'vira_campagne_promo' ? 4 : 1),
                             decoration: InputDecoration(
                               labelText: variableLabel,
                               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
@@ -399,6 +493,51 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                         ),
                       );
                     }),
+                    
+                    if (_templates[_selectedTemplateIndex]['name'] == 'vira_campagne_promo') ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.deepPurple.withValues(alpha: 0.1),
+                              Colors.purpleAccent.withValues(alpha: 0.05)
+                            ],
+                          ),
+                          border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.3), width: 1.5),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _isImprovingWithAI ? null : _improveWithAI,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (_isImprovingWithAI)
+                                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepPurple))
+                                  else
+                                    const Icon(Icons.auto_awesome_rounded, size: 20, color: Colors.deepPurple),
+                                  const SizedBox(width: 12),
+                                  Flexible(
+                                    child: Text(
+                                      _isImprovingWithAI ? 'Amélioration en cours...' : 'Améliorer l\'offre par IA',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                   ],
 
                   const SizedBox(height: 12),
@@ -408,7 +547,7 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF14141B) : Colors.grey.shade50,
+                      color: isDark ? const Color(0xFF1A1A24) : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
                     ),
@@ -422,9 +561,56 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                             Text('Aperçu du template sélectionné', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.primary)),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(right: 32),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF005C4B) : const Color(0xFFE7FFDB),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                              bottomRight: Radius.circular(12),
+                              bottomLeft: Radius.circular(4),
+                            ),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2, offset: const Offset(0, 1)),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_templates[_selectedTemplateIndex]['hasImage'] == true && _selectedImagePath != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(_selectedImagePath!),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: 140,
+                                    ),
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 6.0, right: 6.0, bottom: 6.0, top: 4.0),
+                                child: Text(
+                                  _getTemplatePreview(),
+                                  style: TextStyle(
+                                    fontSize: 14, 
+                                    color: isDark ? Colors.white : Colors.black87, 
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Text(
-                          'Les variables (ex: Nom) seront remplies automatiquement pour chaque client.',
+                          'Les variables seront remplies automatiquement pour chaque client.',
                           style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
                         ),
                       ],
@@ -457,14 +643,14 @@ class _MarketingScreenState extends ConsumerState<MarketingScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              if (marketingState.isLoading)
+                              if (marketingState.isLoading || _isUploadingImage)
                                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                               else
                                 const Icon(Icons.send_rounded, color: Colors.white, size: 22),
                               const SizedBox(width: 12),
                               Flexible(
                                 child: Text(
-                                  marketingState.isLoading ? 'Envoi en cours...' : 'Lancer la campagne',
+                                  marketingState.isLoading || _isUploadingImage ? 'Envoi en cours...' : 'Lancer la campagne',
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                                   overflow: TextOverflow.ellipsis,
                                 ),

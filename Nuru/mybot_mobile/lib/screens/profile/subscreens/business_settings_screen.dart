@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../viewmodels/profile_notifier.dart';
 import '../../../models/business_profile.dart';
@@ -277,6 +278,15 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => context.push('/catalog'),
+                            icon: const Icon(Icons.inventory_2_outlined),
+                            label: const Text('Gérer mon Catalogue', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
                         ),
                       ],
                     ),

@@ -715,19 +715,40 @@ def send_chat_message(biz_id):
     business = business_repo.get_by_id(biz_id)
     if not business:
         return jsonify({'error': 'Business introuvable'}), 404
+        
+    # Vérification fenêtre 24h
+    from datetime import datetime
+    last_user_msg_time = conversation_repo.get_last_user_message_timestamp(wa_id, biz_id)
+    if last_user_msg_time:
+        try:
+            last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            try:
+                last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                last_dt = datetime.now()
+        if (datetime.now() - last_dt).total_seconds() > 24 * 3600:
+            return jsonify({'error': 'Le client ne vous a pas écrit depuis plus de 24h. Envoi impossible.'}), 400
+    else:
+        # Aucun message du client ? Interdit d'initier avec un message libre
+        return jsonify({'error': 'Le client ne vous a jamais écrit. Envoi impossible.'}), 400
+
+    # Sauvegarde en base avec role 'agent' (statut processing par défaut pour la latence, puis sent après l'API)
+    msg_id = conversation_repo.save_message(wa_id, 'agent', text, biz_id, message_status='processing')
 
     # Envoi via l'API WhatsApp
-    status_code = whatsapp_service.send_message(wa_id, text, business['whatsapp_phone_id'], business['token_wa'])
+    response = whatsapp_service.send_text_message(wa_id, text, business['whatsapp_phone_id'], business['token_wa'])
 
-    if status_code not in (200, 201):
+    if response and 'messages' in response:
+        meta_id = response['messages'][0]['id']
+        conversation_repo.update_message_status_by_id(msg_id, 'sent', meta_id)
+    else:
+        conversation_repo.update_message_status_by_id(msg_id, 'failed')
         return jsonify({'error': 'Erreur lors de l\'envoi du message via WhatsApp.'}), 500
     
-    # Si on est en mode humain, on rÃ©initialise le timer Ã  cet instant prÃ©cis
+    # Si on est en mode humain, on réinitialise le timer à cet instant précis
     if business_repo.is_human_mode(biz_id, wa_id):
         business_repo.set_human_mode(biz_id, wa_id, True)
-
-    # Sauvegarde en base avec role 'agent'
-    conversation_repo.save_message(wa_id, 'agent', text, biz_id)
 
     # Diffusion au Dashboard via SocketIO
     try:
@@ -735,14 +756,113 @@ def send_chat_message(biz_id):
         socketio.emit('nouveau_message', {
             'business_id': biz_id,
             'wa_id': wa_id,
+            'message_id': msg_id,
             'content': text,
             'role': 'agent',
-            'timestamp': 'now'
+            'timestamp': 'now',
+            'message_type': 'text',
+            'message_status': 'sent'
         }, room=biz_id)
     except Exception as e:
         print(f"Erreur SocketIO: {e}")
 
     return jsonify({'status': 'sent'})
+
+
+@dashboard_bp.route('/admin/<biz_id>/chat/upload_media', methods=['POST'])
+def upload_media_route(biz_id):
+    """Point d'entrée pour l'upload de médias depuis le chat (image, audio)."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Non autorisé'}), 403
+
+    wa_id = request.form.get('wa_id')
+    media_type = request.form.get('media_type')  # 'image' ou 'audio'
+    
+    if not wa_id or not media_type or 'file' not in request.files:
+        return jsonify({'error': 'Paramètres invalides'}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Aucun fichier sélectionné'}), 400
+
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return jsonify({'error': 'Business introuvable'}), 404
+
+    # Vérification fenêtre 24h
+    from datetime import datetime
+    last_user_msg_time = conversation_repo.get_last_user_message_timestamp(wa_id, biz_id)
+    if last_user_msg_time:
+        try:
+            last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            try:
+                last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                last_dt = datetime.now()
+        if (datetime.now() - last_dt).total_seconds() > 24 * 3600:
+            return jsonify({'error': 'Le client ne vous a pas écrit depuis plus de 24h.'}), 400
+    else:
+        return jsonify({'error': 'Le client ne vous a jamais écrit.'}), 400
+
+    # Validation MIME & Taille
+    import os
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    from app.services.media_worker import enqueue_media_processing
+    
+    mime_type = file.mimetype
+    if media_type == 'image':
+        if not mime_type.startswith('image/'):
+            return jsonify({'error': 'Le fichier n\'est pas une image.'}), 400
+        if request.content_length > 5 * 1024 * 1024:
+            return jsonify({'error': 'Image trop volumineuse (max 5 Mo).'}), 400
+    elif media_type == 'audio':
+        if not mime_type.startswith('audio/') and not mime_type.startswith('video/'): # Safari can send video/mp4 for audio
+            return jsonify({'error': 'Le fichier n\'est pas un audio.'}), 400
+        if request.content_length > 16 * 1024 * 1024:
+            return jsonify({'error': 'Audio trop volumineux (max 16 Mo).'}), 400
+    else:
+        return jsonify({'error': 'Type de média non supporté.'}), 400
+
+    # Sauvegarder dans temp
+    temp_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', os.path.join(current_app.root_path, 'static', 'uploads')), 'temp')
+    os.makedirs(temp_dir, exist_ok=True)
+    import uuid
+    ext = os.path.splitext(secure_filename(file.filename))[1]
+    temp_filename = f"{uuid.uuid4()}_temp{ext}"
+    temp_path = os.path.join(temp_dir, temp_filename)
+    file.save(temp_path)
+    
+    # Enregistrer le message avec statut 'processing'
+    content = '📸 Image envoyée' if media_type == 'image' else '🎤 Message vocal'
+    msg_id = conversation_repo.save_message(
+        wa_id=wa_id, role='agent', content=content, business_id=biz_id,
+        message_type=media_type, message_status='processing'
+    )
+    
+    # Démarrer le worker asynchrone
+    enqueue_media_processing(
+        current_app._get_current_object(), biz_id, wa_id, temp_path, mime_type, media_type, dict(business), msg_id
+    )
+    
+    # Diffuser SocketIO (processing) pour afficher le message gris/chargement
+    try:
+        from app import socketio
+        socketio.emit('nouveau_message', {
+            'business_id': biz_id,
+            'wa_id': wa_id,
+            'message_id': msg_id,
+            'content': content,
+            'role': 'agent',
+            'timestamp': 'now',
+            'message_type': media_type,
+            'message_status': 'processing'
+        }, room=biz_id)
+    except Exception as e:
+        print(f"Erreur SocketIO: {e}")
+
+    return jsonify({'status': 'processing', 'message_id': msg_id})
 
 
 @dashboard_bp.route('/admin/<biz_id>/chat/manual-order', methods=['POST'])

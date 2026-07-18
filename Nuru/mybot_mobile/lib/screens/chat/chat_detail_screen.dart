@@ -4,6 +4,17 @@ import '../../viewmodels/chat_detail_notifier.dart';
 import '../../viewmodels/chat_notifier.dart';
 import '../../repositories/chat_repository.dart';
 import '../../models/conversation.dart';
+import '../../models/message.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'dart:async';
+
+import '../../core/api/api_client.dart';
 import 'widgets/client_profile_sheet.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
@@ -16,7 +27,7 @@ class ChatDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
+class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
@@ -25,7 +36,73 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _showEmojiPanel = false;
   
   String _currentClientName = '';
+  
+  // Recording
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  String? _recordFilePath;
+  
+  // WhatsApp-style Recording UI state
+  bool _isRecordingLocked = false;
+  int _recordDuration = 0;
+  Timer? _recordTimer;
+  double _dragPositionDx = 0;
+  double _dragPositionDy = 0;
+  final AudioPlayer _beepPlayer = AudioPlayer();
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
+    _messageController.dispose();
+    _focusNode.dispose();
+    _audioRecorder.dispose();
+    _recordTimer?.cancel();
+    _beepPlayer.dispose();
+    super.dispose();
+  }
+
+  String _getFullMediaUrl(String path) {
+    if (path.startsWith('http')) return path;
+    String baseUrl = apiClient.options.baseUrl.replaceAll('/api/v1', '');
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+    if (!path.startsWith('/')) {
+      path = '/$path';
+    }
+    return '$baseUrl$path';
+  }
+
+  Widget _buildMessageContent(Message msg, Color textColor, bool isMe, bool isDark) {
+    if (msg.messageType == 'image') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: msg.mediaUrl != null
+                ? Image.network(_getFullMediaUrl(msg.mediaUrl!), width: 200, fit: BoxFit.cover)
+                : Container(
+                    width: 200,
+                    height: 200,
+                    color: isDark ? Colors.grey[800] : Colors.grey[300],
+                    child: Center(child: Icon(Icons.image, size: 50, color: Colors.grey[500])),
+                  ),
+          ),
+          if (msg.content.isNotEmpty) const SizedBox(height: 8),
+          if (msg.content.isNotEmpty) Text(msg.content, style: TextStyle(fontSize: 15, color: textColor)),
+        ],
+      );
+    } else if (msg.messageType == 'audio' && msg.mediaUrl != null) {
+      return AudioMessageWidget(
+        audioUrl: _getFullMediaUrl(msg.mediaUrl!),
+        textColor: textColor,
+      );
+    } else {
+      return Text(msg.content, style: TextStyle(fontSize: 15, color: textColor));
+    }
+  }
 
   Widget _buildDateSeparator(BuildContext context, String timestamp) {
     try {
@@ -74,6 +151,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentClientName = widget.clientName;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatDetailNotifierProvider.notifier).fetchMessages(widget.waId);
@@ -89,6 +167,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(chatDetailNotifierProvider.notifier).fetchMessages(widget.waId);
+    }
+  }
+
 
   void _toggleEmojiPanel() async {
     if (_showEmojiPanel) {
@@ -97,7 +182,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     } else {
       if (_focusNode.hasFocus) {
         _focusNode.unfocus();
-        await Future.delayed(const Duration(milliseconds: 100)); // Prevent overflow while keyboard hides
+        await Future.delayed(const Duration(milliseconds: 100));
       }
       setState(() {
         _showEmojiPanel = true;
@@ -138,11 +223,139 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _focusNode.dispose();
-    super.dispose();
+
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      ref.read(chatDetailNotifierProvider.notifier).uploadMedia(widget.waId, pickedFile.path, 'image');
+    }
+  }
+
+  Future<void> _startRecording() async {
+    if (await Permission.microphone.request().isGranted) {
+      final dir = await getTemporaryDirectory();
+      _recordFilePath = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      
+      await _beepPlayer.setAsset('assets/audio/bip.wav');
+      await _beepPlayer.seek(Duration.zero);
+      _beepPlayer.play();
+      await Future.delayed(const Duration(milliseconds: 200)); // wait for beep
+      
+      const config = RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100);
+      await _audioRecorder.start(config, path: _recordFilePath!);
+      
+      setState(() {
+        _isRecording = true;
+        _isRecordingLocked = false;
+        _recordDuration = 0;
+        _dragPositionDx = 0;
+        _dragPositionDy = 0;
+      });
+      
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _recordDuration++;
+        });
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission microphone refusée')));
+    }
+  }
+
+  Future<void> _stopRecording({bool send = true}) async {
+    if (!_isRecording) return;
+    
+    _recordTimer?.cancel();
+    final path = await _audioRecorder.stop();
+    
+    setState(() {
+      _isRecording = false;
+      _isRecordingLocked = false;
+      _dragPositionDx = 0;
+      _dragPositionDy = 0;
+    });
+    
+    if (send && path != null) {
+      await _beepPlayer.setAsset('assets/audio/bip.wav');
+      await _beepPlayer.seek(Duration.zero);
+      _beepPlayer.play();
+      ref.read(chatDetailNotifierProvider.notifier).uploadMedia(widget.waId, path, 'audio');
+    } else if (!send && path != null) {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+  }
+  
+  void _cancelRecording() {
+    _stopRecording(send: false);
+  }
+  
+  void _lockRecording() {
+    setState(() {
+      _isRecordingLocked = true;
+    });
+  }
+
+  String _formatRecordDuration() {
+    final minutes = (_recordDuration / 60).floor().toString().padLeft(2, '0');
+    final seconds = (_recordDuration % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  Widget _buildRecordingUI(BuildContext context) {
+    if (_isRecordingLocked) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: _cancelRecording,
+            ),
+            Row(
+              children: [
+                const Icon(Icons.mic, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(_formatRecordDuration(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            IconButton(
+              icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => _stopRecording(send: true),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Normal recording (holding)
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.mic, color: Colors.red),
+              const SizedBox(width: 8),
+              Text(_formatRecordDuration(), style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.chevron_left, color: Colors.grey),
+              const SizedBox(width: 4),
+              const Text("Glisser pour annuler", style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _attachmentPanel() {
@@ -160,22 +373,22 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _attachmentIcon(Icons.insert_drive_file, Colors.indigo, 'Document', 'max 100MB'),
+                  _attachmentIcon(Icons.insert_drive_file, Colors.indigo, 'Document', 'max 100MB', onTap: null),
                   const SizedBox(width: 40),
-                  _attachmentIcon(Icons.image, Colors.pink, 'Galerie', 'max 5MB'),
+                  _attachmentIcon(Icons.image, Colors.pink, 'Galerie', 'max 5MB', onTap: _pickImage),
                   const SizedBox(width: 40),
-                  _attachmentIcon(Icons.videocam, Colors.purpleAccent, 'Vidéo', 'max 16MB'),
+                  _attachmentIcon(Icons.videocam, Colors.purpleAccent, 'Vidéo', 'max 16MB', onTap: null),
                 ],
               ),
               const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _attachmentIcon(Icons.headset, Colors.orange, 'Audio', 'max 16MB'),
+                  _attachmentIcon(Icons.headset, Colors.orange, 'Audio', 'max 16MB', onTap: null),
                   const SizedBox(width: 40),
-                  _attachmentIcon(Icons.location_on, Colors.teal, 'Localisation', 'Carte'),
+                  _attachmentIcon(Icons.location_on, Colors.teal, 'Localisation', 'Carte', onTap: null),
                   const SizedBox(width: 40),
-                  _attachmentIcon(Icons.emoji_emotions, Colors.blue, 'Stickers', 'max 500KB'),
+                  _attachmentIcon(Icons.emoji_emotions, Colors.blue, 'Stickers', 'max 500KB', onTap: null),
                 ],
               ),
             ],
@@ -185,11 +398,15 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  Widget _attachmentIcon(IconData icon, Color bg, String text, String subtext) {
+  Widget _attachmentIcon(IconData icon, Color bg, String text, String subtext, {VoidCallback? onTap}) {
     return InkWell(
       onTap: () {
         setState(() => _showAttachmentPanel = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$text : fonction à venir.")));
+        if (onTap != null) {
+          onTap();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$text : fonction à venir.")));
+        }
       },
       child: Column(
         children: [
@@ -211,14 +428,33 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return SizedBox(
       height: 300,
       width: double.infinity,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.emoji_emotions, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text("Clavier Emojis à venir", style: TextStyle(color: Colors.grey)),
-          ],
+      child: EmojiPicker(
+        onEmojiSelected: (category, emoji) {
+          // Do nothing, text gets updated in onBackspacePressed or via controller
+        },
+        onBackspacePressed: () {
+          // Do nothing, text gets updated via controller
+        },
+        textEditingController: _messageController, // pass the controller
+        config: Config(
+          height: 300,
+          emojiViewConfig: EmojiViewConfig(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            columns: 7,
+            emojiSizeMax: 28 * (Platform.isIOS ? 1.30 : 1.0),
+          ),
+          bottomActionBarConfig: BottomActionBarConfig(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            buttonIconColor: Colors.grey,
+            buttonColor: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          categoryViewConfig: CategoryViewConfig(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            dividerColor: Theme.of(context).scaffoldBackgroundColor,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            iconColorSelected: Theme.of(context).colorScheme.primary,
+            iconColor: Colors.grey,
+          ),
         ),
       ),
     );
@@ -384,10 +620,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                           style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54),
                                         ),
                                       ),
-                                    Text(
-                                      msg.content,
-                                      style: TextStyle(fontSize: 15, color: textColor),
-                                    ),
+                                    _buildMessageContent(msg, textColor, isMe, isDark),
                                     const SizedBox(height: 4),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -398,7 +631,12 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                         ),
                                         if (isMe) ...[
                                           const SizedBox(width: 4),
-                                          Icon(Icons.done_all, size: 14, color: isDark ? Colors.blue[300] : Colors.blue[400]),
+                                          if (msg.messageStatus == 'processing')
+                                            SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.blue[300] : Colors.blue[400]))
+                                          else if (msg.messageStatus == 'failed')
+                                            Icon(Icons.error, size: 14, color: Colors.red)
+                                          else
+                                            Icon(Icons.done_all, size: 14, color: isDark ? Colors.blue[300] : Colors.blue[400]),
                                         ]
                                       ],
                                     ),
@@ -420,6 +658,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           },
                         ),
                       ),
+                    if (!state.isWithin24hWindow && state.isHumanMode)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        color: Colors.amber.withOpacity(0.2),
+                        child: const Text(
+                          "Le client ne vous a pas écrit depuis plus de 24h. L'envoi libre est désactivé par Meta.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.amber, fontSize: 12),
+                        ),
+                      ),
                     // INPUT BAR (always visible, mimicking WA)
                     Container(
                       color: Colors.transparent,
@@ -439,65 +688,197 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                   ),
                                 ],
                               ),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                      icon: Icon(_showEmojiPanel ? Icons.keyboard : Icons.emoji_emotions_outlined, color: Colors.grey),
-                                      onPressed: () {
-                                        if (state.isHumanMode) {
-                                          _toggleEmojiPanel();
-                                        }
-                                      },
-                                    ),
-                                  Expanded(
-                                    child: TextField(
-                                      focusNode: _focusNode,
-                                        controller: _messageController,
-                                      enabled: state.isHumanMode, // disable if IA is taking care
-                                      decoration: InputDecoration(
-                                        hintText: state.isHumanMode ? 'Message' : 'Passez en Mode Humain pour répondre',
-                                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
-                                        border: InputBorder.none,
+                              child: _isRecording 
+                                ? _buildRecordingUI(context)
+                                : Row(
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(_showEmojiPanel ? Icons.keyboard : Icons.emoji_emotions_outlined, color: Colors.grey),
+                                        onPressed: () {
+                                          if (state.isHumanMode) {
+                                            _toggleEmojiPanel();
+                                          }
+                                        },
                                       ),
-                                      maxLines: null,
-                                      keyboardType: TextInputType.multiline,
-                                    ),
+                                      Expanded(
+                                        child: TextField(
+                                          focusNode: _focusNode,
+                                          controller: _messageController,
+                                          enabled: state.isHumanMode && state.isWithin24hWindow,
+                                          decoration: InputDecoration(
+                                            hintText: state.isHumanMode 
+                                                ? (state.isWithin24hWindow ? 'Message' : 'Envoi désactivé (>24h)') 
+                                                : 'Passez en Mode Humain',
+                                            hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+                                            border: InputBorder.none,
+                                          ),
+                                          maxLines: null,
+                                          keyboardType: TextInputType.multiline,
+                                          onChanged: (_) => _onTextChanged(),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.attach_file, color: _showAttachmentPanel ? Theme.of(context).colorScheme.primary : Colors.grey),
+                                        onPressed: () {
+                                          if (state.isHumanMode && state.isWithin24hWindow) {
+                                            _toggleAttachmentPanel();
+                                          } else if (!state.isHumanMode) {
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Passez en mode humain pour envoyer des pièces jointes.")));
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
                                   ),
-                                  IconButton(
-                                      icon: Icon(Icons.attach_file, color: _showAttachmentPanel ? Theme.of(context).colorScheme.primary : Colors.grey),
-                                      onPressed: () {
-                                        if (state.isHumanMode) {
-                                          _toggleAttachmentPanel();
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Passez en mode humain pour envoyer des pièces jointes.")));
-                                        }
-                                      },
-                                    ),
-                                  const SizedBox(width: 4),
-                                ],
-                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                              onTap: state.isHumanMode ? (_isTyping ? _sendMessage : () {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Le message vocal n'est pas encore pris en charge.")));
-                              }) : null,
-                              child: CircleAvatar(
-                                radius: 24,
-                                backgroundColor: state.isHumanMode ? Theme.of(context).colorScheme.primary : Colors.grey,
-                                child: Icon(_isTyping ? Icons.send : Icons.mic, color: Theme.of(context).cardColor, size: 24),
+                          if (!_isRecordingLocked) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: state.isHumanMode && state.isWithin24hWindow ? (_isTyping ? _sendMessage : null) : null,
+                              onLongPressStart: state.isHumanMode && state.isWithin24hWindow && !_isTyping ? (_) => _startRecording() : null,
+                              onLongPressMoveUpdate: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (details) {
+                                setState(() {
+                                  _dragPositionDx = details.localOffsetFromOrigin.dx;
+                                  _dragPositionDy = details.localOffsetFromOrigin.dy;
+                                });
+                                if (_dragPositionDx < -50) {
+                                  _cancelRecording();
+                                } else if (_dragPositionDy < -50) {
+                                  _lockRecording();
+                                }
+                              } : null,
+                              onLongPressEnd: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (_) {
+                                if (_isRecording) _stopRecording();
+                              } : null,
+                              onLongPressCancel: () {
+                                if (_isRecording && !_isRecordingLocked) {
+                                  _cancelRecording();
+                                }
+                              },
+                              child: Transform.translate(
+                                offset: Offset(0, _dragPositionDy < 0 ? _dragPositionDy : 0),
+                                child: CircleAvatar(
+                                  radius: _isRecording ? 30 : 24, // grow when recording
+                                  backgroundColor: _isRecording ? Colors.red : (state.isHumanMode && state.isWithin24hWindow ? Theme.of(context).colorScheme.primary : Colors.grey),
+                                  child: Icon(_isTyping ? Icons.send : (_isRecording ? Icons.mic : Icons.mic_none), color: Theme.of(context).cardColor, size: _isRecording ? 28 : 24),
+                                ),
                               ),
-                            )
+                            ),
+                          ]
                         ],
                       ),
                     ),
                     if (_showAttachmentPanel) _attachmentPanel(),
                     if (_showEmojiPanel) _emojiPanel(),
                   ],
-                ),
-          ),
+            ),
+      ),
     );
   }
 }
 
+class AudioMessageWidget extends StatefulWidget {
+  final String audioUrl;
+  final Color textColor;
+
+  const AudioMessageWidget({Key? key, required this.audioUrl, required this.textColor}) : super(key: key);
+
+  @override
+  _AudioMessageWidgetState createState() => _AudioMessageWidgetState();
+}
+
+class _AudioMessageWidgetState extends State<AudioMessageWidget> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    try {
+      await _audioPlayer.setUrl(widget.audioUrl);
+    } catch (e) {
+      debugPrint("Error loading audio: $e");
+    }
+    
+    _audioPlayer.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state.playing;
+          if (state.processingState == ProcessingState.completed) {
+            _isPlaying = false;
+            _audioPlayer.seek(Duration.zero);
+            _audioPlayer.pause();
+          }
+        });
+      }
+    });
+    _audioPlayer.durationStream.listen((newDuration) {
+      if (mounted) setState(() => _duration = newDuration ?? Duration.zero);
+    });
+    _audioPlayer.positionStream.listen((newPosition) {
+      if (mounted) setState(() => _position = newPosition);
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() async {
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+    } else {
+      await _audioPlayer.play();
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, color: widget.textColor, size: 35),
+          onPressed: _togglePlayPause,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 100,
+              height: 4,
+              child: LinearProgressIndicator(
+                value: _duration.inMilliseconds > 0 ? _position.inMilliseconds / _duration.inMilliseconds : 0.0,
+                backgroundColor: widget.textColor.withOpacity(0.3),
+                valueColor: AlwaysStoppedAnimation<Color>(widget.textColor),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formatDuration(_position.inSeconds > 0 ? _position : _duration),
+              style: TextStyle(fontSize: 10, color: widget.textColor),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

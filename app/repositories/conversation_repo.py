@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 from app.models.schema import get_db_path
 
 
-def save_message(wa_id: str, role: str, content: str, business_id: str = '', agent_id: int = None) -> None:
+def save_message(wa_id: str, role: str, content: str, business_id: str = '', agent_id: int = None, message_type: str = 'text', media_url: str = None, message_status: str = 'sent', meta_message_id: str = None) -> int:
     """Enregistre un message dans l'historique.
     
     Args:
@@ -20,15 +20,24 @@ def save_message(wa_id: str, role: str, content: str, business_id: str = '', age
         content: Contenu du message.
         business_id: Identifiant du business concerne.
         agent_id: ID de l'agent IA ayant repondu (optionnel).
+        message_type: 'text', 'image', 'audio', etc.
+        media_url: URL locale du media stocké.
+        message_status: 'processing', 'sent', 'delivered', 'read', 'failed'.
+        meta_message_id: L'ID Meta retourné après l'envoi pour le tracking de status.
+        
+    Returns:
+        L'ID de la ligne insérée.
     """
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO history (wa_id, role, content, timestamp, business_id, agent_id) VALUES (?, ?, ?, ?, ?, ?)",
-        (wa_id, role, content, datetime.now(), business_id, agent_id),
+        "INSERT INTO history (wa_id, role, content, timestamp, business_id, agent_id, message_type, media_url, message_status, meta_message_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (wa_id, role, content, datetime.now(), business_id, agent_id, message_type, media_url, message_status, meta_message_id),
     )
+    last_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    return last_id
 
 
 def get_recent_history(wa_id: str, business_id: str, limit: int = 5) -> List[Dict[str, str]]:
@@ -115,7 +124,7 @@ def get_full_history(wa_id: str, business_id: str, limit: int = 50) -> List[Dict
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, role, content, timestamp 
+        SELECT id, role, content, timestamp, message_type, media_url, message_status, meta_message_id 
         FROM history 
         WHERE wa_id = ? AND business_id = ?
         ORDER BY id DESC LIMIT ?
@@ -124,7 +133,7 @@ def get_full_history(wa_id: str, business_id: str, limit: int = 50) -> List[Dict
     conn.close()
     
     rows.reverse()
-    return [{"id": i, "role": r, "content": c, "timestamp": t} for i, r, c, t in rows]
+    return [{"id": i, "role": r, "content": c, "timestamp": t, "message_type": mt, "media_url": mu, "message_status": ms, "meta_message_id": mmi} for i, r, c, t, mt, mu, ms, mmi in rows]
 
 def get_pending_user_messages(wa_id: str, business_id: str) -> List[str]:
     """Récupère tous les messages envoyés par le client depuis la dernière réponse de l'assistant."""
@@ -204,4 +213,42 @@ def get_last_agent_id(wa_id: str, business_id: str) -> Optional[int]:
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
+
+
+def update_message_status(meta_message_id: str, status: str) -> bool:
+    """Met à jour le statut d'un message envoyé. Retourne True si mis à jour."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE history SET message_status = ? WHERE meta_message_id = ?
+    """, (status, meta_message_id))
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return rows_affected > 0
+
+
+def get_last_user_message_timestamp(wa_id: str, business_id: str) -> Optional[str]:
+    """Retourne le timestamp du dernier message du client."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT timestamp FROM history
+        WHERE wa_id = ? AND business_id = ? AND role = 'user'
+        ORDER BY id DESC LIMIT 1
+    """, (wa_id, business_id))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+def update_message_status_by_id(message_id: int, status: str, meta_message_id: str = None) -> None:
+    """Met à jour le statut d'un message par son ID interne, utile après processing."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    if meta_message_id:
+        cursor.execute("UPDATE history SET message_status = ?, meta_message_id = ? WHERE id = ?", (status, meta_message_id, message_id))
+    else:
+        cursor.execute("UPDATE history SET message_status = ? WHERE id = ?", (status, message_id))
+    conn.commit()
+    conn.close()
 

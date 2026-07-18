@@ -3,7 +3,9 @@ import logging
 import requests
 import json
 import re
+import time
 from datetime import datetime
+from groq import Groq
 from google import genai
 from google.genai import types
 
@@ -638,3 +640,42 @@ Règles importantes :
 - Tu ne donnes jamais d'informations sur d'autres établissements
 """
     return template
+
+def transcribe_audio(audio_bytes: bytes) -> str:
+    """
+    Transcrite un fichier audio (bytes) via l'API Whisper de Groq.
+    Implémente un système de retry pour la robustesse.
+    """
+    # Si la clé n'est pas définie, ça va planter avec une ValueError ou renvoyer un objet vide
+    api_key = cfg.GROQ_API_KEY
+    if not api_key:
+        logger.error("[WHISPER] GROQ_API_KEY non configurée.")
+        return "Erreur technique : transcription indisponible."
+
+    client_groq = Groq(api_key=api_key)
+
+    for attempt in range(3):
+        try:
+            transcription = client_groq.audio.transcriptions.create(
+                file=("vocal.ogg", audio_bytes),
+                model="whisper-large-v3",
+                response_format="json",
+                language="fr" # Pour le test Lomé, on force le français pour l'instant
+            )
+            texte_transcrit = transcription.text
+            logger.info(f"[WHISPER] Vocal transcrit (essai {attempt+1}) : {texte_transcrit}")
+            
+            # Message de fallback propre si l'audio est inaudible (whisper renvoie souvent des blancs ou "Sous-titres par Amara.org" s'il hallucine)
+            if not texte_transcrit or len(texte_transcrit.strip()) < 2:
+                return "Je n'ai pas pu entendre ce que vous avez dit. Pouvez-vous l'écrire ?"
+                
+            return f"🎤 (Vocal transcrit) : {texte_transcrit}"
+            
+        except Exception as e:
+            logger.warning(f"[WHISPER] Tentative {attempt+1} échouée : {e}")
+            if attempt == 2:
+                logger.error("[WHISPER] Échec définitif de la transcription.")
+                return "Je n'ai pas pu décrypter le message vocal, pouvez-vous l'écrire ?"
+            time.sleep(2)
+            
+    return "Je n'ai pas pu décrypter le message vocal, pouvez-vous l'écrire ?"

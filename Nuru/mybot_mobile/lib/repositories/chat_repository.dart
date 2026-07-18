@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_client.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
+import 'package:http_parser/http_parser.dart';
 
 final chatRepositoryProvider = Provider((ref) => ChatRepository(apiClient));
 
@@ -51,6 +52,21 @@ class ChatRepository {
       return response.data['success'] == true;
     } on DioException catch (e) {
       throw Exception('Erreur lors de l\'envoi : ${e.message}');
+    }
+  }
+
+  Future<bool> uploadMedia(String waId, String filePath, String mediaType) async {
+    try {
+      final contentType = mediaType == 'audio' ? MediaType('audio', 'm4a') : null;
+      final formData = FormData.fromMap({
+        'wa_id': waId,
+        'media_type': mediaType,
+        'file': await MultipartFile.fromFile(filePath, contentType: contentType),
+      });
+      final response = await _dio.post('/conversations/$waId/upload_media', data: formData);
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      throw Exception('Erreur lors de l\'envoi du média : ${e.message}');
     }
   }
 

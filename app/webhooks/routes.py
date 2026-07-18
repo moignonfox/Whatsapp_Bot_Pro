@@ -102,56 +102,147 @@ def handle_messages():
                 logger.info("Message dupliqué ignoré (anti-rejeu): %s", wam_id)
                 return make_response("OK", 200)
 
-            if message_info.get('type') == 'text':
+            if message_info.get('type') in ['text', 'image', 'audio']:
                 phone_id = value['metadata']['phone_number_id']
                 wa_id = message_info['from']
-                user_text = message_info['text']['body']
-
+                
+                msg_type = message_info['type']
+                user_text = ""
+                media_url_local = None
+                
                 business = business_repo.get_by_phone_id(phone_id)
-
                 if business:
                     if not dict(business).get('is_active', 1):
                         return make_response("Business inactif", 200)
 
                     biz_id = business['id']
+                    token = business.get('token_wa')
+                    
+                    if msg_type == 'text':
+                        user_text = message_info['text']['body']
+                    elif msg_type in ['image', 'audio']:
+                        media_id = message_info[msg_type]['id']
+                        user_text = "📸 Image reçue" if msg_type == 'image' else "🎤 Message vocal reçu"
+                        
+                        # Si le message image contient une légende (caption)
+                        if msg_type == 'image' and 'caption' in message_info['image']:
+                            user_text = message_info['image']['caption']
+                            
+                        # Télécharger le média
+                        from app.services.whatsapp_service import download_media, send_message
+                        content, mime_type = download_media(media_id, phone_id, token)
+                        if content:
+                            import os, uuid
+                            ext = '.jpg' if msg_type == 'image' else '.m4a'
+                            if mime_type == 'image/png': ext = '.png'
+                            elif mime_type == 'audio/ogg': ext = '.ogg'
+                            
+                            filename = f"client_{uuid.uuid4()}{ext}"
+                            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'client_media')
+                            os.makedirs(upload_dir, exist_ok=True)
+                            file_path = os.path.join(upload_dir, filename)
+                            
+                            with open(file_path, 'wb') as f:
+                                f.write(content)
+                                
+                            media_url_local = f"/static/uploads/client_media/{filename}"
+                            
+                            # Si c'est un audio, on le transcrit en arrière-plan et on envoie l'accusé de réception
+                            if msg_type == 'audio':
+                                # UX: Accusé de réception immédiat
+                                send_message(wa_id, "🎤 J'écoute votre message vocal...", phone_id, token)
+                                
+                                # Transcription Groq
+                                from app.services.ai_service import transcribe_audio
+                                user_text = transcribe_audio(content)
 
-                    # Diffusion du message client au Dashboard en temps réel
+                    # Si c'est une image, on sauvegarde manuellement car bot_core.enqueue_message ne gère pas nativement les images
+                    # Si c'est un audio, on sauvegarde aussi l'entrée avec l'URL, MAIS on appelle enqueue_message pour générer une réponse
+                    if msg_type in ['image', 'audio']:
+                        msg_id = conversation_repo.save_message(
+                            wa_id=wa_id, role='user', content=user_text, business_id=biz_id,
+                            message_type=msg_type, media_url=media_url_local
+                        )
+                        # Diffusion SocketIO pour le Dashboard/Mobile
+                        try:
+                            from app import socketio
+                            socketio.emit('nouveau_message', {
+                                'business_id': biz_id,
+                                'wa_id': wa_id,
+                                'message_id': msg_id,
+                                'content': user_text,
+                                'role': 'user',
+                                'timestamp': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                'message_type': msg_type,
+                                'media_url': media_url_local
+                            }, room=biz_id)
+                        except Exception as e:
+                            logger.error(f"Erreur SocketIO broadcast client media: {e}")
+                        
+                        # Si c'est un audio, on envoie le texte transcrit à l'IA pour traitement
+                        if msg_type == 'audio':
+                            threading.Thread(
+                                target=bot_core.enqueue_message,
+                                args=(wa_id, user_text, business, phone_id, False)
+                            ).start()
+                            
+                    else:
+                        # Diffusion du message client au Dashboard en temps réel (texte)
+                        try:
+                            from app import socketio
+                            socketio.emit('nouveau_message', {
+                                'business_id': biz_id,
+                                'wa_id': wa_id,
+                                'content': user_text,
+                                'role': 'user',
+                                'timestamp': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }, room=biz_id)
+                        except Exception as e:
+                            pass
+                        
+                        # Traitement asynchrone (IA + envoi réponse) pour le texte
+                        threading.Thread(
+                            target=bot_core.enqueue_message,
+                            args=(wa_id, user_text, business, phone_id)
+                        ).start()
+                    
+                    # Notification push Firebase
                     try:
-                        from app import socketio
                         from app.services.notification_service import send_push_notification
-
-                        logger.info("Tentative d'émission SocketIO nouveau_message pour room=%s", biz_id)
-                        socketio.emit('nouveau_message', {
-                            'business_id': biz_id,
-                            'wa_id': wa_id,
-                            'content': user_text,
-                            'role': 'user',
-                            'timestamp': 'now'
-                        }, room=biz_id)
-                        logger.info("SocketIO emit réussi !")
-
-                        # Notification push Firebase
-                        logger.info("Tentative d'envoi de notification Firebase pour business_id=%s", biz_id)
-                        success_push = send_push_notification(
+                        send_push_notification(
                             business_id=biz_id,
                             title="Nouveau message WhatsApp",
                             body=user_text,
-                            data={
-                                "wa_id": wa_id,
-                                "type": "nouveau_message"
-                            }
+                            data={"wa_id": wa_id, "type": "nouveau_message"}
                         )
-                        logger.info("Firebase push envoyé : %s", success_push)
-                    except Exception as ws_err:
-                        logger.warning("Erreur SocketIO/Firebase emit: %s", ws_err, exc_info=True)
+                    except Exception as e:
+                        logger.warning("Erreur Firebase emit: %s", e)
 
-                    # Traitement asynchrone (IA + envoi réponse)
-                    threading.Thread(
-                        target=bot_core.enqueue_message,
-                        args=(wa_id, user_text, business, phone_id)
-                    ).start()
                 else:
                     logger.warning("Business inconnu pour phone_id: %s", phone_id)
+
+        elif 'statuses' in value:
+            for status_item in value['statuses']:
+                wam_id = status_item.get('id')
+                msg_status = status_item.get('status')
+                recipient_id = status_item.get('recipient_id')
+                phone_id = value.get('metadata', {}).get('phone_number_id')
+                
+                if wam_id and msg_status:
+                    updated = conversation_repo.update_message_status(wam_id, msg_status)
+                    if updated and phone_id:
+                        business = business_repo.get_by_phone_id(phone_id)
+                        if business:
+                            try:
+                                from app import socketio
+                                socketio.emit('statut_message', {
+                                    'business_id': business['id'],
+                                    'wa_id': recipient_id,
+                                    'status': msg_status,
+                                    'meta_message_id': wam_id
+                                }, room=business['id'])
+                            except Exception as e:
+                                logger.error("Erreur SocketIO status update: %s", e)
 
     except Exception as e:
         logger.error("Erreur Webhook réception: %s", e)

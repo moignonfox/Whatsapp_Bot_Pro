@@ -1,9 +1,12 @@
 """Routes API pour le marketing (Application Mobile)."""
 import os
 import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from google import genai
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 from app.api import api_bp
 from app.repositories import business_repo, conversation_repo, marketing_repo
@@ -172,4 +175,32 @@ def improve_message_with_ai():
         improved = improve_marketing_message(message)
         return jsonify({"success": True, "improved_message": improved}), 200
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": f"Erreur Gemini: {e}"}), 500
+
+@api_bp.route('/marketing/upload-image', methods=['POST'])
+@jwt_required()
+def upload_campaign_image():
+    biz_id = get_jwt_identity()
+    if 'image' not in request.files:
+        return jsonify({"success": False, "error": "Aucun fichier image fourni"}), 400
+
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "Nom de fichier vide"}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(upload_path)
+        
+        image_url = f"/static/uploads/{unique_filename}"
+        full_url = request.host_url.rstrip('/') + image_url
+        
+        return jsonify({
+            "success": True, 
+            "image_url": full_url
+        })
+    return jsonify({"success": False, "error": "Erreur inconnue"}), 400

@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Cette application utilise le microphone pour enregistrer des messages vocaux.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cette application utilise la galerie pour envoyer des images.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Cette application utilise l'appareil photo pour envoyer des images.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>`n	<string>Vira</string>

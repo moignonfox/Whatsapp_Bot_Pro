@@ -73,6 +73,14 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: 'Boutique, horaires, prompt IA',
                 onTap: () => context.go('/profile/business'),
               ),
+              _buildDivider(),
+              _buildMenuItem(
+                context: context,
+                icon: Icons.inventory_2_outlined,
+                title: 'Catalogue & Stocks',
+                subtitle: 'Gérer les produits et la disponibilité',
+                onTap: () => context.push('/catalog'),
+              ),
             ],
           ),
 

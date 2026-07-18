@@ -77,7 +77,10 @@ def get_messages(wa_id):
             "id": m['id'],
             "role": m['role'],
             "content": m['content'],
-            "timestamp": m['timestamp']
+            "timestamp": m['timestamp'],
+            "message_type": m.get('message_type'),
+            "media_url": m.get('media_url'),
+            "message_status": m.get('message_status')
         })
 
     return jsonify({
@@ -123,7 +126,7 @@ def send_message(wa_id):
             'wa_id': wa_id,
             'content': text,
             'role': 'agent',
-            'timestamp': 'now'
+            'timestamp': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }, room=company_id)
     except Exception as e:
         pass
@@ -131,6 +134,97 @@ def send_message(wa_id):
     return jsonify({"success": True}), 200
 
 
+@api_bp.route('/conversations/<wa_id>/upload_media', methods=['POST'])
+@jwt_required()
+def upload_media(wa_id):
+    company_id = get_jwt_identity()
+    
+    media_type = request.form.get('media_type')  # 'image' ou 'audio'
+    if not media_type or 'file' not in request.files:
+        return jsonify({"success": False, "error": "Paramètres invalides"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "Aucun fichier sélectionné"}), 400
+
+    business = business_repo.get_by_id(company_id)
+    if not business:
+        return jsonify({"success": False, "error": "Business introuvable"}), 404
+
+    # Vérification fenêtre 24h
+    from datetime import datetime
+    last_user_msg_time = conversation_repo.get_last_user_message_timestamp(wa_id, company_id)
+    if last_user_msg_time:
+        try:
+            last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            try:
+                last_dt = datetime.strptime(last_user_msg_time, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                last_dt = datetime.now()
+        if (datetime.now() - last_dt).total_seconds() > 24 * 3600:
+            return jsonify({"success": False, "error": "Le client ne vous a pas écrit depuis plus de 24h."}), 400
+    else:
+        return jsonify({"success": False, "error": "Le client ne vous a jamais écrit."}), 400
+
+    # Validation MIME & Taille
+    import os
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    from app.services.media_worker import enqueue_media_processing
+    
+    mime_type = file.mimetype
+    if media_type == 'image':
+        if not mime_type.startswith('image/'):
+            return jsonify({"success": False, "error": "Le fichier n'est pas une image."}), 400
+        if request.content_length and request.content_length > 5 * 1024 * 1024:
+            return jsonify({"success": False, "error": "Image trop volumineuse (max 5 Mo)."}), 400
+    elif media_type == 'audio':
+        if not mime_type.startswith('audio/') and not mime_type.startswith('video/'):
+            return jsonify({"success": False, "error": "Le fichier n'est pas un audio."}), 400
+        if request.content_length and request.content_length > 16 * 1024 * 1024:
+            return jsonify({"success": False, "error": "Audio trop volumineux (max 16 Mo)."}), 400
+    else:
+        return jsonify({"success": False, "error": "Type de média non supporté."}), 400
+
+    # Sauvegarder dans temp
+    temp_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', os.path.join(current_app.root_path, 'static', 'uploads')), 'temp')
+    os.makedirs(temp_dir, exist_ok=True)
+    import uuid
+    ext = os.path.splitext(secure_filename(file.filename))[1]
+    temp_filename = f"{uuid.uuid4()}_temp{ext}"
+    temp_path = os.path.join(temp_dir, temp_filename)
+    file.save(temp_path)
+    
+    # Enregistrer le message avec statut 'processing'
+    content = '📸 Image envoyée' if media_type == 'image' else '🎤 Message vocal'
+    msg_id = conversation_repo.save_message(
+        wa_id=wa_id, role='agent', content=content, business_id=company_id,
+        message_type=media_type, message_status='processing'
+    )
+    
+    # Démarrer le worker asynchrone
+    enqueue_media_processing(
+        current_app._get_current_object(), company_id, wa_id, temp_path, mime_type, media_type, dict(business), msg_id
+    )
+    
+    # Diffuser SocketIO (processing) pour afficher le message gris/chargement
+    try:
+        from app import socketio
+        socketio.emit('nouveau_message', {
+            'business_id': company_id,
+            'wa_id': wa_id,
+            'message_id': msg_id,
+            'content': content,
+            'role': 'agent',
+            'timestamp': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'message_type': media_type,
+            'message_status': 'processing'
+        }, room=company_id)
+    except Exception as e:
+        pass
+
+    return jsonify({"success": True}), 200
 @api_bp.route('/conversations/<wa_id>/toggle-mode', methods=['PUT'])
 @jwt_required()
 def toggle_human_mode(wa_id):

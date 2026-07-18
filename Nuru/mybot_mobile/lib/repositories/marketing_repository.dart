@@ -53,6 +53,25 @@ class MarketingRepository {
     }
   }
 
+  Future<String> uploadCampaignImage(String imagePath) async {
+    try {
+      final requestData = FormData();
+      requestData.files.add(MapEntry(
+        'image',
+        await MultipartFile.fromFile(imagePath),
+      ));
+      final response = await _dio.post('/marketing/upload-image', data: requestData);
+      return response.data['image_url'] as String;
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(e.response?.data['error'] ?? 'Erreur lors du téléchargement de l\'image.');
+      }
+      throw Exception('Erreur de connexion : ${e.message}');
+    } catch (e) {
+      throw Exception('Erreur : $e');
+    }
+  }
+
   /// Envoie le message à Gemini via le backend et retourne la version améliorée.
   Future<String> improveMessageWithAI({required String message}) async {
     try {

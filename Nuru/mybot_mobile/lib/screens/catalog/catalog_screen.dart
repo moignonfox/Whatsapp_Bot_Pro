@@ -69,7 +69,8 @@ class CatalogScreen extends ConsumerWidget {
     return Scaffold(
       
       appBar: AppBar(
-        title: Text('Catalogue & Stocks', style: TextStyle(fontWeight: FontWeight.w500)),
+        title: const Text('Catalogue & Stocks', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -125,7 +126,7 @@ class CatalogScreen extends ConsumerWidget {
                       ),
                     ),
                     SizedBox(
-                      height: 340, // Hauteur fixe augmentée pour éviter l'overflow
+                      height: 270, // Ajusté pour un meilleur rendu sans espace vide
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -157,7 +158,6 @@ class CatalogScreen extends ConsumerWidget {
                                     children: [
                                       // Image Header
                                       Expanded(
-                                        flex: 4,
                                         child: fullImageUrl.isNotEmpty
                                             ? Image.network(
                                                 fullImageUrl,
@@ -167,89 +167,87 @@ class CatalogScreen extends ConsumerWidget {
                                             : _buildPlaceholder(context),
                                       ),
                                       // Content
-                                      Expanded(
-                                        flex: 5,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                product.nom,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                  decoration: product.disponible ? null : TextDecoration.lineThrough,
-                                                  color: product.disponible ? ((Theme.of(context).brightness == Brightness.dark) ? Colors.white : Colors.black87) : Colors.grey,
+                                      Padding(
+                                        padding: const EdgeInsets.all(10.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              product.nom,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                decoration: product.disponible ? null : TextDecoration.lineThrough,
+                                                color: product.disponible ? ((Theme.of(context).brightness == Brightness.dark) ? Colors.white : Colors.black87) : Colors.grey,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  '${product.prix.toStringAsFixed(2)} F',
+                                                  style: TextStyle(
+                                                    color: product.disponible ? Theme.of(context).colorScheme.secondary : Colors.grey,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    '${product.prix.toStringAsFixed(2)} F',
-                                                    style: TextStyle(
-                                                      color: product.disponible ? Theme.of(context).colorScheme.secondary : Colors.grey,
-                                                      fontWeight: FontWeight.w600,
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.timer, size: 12, color: Colors.grey),
+                                                    const SizedBox(width: 2),
+                                                    Text(
+                                                      '${product.dureeMinutes}m',
+                                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            // Toggles
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text('Dispo', style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark) ? Colors.white54 : Colors.black54)),
+                                                SizedBox(
+                                                  height: 26,
+                                                  child: Transform.scale(
+                                                    scale: 0.65,
+                                                    child: Switch(
+                                                      value: product.disponible,
+                                                      activeColor: Theme.of(context).colorScheme.primary,
+                                                      onChanged: (val) {
+                                                        ref.read(catalogNotifierProvider.notifier).toggleStock(product.id);
+                                                      },
                                                     ),
                                                   ),
-                                                  Row(
-                                                    children: [
-                                                      Icon(Icons.timer, size: 12, color: Colors.grey),
-                                                      const SizedBox(width: 2),
-                                                      Text(
-                                                        '${product.dureeMinutes}m',
-                                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                              const Spacer(),
-                                              // Toggles
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text('Dispo', style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark) ? Colors.white54 : Colors.black54)),
-                                                  SizedBox(
-                                                    height: 30,
-                                                    child: Transform.scale(
-                                                      scale: 0.7,
-                                                      child: Switch(
-                                                        value: product.disponible,
-                                                        activeColor: Theme.of(context).colorScheme.primary,
-                                                        onChanged: (val) {
-                                                          ref.read(catalogNotifierProvider.notifier).toggleStock(product.id);
-                                                        },
-                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text('Vitrine', style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark) ? Colors.white54 : Colors.black54)),
+                                                SizedBox(
+                                                  height: 26,
+                                                  child: Transform.scale(
+                                                    scale: 0.65,
+                                                    child: Switch(
+                                                      value: product.isVisible,
+                                                      activeColor: Theme.of(context).colorScheme.primary,
+                                                      onChanged: (val) {
+                                                        ref.read(catalogNotifierProvider.notifier).toggleVisibility(product.id);
+                                                      },
                                                     ),
                                                   ),
-                                                ],
-                                              ),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text('Vitrine', style: TextStyle(fontSize: 12, color: (Theme.of(context).brightness == Brightness.dark) ? Colors.white54 : Colors.black54)),
-                                                  SizedBox(
-                                                    height: 30,
-                                                    child: Transform.scale(
-                                                      scale: 0.7,
-                                                      child: Switch(
-                                                        value: product.isVisible,
-                                                        activeColor: Theme.of(context).colorScheme.primary,
-                                                        onChanged: (val) {
-                                                          ref.read(catalogNotifierProvider.notifier).toggleVisibility(product.id);
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -260,7 +258,7 @@ class CatalogScreen extends ConsumerWidget {
                                     right: 4,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withAlpha(220),
+                                        color: (Theme.of(context).brightness == Brightness.dark) ? Colors.black.withAlpha(150) : Colors.white.withAlpha(220),
                                         shape: BoxShape.circle,
                                       ),
                                       child: PopupMenuButton<String>(

@@ -61,6 +61,9 @@
         }
 
         /* ────────────────── MAIN CHAT LAYOUT ────────────────── */
+        * {
+            box-sizing: border-box;
+        }
         .chat-container {
             flex: 1;
             display: flex;
@@ -199,6 +202,8 @@
             flex-direction: column;
             background: var(--bg);
             position: relative;
+            min-height: 0;
+            min-width: 0;
         }
 
         .empty-state {
@@ -279,11 +284,23 @@
 
         .chat-messages {
             flex: 1;
+            min-height: 0;
             padding: 24px;
+            padding-bottom: 40px;
             overflow-y: auto;
+            display: block;
+        }
+
+        .message-row {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .message-row.user {
+            justify-content: flex-start;
+        }
+        .message-row.assistant, .message-row.agent {
+            justify-content: flex-end;
         }
 
         .message-bubble {
@@ -297,18 +314,15 @@
             flex-direction: column;
         }
         .message-bubble.user {
-            align-self: flex-start;
             background: var(--card);
             border-bottom-left-radius: 4px;
         }
         .message-bubble.assistant {
-            align-self: flex-end;
             background: rgba(37,211,102,0.12);
             border: 1px solid rgba(37,211,102,0.2);
             border-bottom-right-radius: 4px;
         }
         .message-bubble.agent {
-            align-self: flex-end;
             background: rgba(88,166,255,0.12);
             border: 1px solid rgba(88,166,255,0.2);
             border-bottom-right-radius: 4px;
@@ -344,6 +358,7 @@
             display: flex;
             gap: 15px;
             align-items: flex-end;
+            flex-shrink: 0;
         }
         .chat-input-box {
             flex: 1;
@@ -488,7 +503,7 @@
         </div>
 
         <!-- Chat Content (Hidden initially) -->
-        <div id="chat-panel" class="chat-panel-mobile" style="display: none; flex-direction: column; height: 100%; width: 100%; background: var(--bg);">
+        <div id="chat-panel" class="chat-panel-mobile" style="display: none; flex-direction: column; flex: 1; min-height: 0; width: 100%; background: var(--bg);">
             
             <div class="chat-header">
                 <div class="chat-header-info">
@@ -515,10 +530,20 @@
                 <!-- Messages will be injected here via JS -->
             </div>
 
+            <div id="window-alert" style="display:none; padding:10px; text-align:center; color:var(--amber); font-size:13px; background:var(--amber-bg); border-top:1px solid rgba(240,180,41,0.2);">
+                Le client ne vous a pas écrit depuis plus de 24h. L'envoi libre est désactivé par Meta.
+            </div>
             <div class="chat-input-area">
+                <input type="file" id="media-input" style="display:none;" accept="image/*,audio/*,video/*" onchange="uploadMedia(event)">
+                <button id="attach-btn" class="send-btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" disabled onclick="document.getElementById('media-input').click()">
+                    <i class="fas fa-paperclip"></i>
+                </button>
                 <div class="chat-input-box">
                     <textarea id="chat-input" rows="1" placeholder="Activez le mode humain pour répondre..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
                 </div>
+                <button id="record-btn" class="send-btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" disabled onclick="toggleRecording()">
+                    <i class="fas fa-microphone"></i>
+                </button>
                 <button id="send-btn" class="send-btn" disabled onclick="sendMessage()">
                     <i class="fas fa-paper-plane"></i>
                 </button>
@@ -578,7 +603,6 @@
     // Compteur de messages non-lus par conversation
     const unreadCounts = {};
 
-    // Écoute des nouveaux messages (Webhook & Bot)
     socket.on('nouveau_message', (data) => {
         if (data.business_id !== bizId) return;
 
@@ -587,7 +611,7 @@
 
         if (data.wa_id === currentWaId) {
             // Conversation ouverte → afficher la bulle directement
-            addMessageBubble(data.role, data.content, data.timestamp);
+            addMessageBubble(data.role, data.content, data.timestamp, data.message_type, data.media_url, data.message_status, data.message_id);
         } else if (!currentWaId) {
             // Aucune conversation ouverte → ouvrir automatiquement
             loadConversation(data.wa_id);
@@ -596,6 +620,25 @@
             unreadCounts[data.wa_id] = (unreadCounts[data.wa_id] || 0) + 1;
             updateUnreadBadge(data.wa_id);
             showMessageToast(data);
+        }
+    });
+
+    socket.on('statut_message', (data) => {
+        if (data.business_id !== bizId || data.wa_id !== currentWaId) return;
+        const bubble = document.getElementById(`msg-${data.message_id}`);
+        if (bubble) {
+            const statusSpan = bubble.querySelector('.msg-status');
+            if (statusSpan) {
+                if (data.status === 'processing') statusSpan.innerHTML = '<i class="fas fa-clock" style="font-size:10px; margin-left:5px;"></i>';
+                else if (data.status === 'sent') statusSpan.innerHTML = '<i class="fas fa-check" style="font-size:10px; margin-left:5px;"></i>';
+                else if (data.status === 'delivered') statusSpan.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; margin-left:5px; color:var(--muted);"></i>';
+                else if (data.status === 'read') statusSpan.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; margin-left:5px; color:#53bdeb;"></i>';
+                else if (data.status === 'failed') statusSpan.innerHTML = '<i class="fas fa-exclamation-circle" style="font-size:10px; margin-left:5px; color:var(--red);"></i>';
+            }
+            if (data.media_url) {
+                // If media was just fully processed, reload conversation to display the image/audio
+                loadConversation(currentWaId);
+            }
         }
     });
 
@@ -631,7 +674,7 @@
                 chatArea.innerHTML = '';
 
                 data.messages.forEach(msg => {
-                    addMessageBubble(msg.role, msg.content, msg.timestamp);
+                    addMessageBubble(msg.role, msg.content, msg.timestamp, msg.message_type, msg.media_url, msg.message_status, msg.id);
                 });
 
                 document.getElementById('empty-state').style.display = 'none';
@@ -639,7 +682,48 @@
                 document.getElementById('chat-panel').classList.add('active');
 
                 chatArea.scrollTop = chatArea.scrollHeight;
+                
+                window.currentMessages = data.messages;
+                check24hWindow(data.messages);
             });
+    }
+
+    function check24hWindow(messages) {
+        // Recherche le dernier message utilisateur
+        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+        const alertBox = document.getElementById('window-alert');
+        let isWithin24h = false;
+        
+        if (lastUserMsg && lastUserMsg.timestamp) {
+            let lastTime;
+            if (lastUserMsg.timestamp === 'now') lastTime = new Date();
+            else lastTime = new Date(lastUserMsg.timestamp);
+            
+            if (!isNaN(lastTime)) {
+                const diffMs = new Date() - lastTime;
+                if (diffMs < 24 * 3600 * 1000) {
+                    isWithin24h = true;
+                }
+            }
+        }
+        
+        if (!isWithin24h && isHumanMode) {
+            alertBox.style.display = 'block';
+            document.getElementById('chat-input').disabled = true;
+            document.getElementById('chat-input').placeholder = "Fenêtre de 24h dépassée. Seuls les modèles Meta sont autorisés.";
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('attach-btn').disabled = true;
+            document.getElementById('record-btn').disabled = true;
+        } else {
+            alertBox.style.display = 'none';
+            if (isHumanMode) {
+                document.getElementById('chat-input').disabled = false;
+                document.getElementById('chat-input').placeholder = "Tapez votre message pour le client...";
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('attach-btn').disabled = false;
+                document.getElementById('record-btn').disabled = false;
+            }
+        }
     }
 
     function closeMobileChat() {
@@ -647,8 +731,13 @@
         // On mobile, the active style will just hide the panel, revealing the conv list again.
     }
 
-    function addMessageBubble(role, content, timestamp) {
+    function addMessageBubble(role, content, timestamp, msgType='text', mediaUrl=null, status='sent', msgId=null) {
         const chatArea = document.getElementById('chat-messages');
+        
+        const row = document.createElement('div');
+        row.className = `message-row ${role}`;
+        if (msgId) row.id = `msg-${msgId}`;
+        
         const bubble = document.createElement('div');
         bubble.className = `message-bubble ${role}`;
         
@@ -656,12 +745,39 @@
         if (role === 'assistant') badge = '<div class="msg-badge bot"><i class="fas fa-robot"></i> Bot AI</div>';
         else if (role === 'agent') badge = '<div class="msg-badge agent"><i class="fas fa-user-tie"></i> Vous</div>';
         
+        let mediaHtml = '';
+        if (msgType === 'image') {
+            if (mediaUrl) {
+                mediaHtml = `<img src="${mediaUrl}" style="display:block; max-width:100%; width:auto; max-height:250px; object-fit:contain; border-radius:8px; margin-bottom:8px; cursor:zoom-in;" onclick="window.open(this.src, '_blank')">`;
+            } else {
+                mediaHtml = `<div style="padding:10px; background:rgba(0,0,0,0.1); border-radius:8px; margin-bottom:8px;"><i class="fas fa-spinner fa-spin"></i> Traitement de l'image...</div>`;
+            }
+        } else if (msgType === 'audio') {
+            if (mediaUrl) {
+                mediaHtml = `<audio controls src="${mediaUrl}" style="max-width:100%; margin-bottom:8px;"></audio>`;
+            } else {
+                mediaHtml = `<div style="padding:10px; background:rgba(0,0,0,0.1); border-radius:8px; margin-bottom:8px;"><i class="fas fa-spinner fa-spin"></i> Traitement vocal...</div>`;
+            }
+        }
+        
+        let statusIcon = '';
+        if (role === 'agent') {
+            if (status === 'processing') statusIcon = '<i class="fas fa-clock" style="font-size:10px; margin-left:5px;"></i>';
+            else if (status === 'sent') statusIcon = '<i class="fas fa-check" style="font-size:10px; margin-left:5px;"></i>';
+            else if (status === 'delivered') statusIcon = '<i class="fas fa-check-double" style="font-size:10px; margin-left:5px; color:var(--muted);"></i>';
+            else if (status === 'read') statusIcon = '<i class="fas fa-check-double" style="font-size:10px; margin-left:5px; color:#53bdeb;"></i>';
+            else if (status === 'failed') statusIcon = '<i class="fas fa-exclamation-circle" style="font-size:10px; margin-left:5px; color:var(--red);"></i>';
+        }
+
         bubble.innerHTML = `
             ${badge}
+            ${mediaHtml}
             <div class="msg-text">${escapeHtml(content)}</div>
-            <div class="msg-time">${formatTime(timestamp)}</div>
+            <div class="msg-time" style="display:flex; align-items:center; justify-content:flex-end;">${formatTime(timestamp)} <span class="msg-status">${statusIcon}</span></div>
         `;
-        chatArea.appendChild(bubble);
+        
+        row.appendChild(bubble);
+        chatArea.appendChild(row);
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
@@ -725,6 +841,8 @@
         const toggle = document.getElementById('mode-toggle');
         const input = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
+        const attachBtn = document.getElementById('attach-btn');
+        const recordBtn = document.getElementById('record-btn');
         
         if (isHumanMode) {
             toggle.innerHTML = '<i class="fas fa-user-tie"></i> Mode Humain (Actif)';
@@ -732,6 +850,12 @@
             input.disabled = false;
             input.placeholder = 'Tapez votre message pour le client...';
             sendBtn.disabled = false;
+            attachBtn.disabled = false;
+            recordBtn.disabled = false;
+            // Also need to check 24h window without reloading the whole history
+            if (window.currentMessages) {
+                check24hWindow(window.currentMessages);
+            }
         } else {
             toggle.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
             toggle.className = 'mode-toggle ai';
@@ -740,6 +864,95 @@
             input.value = '';
             input.style.height = '';
             sendBtn.disabled = true;
+            attachBtn.disabled = true;
+            recordBtn.disabled = true;
+        }
+    }
+
+    // --- Media Upload Logic ---
+    function uploadMedia(event) {
+        const file = event.target.files[0];
+        if (!file || !currentWaId || !isHumanMode) return;
+
+        let mediaType = 'image';
+        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+            mediaType = 'audio';
+        } else if (!file.type.startsWith('image/')) {
+            alert('Type de fichier non supporté. (Image ou Audio uniquement)');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('wa_id', currentWaId);
+        formData.append('media_type', mediaType);
+        formData.append('file', file);
+
+        fetch(`/admin/${bizId}/chat/upload_media`, {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type header, let browser boundary do it
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Erreur: ' + data.error);
+            }
+            document.getElementById('media-input').value = '';
+        })
+        .catch(err => {
+            alert('Erreur lors du téléversement.');
+            console.error(err);
+        });
+    }
+
+    // --- Voice Recording Logic ---
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    function toggleRecording() {
+        const recordBtn = document.getElementById('record-btn');
+        if (!isRecording) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                recordBtn.style.color = 'var(--red)';
+                recordBtn.style.animation = 'pulse 1s infinite';
+
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener("stop", () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // Fallback mime type
+                    audioChunks = [];
+                    stream.getTracks().forEach(track => track.stop()); // Stop mic
+                    isRecording = false;
+                    recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    recordBtn.style.color = 'var(--text)';
+                    recordBtn.style.animation = 'none';
+                    
+                    // Upload the audio blob
+                    const file = new File([audioBlob], "voice_record.webm", { type: 'audio/webm' });
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    
+                    // Re-use uploadMedia logic via fake event
+                    uploadMedia({target: {files: dt.files}});
+                });
+            })
+            .catch(err => {
+                alert("Impossible d'accéder au microphone.");
+                console.error(err);
+            });
+        } else {
+            mediaRecorder.stop();
         }
     }
 

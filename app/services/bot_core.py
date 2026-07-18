@@ -14,15 +14,16 @@ warned_truncation_users = set()
 MAX_DEBOUNCE_WAIT = 20 # Limite absolue d'attente (secondes)
 
 
-def enqueue_message(wa_id, user_text, business, phone_id):
+def enqueue_message(wa_id, user_text, business, phone_id, save_to_db=True):
     """Reçoit un message et gère le délai (debounce) avant traitement."""
     try:
         if not isinstance(business, dict):
             business = dict(business)
         biz_id = business['id']
 
-        # 0. Enregistrer IMMEDIATEMENT le message entrant
-        conversation_repo.save_message(wa_id, 'user', user_text, biz_id)
+        # 0. Enregistrer IMMEDIATEMENT le message entrant (si demandé)
+        if save_to_db:
+            conversation_repo.save_message(wa_id, 'user', user_text, biz_id)
 
         # Coupe-circuit : Mode humain
         if business_repo.is_human_mode(biz_id, wa_id):

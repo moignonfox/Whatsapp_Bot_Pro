@@ -35,7 +35,11 @@ def init_db() -> None:
             role      TEXT,
             content   TEXT,
             timestamp DATETIME,
-            is_read   INTEGER DEFAULT 0
+            is_read   INTEGER DEFAULT 0,
+            message_type TEXT DEFAULT 'text',
+            media_url TEXT,
+            message_status TEXT DEFAULT 'sent',
+            meta_message_id TEXT
         )
     """)
 
@@ -252,6 +256,26 @@ def update_schema() -> None:
 
     try:
         cursor.execute("ALTER TABLE history ADD COLUMN is_read INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE history ADD COLUMN message_type TEXT DEFAULT 'text'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE history ADD COLUMN media_url TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE history ADD COLUMN message_status TEXT DEFAULT 'sent'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE history ADD COLUMN meta_message_id TEXT")
     except sqlite3.OperationalError:
         pass
 
