@@ -44,6 +44,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
   
   // WhatsApp-style Recording UI state
   bool _isRecordingLocked = false;
+  bool _isRecordingPaused = false;
+  bool _isStartRecordingCancelled = false;
+  bool _isStartingRecording = false;
   int _recordDuration = 0;
   Timer? _recordTimer;
   double _dragPositionDx = 0;
@@ -234,53 +237,96 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
   }
 
   Future<void> _startRecording() async {
+    if (_isStartingRecording || _isRecording) return;
+    
     if (await Permission.microphone.request().isGranted) {
+      _isStartingRecording = true;
+      _isStartRecordingCancelled = false;
       final dir = await getTemporaryDirectory();
       _recordFilePath = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
       
-      await _beepPlayer.setAsset('assets/audio/bip.wav');
-      await _beepPlayer.seek(Duration.zero);
-      _beepPlayer.play();
+      try {
+        await _beepPlayer.setAsset('assets/audio/bip.wav');
+        await _beepPlayer.seek(Duration.zero);
+        _beepPlayer.play();
+      } catch (e) {
+        debugPrint('Beep player error: $e');
+      }
+      
       await Future.delayed(const Duration(milliseconds: 200)); // wait for beep
       
-      const config = RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100);
-      await _audioRecorder.start(config, path: _recordFilePath!);
+      if (_isStartRecordingCancelled) {
+        _isStartingRecording = false;
+        return;
+      }
       
-      setState(() {
-        _isRecording = true;
-        _isRecordingLocked = false;
-        _recordDuration = 0;
-        _dragPositionDx = 0;
-        _dragPositionDy = 0;
-      });
+      try {
+        const config = RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100);
+        await _audioRecorder.start(config, path: _recordFilePath!);
+      } catch (e) {
+        _isStartingRecording = false;
+        _stopRecording(send: false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur micro: $e')));
+        }
+        return;
+      }
       
-      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
         setState(() {
-          _recordDuration++;
+          _isRecording = true;
+          // IMPORTANT: DO NOT reset _isRecordingLocked! The user might have locked it during the 200ms delay.
+          _recordDuration = 0;
+          if (!_isRecordingLocked) {
+            _dragPositionDx = 0;
+            _dragPositionDy = 0;
+          }
         });
-      });
+      }
+      
+      _isStartingRecording = false;
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (mounted && !_isRecordingPaused) {
+            setState(() {
+              _recordDuration++;
+            });
+          }
+        });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission microphone refusée')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission microphone refusée')));
+      }
     }
   }
 
   Future<void> _stopRecording({bool send = true}) async {
-    if (!_isRecording) return;
+    _isStartRecordingCancelled = true;
+    _isStartingRecording = false;
+    bool wasRecording = _isRecording;
+    
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _isRecordingLocked = false;
+        _isRecordingPaused = false;
+        _dragPositionDx = 0;
+        _dragPositionDy = 0;
+      });
+    }
+    
+    if (!wasRecording) return;
     
     _recordTimer?.cancel();
     final path = await _audioRecorder.stop();
     
-    setState(() {
-      _isRecording = false;
-      _isRecordingLocked = false;
-      _dragPositionDx = 0;
-      _dragPositionDy = 0;
-    });
-    
     if (send && path != null) {
-      await _beepPlayer.setAsset('assets/audio/bip.wav');
-      await _beepPlayer.seek(Duration.zero);
-      _beepPlayer.play();
+      try {
+        await _beepPlayer.setAsset('assets/audio/bip.wav');
+        await _beepPlayer.seek(Duration.zero);
+        _beepPlayer.play();
+      } catch (e) {
+        debugPrint('Beep player error: $e');
+      }
       ref.read(chatDetailNotifierProvider.notifier).uploadMedia(widget.waId, path, 'audio');
     } else if (!send && path != null) {
       final file = File(path);
@@ -291,13 +337,30 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
   }
   
   void _cancelRecording() {
+    _isStartRecordingCancelled = true;
     _stopRecording(send: false);
   }
   
   void _lockRecording() {
     setState(() {
       _isRecordingLocked = true;
+      _dragPositionDx = 0;
+      _dragPositionDy = 0;
     });
+  }
+
+  Future<void> _togglePauseRecording() async {
+    if (_isRecordingPaused) {
+      await _audioRecorder.resume();
+      setState(() {
+        _isRecordingPaused = false;
+      });
+    } else {
+      await _audioRecorder.pause();
+      setState(() {
+        _isRecordingPaused = true;
+      });
+    }
   }
 
   String _formatRecordDuration() {
@@ -311,22 +374,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _cancelRecording,
             ),
-            Row(
-              children: [
-                const Icon(Icons.mic, color: Colors.red),
-                const SizedBox(width: 8),
-                Text(_formatRecordDuration(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
+            const SizedBox(width: 16),
+            Icon(_isRecordingPaused ? Icons.mic_off : Icons.mic, color: _isRecordingPaused ? Colors.grey : Colors.red),
+            const SizedBox(width: 8),
+            Text(_formatRecordDuration(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Spacer(),
             IconButton(
-              icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
-              onPressed: () => _stopRecording(send: true),
+              icon: Icon(_isRecordingPaused ? Icons.play_arrow : Icons.pause, color: Theme.of(context).colorScheme.primary),
+              onPressed: _togglePauseRecording,
             ),
           ],
         ),
@@ -732,40 +793,44 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
                                   ),
                             ),
                           ),
-                          if (!_isRecordingLocked) ...[
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: state.isHumanMode && state.isWithin24hWindow ? (_isTyping ? _sendMessage : null) : null,
-                              onLongPressStart: state.isHumanMode && state.isWithin24hWindow && !_isTyping ? (_) => _startRecording() : null,
-                              onLongPressMoveUpdate: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (details) {
-                                setState(() {
-                                  _dragPositionDx = details.localOffsetFromOrigin.dx;
-                                  _dragPositionDy = details.localOffsetFromOrigin.dy;
-                                });
-                                if (_dragPositionDx < -50) {
-                                  _cancelRecording();
-                                } else if (_dragPositionDy < -50) {
-                                  _lockRecording();
-                                }
-                              } : null,
-                              onLongPressEnd: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (_) {
-                                if (_isRecording) _stopRecording();
-                              } : null,
-                              onLongPressCancel: () {
-                                if (_isRecording && !_isRecordingLocked) {
-                                  _cancelRecording();
-                                }
-                              },
-                              child: Transform.translate(
-                                offset: Offset(0, _dragPositionDy < 0 ? _dragPositionDy : 0),
-                                child: CircleAvatar(
-                                  radius: _isRecording ? 30 : 24, // grow when recording
-                                  backgroundColor: _isRecording ? Colors.red : (state.isHumanMode && state.isWithin24hWindow ? Theme.of(context).colorScheme.primary : Colors.grey),
-                                  child: Icon(_isTyping ? Icons.send : (_isRecording ? Icons.mic : Icons.mic_none), color: Theme.of(context).cardColor, size: _isRecording ? 28 : 24),
-                                ),
+                          // Circle Avatar (Mic or Send button)
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              if (_isRecordingLocked) {
+                                _stopRecording(send: true);
+                              } else if (state.isHumanMode && state.isWithin24hWindow) {
+                                if (_isTyping) _sendMessage();
+                              }
+                            },
+                            onLongPressStart: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (_) => _startRecording() : null,
+                            onLongPressMoveUpdate: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (details) {
+                              setState(() {
+                                _dragPositionDx = details.localOffsetFromOrigin.dx;
+                                _dragPositionDy = details.localOffsetFromOrigin.dy;
+                              });
+                              if (_dragPositionDx < -25) {
+                                _cancelRecording();
+                              } else if (_dragPositionDy < -25) {
+                                _lockRecording();
+                              }
+                            } : null,
+                            onLongPressEnd: state.isHumanMode && state.isWithin24hWindow && !_isTyping && !_isRecordingLocked ? (_) {
+                              _stopRecording(send: true);
+                            } : null,
+                            onLongPressCancel: () {
+                              if (_isRecordingLocked) return;
+                              _cancelRecording();
+                            },
+                            child: Transform.translate(
+                              offset: Offset(0, _dragPositionDy < 0 ? _dragPositionDy : 0),
+                              child: CircleAvatar(
+                                radius: (_isRecording && !_isRecordingLocked) ? 30 : 24, // grow when holding, normal when locked
+                                backgroundColor: (_isRecording && !_isRecordingLocked) ? Colors.red : (state.isHumanMode && state.isWithin24hWindow ? Theme.of(context).colorScheme.primary : Colors.grey),
+                                child: Icon((_isTyping || _isRecordingLocked) ? Icons.send : (_isRecording ? Icons.mic : Icons.mic_none), color: Theme.of(context).cardColor, size: (_isRecording && !_isRecordingLocked) ? 28 : 24),
                               ),
                             ),
-                          ]
+                          ),
                         ],
                       ),
                     ),
