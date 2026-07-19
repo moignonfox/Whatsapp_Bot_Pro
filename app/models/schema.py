@@ -66,6 +66,8 @@ def init_db() -> None:
             requested_bot_phone TEXT,
             vitrine_color     TEXT DEFAULT '#5b6af0',
             vitrine_logo_url  TEXT,
+            vitrine_cover_url TEXT,
+            vitrine_description TEXT,
             fcm_token         TEXT,
             email             TEXT,
             owner_name        TEXT,
@@ -233,6 +235,16 @@ def update_schema() -> None:
     """Applique les migrations de schéma (ajout de colonnes manquantes)."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN vitrine_cover_url TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN vitrine_description TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     try:
         cursor.execute("ALTER TABLE reservations ADD COLUMN montant INTEGER DEFAULT 0")

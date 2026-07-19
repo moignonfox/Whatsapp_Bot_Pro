@@ -182,20 +182,30 @@ def set_fcm_token(biz_id: str, fcm_token: str) -> None:
 
 
 
-def set_vitrine_settings(biz_id: str, color: str, logo_url: str = None) -> None:
+def set_vitrine_settings(biz_id: str, color: str, logo_url: str = None, cover_url: str = None, description: str = None) -> None:
     """Met à jour les paramètres de la vitrine d'un business."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
+    
+    query = "UPDATE businesses SET vitrine_color = ?"
+    params = [color]
+
     if logo_url is not None:
-        cursor.execute(
-            "UPDATE businesses SET vitrine_color = ?, vitrine_logo_url = ? WHERE id = ?",
-            (color, logo_url, biz_id)
-        )
-    else:
-        cursor.execute(
-            "UPDATE businesses SET vitrine_color = ? WHERE id = ?",
-            (color, biz_id)
-        )
+        query += ", vitrine_logo_url = ?"
+        params.append(logo_url)
+    
+    if cover_url is not None:
+        query += ", vitrine_cover_url = ?"
+        params.append(cover_url)
+        
+    if description is not None:
+        query += ", vitrine_description = ?"
+        params.append(description)
+
+    query += " WHERE id = ?"
+    params.append(biz_id)
+
+    cursor.execute(query, tuple(params))
     conn.commit()
     conn.close()
 

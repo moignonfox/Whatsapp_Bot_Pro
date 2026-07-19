@@ -1357,6 +1357,8 @@ def vitrine_settings(biz_id):
 
         color = request.form.get('vitrine_color', '#5b6af0')
         logo_url = None
+        cover_url = None
+        description = None
 
         if 'logo' in request.files:
             file = request.files['logo']
@@ -1367,8 +1369,20 @@ def vitrine_settings(biz_id):
                 filepath = os.path.join(biz_upload_dir, filename)
                 file.save(filepath)
                 logo_url = f'/static/uploads/businesses/{biz_id}/{filename}'
+                
+        if plan == 'PREMIUM':
+            description = request.form.get('vitrine_description')
+            if 'cover' in request.files:
+                file = request.files['cover']
+                if file and file.filename != '':
+                    filename = secure_filename("cover_" + file.filename)
+                    biz_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'businesses', biz_id)
+                    os.makedirs(biz_upload_dir, exist_ok=True)
+                    filepath = os.path.join(biz_upload_dir, filename)
+                    file.save(filepath)
+                    cover_url = f'/static/uploads/businesses/{biz_id}/{filename}'
 
-        business_repo.set_vitrine_settings(biz_id, color, logo_url)
+        business_repo.set_vitrine_settings(biz_id, color, logo_url, cover_url, description)
         flash('ParamÃ¨tres de la vitrine mis Ã  jour.', 'success')
         return redirect(url_for('dashboard.vitrine_settings', biz_id=biz_id))
 
@@ -1399,7 +1413,9 @@ def public_vitrine(biz_id):
             grouped_products[cat] = []
         grouped_products[cat].append(p)
 
-    return render_template('vitrine.html',
+    template_name = 'vitrine_premium.html' if plan == 'PREMIUM' else 'vitrine.html'
+
+    return render_template(template_name,
                            business=business,
                            plan=plan,
                            grouped_products=grouped_products)
