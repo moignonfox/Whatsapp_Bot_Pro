@@ -15,6 +15,8 @@ class BusinessProfile {
   final String devise;
   final String dateDebutAbonnement;
   final String dateFinAbonnement;
+  final String? vitrineCoverUrl;
+  final String? vitrineLogoUrl;
 
   BusinessProfile({
     required this.id,
@@ -33,6 +35,8 @@ class BusinessProfile {
     required this.devise,
     required this.dateDebutAbonnement,
     required this.dateFinAbonnement,
+    this.vitrineCoverUrl,
+    this.vitrineLogoUrl,
   });
 
   factory BusinessProfile.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,8 @@ class BusinessProfile {
       devise: json['devise'] ?? 'FCFA',
       dateDebutAbonnement: json['date_debut_abonnement'] ?? '',
       dateFinAbonnement: json['date_fin_abonnement'] ?? '',
+      vitrineCoverUrl: json['vitrine_cover_url'],
+      vitrineLogoUrl: json['vitrine_logo_url'],
     );
   }
 
@@ -72,6 +78,8 @@ class BusinessProfile {
     String? devise,
     String? dateDebutAbonnement,
     String? dateFinAbonnement,
+    String? vitrineCoverUrl,
+    String? vitrineLogoUrl,
   }) {
     return BusinessProfile(
       id: id,
@@ -90,6 +98,8 @@ class BusinessProfile {
       devise: devise ?? this.devise,
       dateDebutAbonnement: dateDebutAbonnement ?? this.dateDebutAbonnement,
       dateFinAbonnement: dateFinAbonnement ?? this.dateFinAbonnement,
+      vitrineCoverUrl: vitrineCoverUrl ?? this.vitrineCoverUrl,
+      vitrineLogoUrl: vitrineLogoUrl ?? this.vitrineLogoUrl,
     );
   }
 }

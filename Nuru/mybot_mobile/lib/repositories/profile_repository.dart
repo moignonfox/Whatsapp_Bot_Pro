@@ -48,5 +48,23 @@ class ProfileRepository {
       throw Exception('Erreur: $e');
     }
   }
+
+  Future<bool> uploadImages({String? logoPath, String? coverPath}) async {
+    try {
+      final formData = FormData();
+      if (logoPath != null) {
+        formData.files.add(MapEntry('logo', await MultipartFile.fromFile(logoPath)));
+      }
+      if (coverPath != null) {
+        formData.files.add(MapEntry('cover', await MultipartFile.fromFile(coverPath)));
+      }
+      final response = await _dio.post('/auth/me/images', data: formData);
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Erreur lors de l\'envoi des images');
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
 }
 

@@ -39,5 +39,19 @@ class ProfileNotifier extends AsyncNotifier<BusinessProfile?> {
       return false;
     }
   }
+
+  Future<bool> uploadImages({String? logoPath, String? coverPath}) async {
+    try {
+      final repository = ref.read(profileRepositoryProvider);
+      final success = await repository.uploadImages(logoPath: logoPath, coverPath: coverPath);
+      if (success) {
+        await fetchProfile();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 

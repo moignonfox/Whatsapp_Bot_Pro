@@ -1415,9 +1415,39 @@ def public_vitrine(biz_id):
 
     template_name = 'vitrine_premium.html' if plan == 'PREMIUM' else 'vitrine.html'
 
+    is_open = False
+    horaires_str = dict(business).get('horaires_json')
+    if horaires_str:
+        import json
+        from datetime import datetime
+        try:
+            horaires = json.loads(horaires_str)
+            days = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim']
+            now = datetime.now()
+            today_str = days[now.weekday()]
+            today_horaire = horaires.get(today_str)
+            if today_horaire:
+                open_str = None
+                close_str = None
+                if isinstance(today_horaire, list) and len(today_horaire) >= 2:
+                    open_str = today_horaire[0]
+                    close_str = today_horaire[1]
+                elif isinstance(today_horaire, dict):
+                    open_str = today_horaire.get('open')
+                    close_str = today_horaire.get('close')
+                
+                if open_str and close_str:
+                    open_time = datetime.strptime(open_str, '%H:%M').time()
+                    close_time = datetime.strptime(close_str, '%H:%M').time()
+                    if open_time <= now.time() <= close_time:
+                        is_open = True
+        except Exception:
+            pass
+
     return render_template(template_name,
                            business=business,
                            plan=plan,
+                           is_open=is_open,
                            grouped_products=grouped_products)
 
 @dashboard_bp.route('/admin/<biz_id>/catalog/edit/<int:product_id>', methods=['POST'])

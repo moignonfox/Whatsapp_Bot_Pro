@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/api/api_client.dart';
 import '../../../viewmodels/profile_notifier.dart';
 import '../../../models/business_profile.dart';
@@ -96,6 +97,24 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
       _isSaving = false;
       if (success) _isEditing = false;
     });
+  }
+
+  Future<void> _pickAndUploadImage(bool isCover) async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery);
+    if (xfile != null) {
+      setState(() => _isSaving = true);
+      final success = await ref.read(profileNotifierProvider.notifier).uploadImages(
+        logoPath: isCover ? null : xfile.path,
+        coverPath: isCover ? xfile.path : null,
+      );
+      setState(() => _isSaving = false);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image mise à jour.')));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de la mise à jour.')));
+      }
+    }
   }
 
   Future<void> _pickTime(String code, String key) async {
@@ -209,6 +228,38 @@ class _BusinessSettingsScreenState extends ConsumerState<BusinessSettingsScreen>
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+
+                const Padding(
+                  padding: EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text('Apparence', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ),
+                _buildContainer(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.image_outlined),
+                          title: const Text('Image de couverture'),
+                          trailing: const Icon(Icons.edit, size: 18),
+                          onTap: () => _pickAndUploadImage(true),
+                        ),
+                        const Divider(),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.account_circle_outlined),
+                          title: const Text('Logo de l\'entreprise'),
+                          trailing: const Icon(Icons.edit, size: 18),
+                          onTap: () => _pickAndUploadImage(false),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
                 const SizedBox(height: 24),
                 
                 const Padding(

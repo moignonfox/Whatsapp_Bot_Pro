@@ -5,6 +5,7 @@ import '../../viewmodels/auth_notifier.dart';
 import '../../viewmodels/profile_notifier.dart';
 import '../../core/subscription_gate.dart';
 import '../../core/feature_gate_widget.dart';
+import '../../core/api/api_client.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -26,17 +27,63 @@ class ProfileScreen extends ConsumerWidget {
           profileState.when(
             data: (profile) {
               if (profile == null) return const SizedBox();
+              final baseUrl = apiClient.options.baseUrl.replaceAll('/api/v1', '');
+              
+              String? coverUrl;
+              if (profile.vitrineCoverUrl != null && profile.vitrineCoverUrl!.isNotEmpty) {
+                coverUrl = profile.vitrineCoverUrl!.startsWith('http') 
+                  ? profile.vitrineCoverUrl 
+                  : '$baseUrl${profile.vitrineCoverUrl}';
+              }
+              
+              String? logoUrl;
+              if (profile.vitrineLogoUrl != null && profile.vitrineLogoUrl!.isNotEmpty) {
+                logoUrl = profile.vitrineLogoUrl!.startsWith('http') 
+                  ? profile.vitrineLogoUrl 
+                  : '$baseUrl${profile.vitrineLogoUrl}';
+              }
+
               return Column(
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                    child: Text(
-                    profile.nom.isNotEmpty ? profile.nom.substring(0, 1).toUpperCase() : '?',
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                  Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                      image: coverUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(coverUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.bottomCenter,
+                      children: [
+                        Positioned(
+                          bottom: -40,
+                          child: CircleAvatar(
+                            radius: 44,
+                            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
+                              child: logoUrl == null
+                                  ? Text(
+                                      profile.nom.isNotEmpty ? profile.nom.substring(0, 1).toUpperCase() : '?',
+                                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 52),
                   Text(
                     profile.nom.isNotEmpty ? profile.nom : 'Utilisateur',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

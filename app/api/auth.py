@@ -284,10 +284,54 @@ def update_password():
         conn.close()
         return jsonify({"success": True}), 200
     except Exception as e:
-        logger.error("Erreur changement mot de passe [%s]: %s", company_id, e, exc_info=True)
-        return jsonify({"success": False, "error": "Erreur interne. Veuillez rÃ©essayer."}), 500
+        logger.error(f"Erreur update_me: {e}", exc_info=True)
+        return jsonify({"success": False, "error": "Erreur interne"}), 500
 
+@api_bp.route('/auth/me/images', methods=['POST'])
+@jwt_required()
+def update_me_images():
+    import os
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    
+    company_id = get_jwt_identity()
+    business = business_repo.get_by_id(company_id)
+    if not business:
+        return jsonify({"success": False, "error": "Utilisateur introuvable"}), 404
 
+    logo_url = None
+    cover_url = None
+    
+    if 'logo' in request.files:
+        file = request.files['logo']
+        if file and file.filename != '':
+            filename = secure_filename("logo_" + file.filename)
+            biz_upload_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'static/uploads'), 'businesses', company_id)
+            os.makedirs(biz_upload_dir, exist_ok=True)
+            filepath = os.path.join(biz_upload_dir, filename)
+            file.save(filepath)
+            logo_url = f'/static/uploads/businesses/{company_id}/{filename}'
+            
+    if 'cover' in request.files:
+        file = request.files['cover']
+        if file and file.filename != '':
+            filename = secure_filename("cover_" + file.filename)
+            biz_upload_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'static/uploads'), 'businesses', company_id)
+            os.makedirs(biz_upload_dir, exist_ok=True)
+            filepath = os.path.join(biz_upload_dir, filename)
+            file.save(filepath)
+            cover_url = f'/static/uploads/businesses/{company_id}/{filename}'
+            
+    if logo_url or cover_url:
+        color = dict(business).get('vitrine_color', '#5b6af0')
+        description = dict(business).get('vitrine_description')
+        business_repo.set_vitrine_settings(company_id, color, logo_url, cover_url, description)
+
+    return jsonify({
+        "success": True,
+        "logo_url": logo_url,
+        "cover_url": cover_url
+    }), 200
 
 @api_bp.route('/auth/forgot-password', methods=['POST'])
 @limiter.limit("5 per minute")
