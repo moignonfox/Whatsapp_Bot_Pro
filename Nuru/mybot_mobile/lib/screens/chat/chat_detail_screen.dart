@@ -735,6 +735,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
                       color: Colors.transparent,
                       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Expanded(
                             child: Container(
