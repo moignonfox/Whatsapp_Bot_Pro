@@ -22,6 +22,9 @@ class Config:
     SECRET_KEY: str = os.getenv('SECRET_KEY', 'change-me')
     JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY', 'fallback-jwt-secret-key-change-me')
     ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '')
+    # Redis — message queue pour la synchronisation multi-worker Socket.IO
+    # Laisser vide pour désactiver (mode single-worker, dev local sans Redis)
+    REDIS_URL: str = os.getenv('REDIS_URL', '')
 
     # JWT : access token de courte durée (15 min), refresh indéfini (10 ans)
     JWT_ACCESS_TOKEN_EXPIRES: int = 900

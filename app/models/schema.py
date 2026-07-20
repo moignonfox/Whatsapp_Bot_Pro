@@ -26,6 +26,11 @@ def init_db() -> None:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
+    # Activer WAL (Write-Ahead Logging) : réduit fortement les "database is locked"
+    # en cas de lectures/écritures simultanées (multi-worker Gunicorn).
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")  # Cohérent avec WAL, plus rapide
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS history (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -147,9 +147,25 @@ def create_app(config_name=None):
     # ------------------------------------------------------------------ #
     # SocketIO — cors_allowed_origins="*" requis pour mobile natif        #
     # (les apps mobiles n'ont pas d'origine HTTP fixe).                   #
-    # Pour un dashboard web, ajouter son domaine dans allowed_api_origins #
+    # message_queue=REDIS_URL active le mode multi-worker : tous les      #
+    # workers partagent les événements via Redis. None = single-worker.   #
     # ------------------------------------------------------------------ #
-    socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet')
+    _redis_url = app.config.get('REDIS_URL') or None
+    socketio.init_app(
+        app,
+        cors_allowed_origins="*",
+        async_mode='eventlet',
+        message_queue=_redis_url,
+        channel='whatsappbot'  # Namespace Redis isolé, évite les collisions
+    )
+    if _redis_url:
+        logging.getLogger(__name__).info(
+            "SocketIO multi-worker activé via Redis : %s", _redis_url.split('@')[-1]
+        )
+    else:
+        logging.getLogger(__name__).warning(
+            "SocketIO en mode single-worker (REDIS_URL absent). Configurer Redis en production."
+        )
 
     # ------------------------------------------------------------------ #
     # Tâche planifiée — nettoyage périodique de la blocklist JWT          #
@@ -247,13 +263,28 @@ def create_app(config_name=None):
     @socketio.on('rejoindre_room')
     def handle_join_room(data):
         from flask import session
-        from flask_socketio import join_room
+        from flask_socketio import join_room, emit
         user_id = session.get('user_id') or session.get('is_master')
         if not user_id:
             return
         room = data.get('room')
         if room and (room == session.get('user_id') or session.get('is_master')):
             join_room(room)
+            # ── Rattrapage des événements manqués (reconnexion) ──
+            try:
+                last_message_id = int(data.get('last_message_id', 0))
+                last_order_id   = int(data.get('last_order_id', 0))
+                if last_message_id > 0:
+                    from app.repositories import conversation_repo, order_repo
+                    missed_msgs   = conversation_repo.get_messages_since(user_id, last_message_id)
+                    missed_orders = order_repo.get_orders_since(user_id, last_order_id)
+                    if missed_msgs or missed_orders:
+                        emit('sync_missed_events', {
+                            'messages': missed_msgs,
+                            'orders':   missed_orders
+                        })
+            except Exception as sync_err:
+                logging.getLogger(__name__).warning("Rattrapage web échoué : %s", sync_err)
 
     # ------------------------------------------------------------------ #
     # Handler SocketIO — authentification JWT (app mobile)                #
@@ -264,13 +295,40 @@ def create_app(config_name=None):
         if not token:
             return
         from flask_jwt_extended import decode_token
-        from flask_socketio import join_room
+        from flask_socketio import join_room, emit
         try:
             decoded = decode_token(token)
             company_id = decoded['sub']
             if company_id:
                 join_room(company_id)
+                # ── Rattrapage des événements manqués (reconnexion mobile) ──
+                try:
+                    last_message_id = int(data.get('last_message_id', 0))
+                    last_order_id   = int(data.get('last_order_id', 0))
+                    if last_message_id > 0:
+                        from app.repositories import conversation_repo, order_repo
+                        missed_msgs   = conversation_repo.get_messages_since(company_id, last_message_id)
+                        missed_orders = order_repo.get_orders_since(company_id, last_order_id)
+                        if missed_msgs or missed_orders:
+                            emit('sync_missed_events', {
+                                'messages': missed_msgs,
+                                'orders':   missed_orders
+                            })
+                except Exception as sync_err:
+                    logging.getLogger(__name__).warning("Rattrapage mobile échoué : %s", sync_err)
         except Exception as e:
             logging.getLogger(__name__).warning("SocketIO JWT Auth échoué : %s", e)
+
+    # ------------------------------------------------------------------ #
+    # Handler SocketIO — accusés de réception applicatifs (P4)           #
+    # ------------------------------------------------------------------ #
+    @socketio.on('ack_event')
+    def handle_ack_event(data):
+        """Le client confirme la réception d'un événement applicatif."""
+        event_id = data.get('event_id')
+        if event_id:
+            logging.getLogger('socketio.ack').debug(
+                "ACK reçu pour event_id=%s", event_id
+            )
 
     return app

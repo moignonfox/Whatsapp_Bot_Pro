@@ -294,3 +294,34 @@ def mark_reminder_sent(res_id: int):
     cursor.execute("UPDATE reservations SET rappel_envoye = 1 WHERE id = ?", (res_id,))
     conn.commit()
     conn.close()
+
+
+def get_orders_since(business_id: str, last_order_id: int, limit: int = 100) -> list:
+    """Retourne toutes les commandes postérieures à last_order_id pour un business.
+
+    Utilisé lors de la reconnexion d'un client pour lui envoyer les commandes
+    créées ou modifiées pendant sa déconnexion.
+    La limite à 100 évite un pic mémoire/réseau si le client est resté longtemps absent.
+
+    Args:
+        business_id: ID du business concerné.
+        last_order_id: ID de la dernière commande reçue par le client.
+        limit: Nombre maximum de commandes à retourner (défaut 100).
+
+    Returns:
+        Liste de dicts dans l'ordre chronologique.
+    """
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, wa_id, details, statut, priorite, montant, created_at
+           FROM reservations
+           WHERE business_id = ? AND id > ?
+           ORDER BY id ASC
+           LIMIT ?""",
+        (business_id, last_order_id, limit)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

@@ -595,23 +595,41 @@
 
     // ── SOCKET.IO CONNECTION ──
     const socket = io();
+
+    // ── Tracking des derniers IDs reçus (base du rattrapage P3) ──
+    let lastMsgId = parseInt(localStorage.getItem('lastMsgId_' + bizId) || '0');
+    let lastOrdId = parseInt(localStorage.getItem('lastOrdId_' + bizId) || '0');
+
     socket.on('connect', () => {
-        socket.emit('rejoindre_room', {room: bizId});
+        // Rejoindre la room en envoyant les derniers IDs connus → le serveur
+        // retournera via sync_missed_events tout ce qui a été manqué.
+        socket.emit('rejoindre_room', {
+            room: bizId,
+            last_message_id: lastMsgId,
+            last_order_id:   lastOrdId
+        });
         console.log('Connecté au canal en temps réel:', bizId);
     });
 
     // Compteur de messages non-lus par conversation
     const unreadCounts = {};
 
-    socket.on('nouveau_message', (data) => {
-        if (data.business_id !== bizId) return;
+    // ── Logique métier extraite en fonctions nommées ──
+    // Permet d'appeler depuis sync_missed_events sans ré-émettre vers le serveur.
 
+    function handleNouveauMessage(data) {
+        if (data.business_id !== bizId) return;
+        // Mise à jour du dernier ID connu
+        if (data.id && data.id > lastMsgId) {
+            lastMsgId = data.id;
+            localStorage.setItem('lastMsgId_' + bizId, lastMsgId);
+        }
         // Mettre à jour la liste (preview + remonter en haut)
         updateConversationList(data);
 
         if (data.wa_id === currentWaId) {
             // Conversation ouverte → afficher la bulle directement
-            addMessageBubble(data.role, data.content, data.timestamp, data.message_type, data.media_url, data.message_status, data.message_id);
+            addMessageBubble(data.role, data.content, data.timestamp, data.message_type, data.media_url, data.message_status, data.message_id || data.id);
         } else if (!currentWaId) {
             // Aucune conversation ouverte → ouvrir automatiquement
             loadConversation(data.wa_id);
@@ -621,7 +639,11 @@
             updateUnreadBadge(data.wa_id);
             showMessageToast(data);
         }
-    });
+        // ACK applicatif (P4)
+        if (data.event_id) socket.emit('ack_event', { event_id: data.event_id });
+    }
+
+    socket.on('nouveau_message', handleNouveauMessage);
 
     socket.on('statut_message', (data) => {
         if (data.business_id !== bizId || data.wa_id !== currentWaId) return;
@@ -640,6 +662,23 @@
                 loadConversation(currentWaId);
             }
         }
+    });
+
+    // ── Rattrapage à la reconnexion (P3) ──
+    // Le serveur envoie cet événement avec les messages/commandes manqués.
+    // On appelle handleNouveauMessage directement (pas socket.emit → pas d'aller-retour serveur).
+    socket.on('sync_missed_events', function(data) {
+        (data.messages || []).forEach(function(msg) {
+            handleNouveauMessage(msg);
+        });
+        // Les commandes dans la vue chat ne nécessitent pas de traitement spécifique ici
+        // (géré par la sidebar). On met juste à jour le lastOrdId.
+        (data.orders || []).forEach(function(order) {
+            if (order.id && order.id > lastOrdId) {
+                lastOrdId = order.id;
+                localStorage.setItem('lastOrdId_' + bizId, lastOrdId);
+            }
+        });
     });
 
     // ── LOGIQUE CHAT ──

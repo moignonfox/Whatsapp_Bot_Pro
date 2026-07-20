@@ -1,5 +1,6 @@
 """Service Commandes — Extraction et sauvegarde des réservations."""
 import logging
+import uuid
 from app.repositories import order_repo, tag_repo
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,7 @@ def extract_and_save_reservation(reply, wa_id, business_id):
                 from app.services.notification_service import send_push_notification
                 
                 socketio.emit('nouvelle_commande', {
+                    'event_id': str(uuid.uuid4()),
                     'business_id': business_id,
                     'wa_id': wa_id,
                     'details': details_extract,

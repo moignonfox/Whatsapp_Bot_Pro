@@ -3,6 +3,7 @@ import hmac
 import hashlib
 import logging
 import threading
+import uuid
 from flask import Blueprint, request, make_response, current_app
 from app.repositories import business_repo, conversation_repo
 from app.services import bot_core
@@ -167,6 +168,7 @@ def handle_messages():
                         try:
                             from app import socketio
                             socketio.emit('nouveau_message', {
+                                'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id,
                                 'wa_id': wa_id,
                                 'message_id': msg_id,
@@ -181,16 +183,18 @@ def handle_messages():
                         
                         # Si c'est un audio, on envoie le texte transcrit à l'IA pour traitement
                         if msg_type == 'audio':
-                            threading.Thread(
-                                target=bot_core.enqueue_message,
-                                args=(wa_id, user_text, business, phone_id, False)
-                            ).start()
+                            from app import socketio as _sio
+                            _sio.start_background_task(
+                                bot_core.enqueue_message,
+                                wa_id, user_text, business, phone_id, False
+                            )
                             
                     else:
                         # Diffusion du message client au Dashboard en temps réel (texte)
                         try:
                             from app import socketio
                             socketio.emit('nouveau_message', {
+                                'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id,
                                 'wa_id': wa_id,
                                 'content': user_text,
@@ -201,10 +205,11 @@ def handle_messages():
                             pass
                         
                         # Traitement asynchrone (IA + envoi réponse) pour le texte
-                        threading.Thread(
-                            target=bot_core.enqueue_message,
-                            args=(wa_id, user_text, business, phone_id)
-                        ).start()
+                        from app import socketio as _sio
+                        _sio.start_background_task(
+                            bot_core.enqueue_message,
+                            wa_id, user_text, business, phone_id
+                        )
                     
                     # Notification push Firebase
                     try:

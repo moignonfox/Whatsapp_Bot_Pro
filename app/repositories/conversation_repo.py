@@ -252,3 +252,36 @@ def update_message_status_by_id(message_id: int, status: str, meta_message_id: s
     conn.commit()
     conn.close()
 
+
+def get_messages_since(business_id: str, last_message_id: int, limit: int = 100) -> list:
+    """Retourne tous les messages postérieurs à last_message_id pour un business.
+
+    Utilisé lors de la reconnexion d'un client (web ou mobile) pour lui envoyer
+    les événements qu'il a manqués pendant sa déconnexion.
+    Utilise l'ID auto-incrémenté (pas le timestamp) pour éviter les doublons
+    en cas d'horloges désynchronisées.
+
+    Args:
+        business_id: ID du business concerné.
+        last_message_id: ID du dernier message reçu par le client.
+        limit: Nombre maximum de messages à retourner (défaut 100).
+
+    Returns:
+        Liste de dicts (id, wa_id, role, content, timestamp, message_type,
+        media_url, message_status) dans l'ordre chronologique.
+    """
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, wa_id, role, content, timestamp, message_type,
+                  media_url, message_status, meta_message_id
+           FROM history
+           WHERE business_id = ? AND id > ?
+           ORDER BY id ASC
+           LIMIT ?""",
+        (business_id, last_message_id, limit)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

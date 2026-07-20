@@ -2,6 +2,7 @@
 import logging
 import threading
 import time
+import uuid
 from app.services import ai_service, crm_service, order_service, whatsapp_service
 from app.repositories import business_repo, conversation_repo, employee_repo, agent_repo
 
@@ -175,6 +176,7 @@ def process_debounced_messages(wa_id, business, phone_id):
                 try:
                     from app import socketio
                     socketio.emit('nouveau_message', {
+                        'event_id': str(uuid.uuid4()),
                         'business_id': biz_id, 'wa_id': wa_id, 'content': fallback_msg, 'role': 'assistant', 'timestamp': 'now'
                     }, room=biz_id)
                 except Exception:
@@ -252,12 +254,14 @@ def process_debounced_messages(wa_id, business, phone_id):
                         try:
                             from app import socketio
                             socketio.emit('nouveau_message', {
+                                'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id, 'wa_id': wa_id, 'content': fallback_msg,
                                 'role': 'assistant', 'timestamp': 'now'
                             }, room=biz_id)
                             
                             # Notifier le dashboard pour la nouvelle commande (IA indisponible)
                             socketio.emit('nouvelle_commande', {
+                                'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id,
                                 'res_id': new_id,
                                 'wa_id': wa_id,
@@ -322,6 +326,7 @@ def process_debounced_messages(wa_id, business, phone_id):
                 from app import socketio
                 socketio.emit('human_mode_toggled', {'business_id': biz_id, 'wa_id': wa_id, 'state': True}, room=biz_id)
                 socketio.emit('nouveau_message', {
+                    'event_id': str(uuid.uuid4()),
                     'business_id': biz_id, 'wa_id': wa_id, 'content': final_msg,
                     'role': 'assistant', 'timestamp': 'now'
                 }, room=biz_id)
@@ -349,6 +354,7 @@ def process_debounced_messages(wa_id, business, phone_id):
         try:
             from app import socketio
             socketio.emit('nouveau_message', {
+                'event_id': str(uuid.uuid4()),
                 'business_id': biz_id,
                 'wa_id': wa_id,
                 'content': agent_reply,
