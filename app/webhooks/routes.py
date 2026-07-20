@@ -164,6 +164,13 @@ def handle_messages():
                             wa_id=wa_id, role='user', content=user_text, business_id=biz_id,
                             message_type=msg_type, media_url=media_url_local
                         )
+                        # Récupérer le nom du client pour affichage immédiat dans la liste
+                        try:
+                            from app.repositories import client_repo
+                            _client = client_repo.get_or_create(biz_id, wa_id)
+                            _client_name = dict(_client).get('display_name') or dict(_client).get('nom') or wa_id
+                        except Exception:
+                            _client_name = wa_id
                         # Diffusion SocketIO pour le Dashboard/Mobile
                         try:
                             from app import socketio
@@ -171,6 +178,7 @@ def handle_messages():
                                 'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id,
                                 'wa_id': wa_id,
+                                'client_name': _client_name,
                                 'message_id': msg_id,
                                 'content': user_text,
                                 'role': 'user',
@@ -190,6 +198,13 @@ def handle_messages():
                             )
                             
                     else:
+                        # Récupérer le nom du client pour affichage immédiat dans la liste
+                        try:
+                            from app.repositories import client_repo
+                            _client = client_repo.get_or_create(biz_id, wa_id)
+                            _client_name = dict(_client).get('display_name') or dict(_client).get('nom') or wa_id
+                        except Exception:
+                            _client_name = wa_id
                         # Diffusion du message client au Dashboard en temps réel (texte)
                         try:
                             from app import socketio
@@ -197,6 +212,7 @@ def handle_messages():
                                 'event_id': str(uuid.uuid4()),
                                 'business_id': biz_id,
                                 'wa_id': wa_id,
+                                'client_name': _client_name,
                                 'content': user_text,
                                 'role': 'user',
                                 'timestamp': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -211,17 +227,25 @@ def handle_messages():
                             wa_id, user_text, business, phone_id
                         )
                     
-                    # Notification push Firebase
+                    # Notification push Firebase — avec lien direct vers la conversation
                     try:
                         from app.services.notification_service import send_push_notification
+                        from flask import request as _req
+                        # Construire l'URL directe vers la conversation (ex: /admin/BIZID/chat?wa_id=WAID)
+                        chat_url = f"/admin/{biz_id}/chat?wa_id={wa_id}"
                         send_push_notification(
                             business_id=biz_id,
                             title="Nouveau message WhatsApp",
                             body=user_text,
-                            data={"wa_id": wa_id, "type": "nouveau_message"}
+                            data={
+                                "wa_id": wa_id,
+                                "type": "nouveau_message",
+                                "click_action": chat_url
+                            }
                         )
                     except Exception as e:
                         logger.warning("Erreur Firebase emit: %s", e)
+
 
                 else:
                     logger.warning("Business inconnu pour phone_id: %s", phone_id)

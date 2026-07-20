@@ -32,6 +32,8 @@ class Conversation {
   Conversation copyWith({
     String? id,
     String? clientName,
+    String? clientRealName,
+    String? clientDisplayName,
     String? lastMessage,
     String? lastTimestamp,
     int? unreadCount,
@@ -39,10 +41,13 @@ class Conversation {
     return Conversation(
       id: id ?? this.id,
       clientName: clientName ?? this.clientName,
+      clientRealName: clientRealName ?? this.clientRealName,
+      clientDisplayName: clientDisplayName ?? this.clientDisplayName,
       lastMessage: lastMessage ?? this.lastMessage,
       lastTimestamp: lastTimestamp ?? this.lastTimestamp,
       unreadCount: unreadCount ?? this.unreadCount,
     );
   }
+
 }
 

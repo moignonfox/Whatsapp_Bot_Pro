@@ -1,9 +1,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../api/api_client.dart';
+import '../router.dart';
 
 final firebaseMessagingProvider = Provider<FirebaseMessagingService>((ref) {
   return FirebaseMessagingService();
@@ -29,19 +31,54 @@ class FirebaseMessagingService {
       return;
     }
 
-    // Gérer les notifications reçues pendant que l'app est en premier plan
+    // ── Cas 1 : app en premier plan ──
+    // Socket.IO gère déjà la mise à jour en temps réel dans ce cas.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('📨 Message Firebase reçu en premier plan : ${message.notification?.title}');
-      // On peut ajouter un SnackBar local ici si on le souhaite
     });
 
-    // Envoyer le token au backend
+    // ── Cas 2 : app en arrière-plan, utilisateur tape sur la notification ──
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('🔔 Notification tapée (arrière-plan): ${message.data}');
+      _scheduleNavigation(message.data['wa_id']?.toString(), delay: 0);
+    });
+
+    // ── Cas 3 : app était FERMÉE, lancée par tap sur notification ──
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('🔔 App lancée par notification: ${initialMessage.data}');
+      // addPostFrameCallback garantit que le widget tree est monté avant de naviguer
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scheduleNavigation(initialMessage.data['wa_id']?.toString(), delay: 1200);
+      });
+    }
+
+    // Envoyer le token FCM au backend
     await _sendTokenToBackend();
 
-    // S'assurer que le backend est informé si le token change
+    // Renouveler le token si Firebase en génère un nouveau
     _messaging.onTokenRefresh.listen((newToken) async {
       await _updateBackendWithToken(newToken);
     });
+  }
+
+  /// Planifie la navigation vers la conversation [waId] après [delay] ms.
+  /// Utilise uniquement rootNavigatorKey — aucun BuildContext async.
+  void _scheduleNavigation(String? waId, {int delay = 0}) {
+    if (waId == null || waId.isEmpty) return;
+
+    void navigate() {
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx == null) return;
+      // Navigation directe vers le détail de la conversation
+      ctx.go('/chat/detail/$waId?clientName=${Uri.encodeComponent(waId)}');
+    }
+
+    if (delay <= 0) {
+      navigate();
+    } else {
+      Future.delayed(Duration(milliseconds: delay), navigate);
+    }
   }
 
   Future<void> _sendTokenToBackend() async {
@@ -71,13 +108,12 @@ class FirebaseMessagingService {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        debugPrint("⚠️ FCM Token non envoyé : session expirée (401). L'intercepteur gère la déconnexion.");
+        debugPrint("⚠️ FCM Token non envoyé : session expirée (401).");
         return;
       }
-      debugPrint("❌ Erreur lors de l'envoi du FCM Token au backend: $e");
+      debugPrint("❌ Erreur lors de l'envoi du FCM Token: $e");
     } catch (e) {
       debugPrint("❌ Erreur inattendue lors de l'envoi du FCM Token: $e");
     }
   }
 }
-

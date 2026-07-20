@@ -709,7 +709,7 @@
     // (permet de les appeler depuis sync_missed_events sans ré-émettre vers le serveur)
 
     function handleNouveauMessage(data) {
-        if (data.business_id !== bizId) return;
+        if (data.business_id != bizId) return;
         if (data.role !== 'user') return;
         // Mise à jour du dernier ID connu
         if (data.id && data.id > lastMsgId) {
@@ -730,7 +730,7 @@
     }
 
     function handleNouvelleCommande(data) {
-        if (data.business_id !== bizId) return;
+        if (data.business_id != bizId) return;
         // Mise à jour du dernier ID connu
         if (data.res_id && data.res_id > lastOrdId) {
             lastOrdId = data.res_id;
@@ -757,7 +757,7 @@
 
     // Mise à jour de statut (depuis un autre onglet ou depuis le dashboard)
     socket.on('statut_commande', function(data) {
-        if (data.business_id !== bizId) return;
+        if (data.business_id != bizId) return;
         const n = notifications.find(n => n.type==='order' && n.data && n.data.res_id === data.res_id);
         if (n) { 
             if (data.statut !== 'En attente') {

@@ -593,6 +593,20 @@
         el.textContent = formatTime(el.textContent);
     });
 
+    // ── Auto-ouverture depuis une notification push ──
+    // Si l'URL contient ?wa_id=XXX (injecté par la notification Firebase),
+    // ouvrir directement cette conversation au chargement.
+    (function openFromNotification() {
+        const params = new URLSearchParams(window.location.search);
+        const targetWaId = params.get('wa_id');
+        if (targetWaId) {
+            // Nettoyer l'URL sans recharger la page
+            history.replaceState(null, '', window.location.pathname);
+            // Attendre que le DOM soit prêt (les items de conv sont déjà rendus par Jinja)
+            loadConversation(targetWaId);
+        }
+    })();
+
     // ── SOCKET.IO CONNECTION ──
     const socket = io();
 
@@ -618,26 +632,30 @@
     // Permet d'appeler depuis sync_missed_events sans ré-émettre vers le serveur.
 
     function handleNouveauMessage(data) {
-        if (data.business_id !== bizId) return;
+        if (data.business_id != bizId) return;
         // Mise à jour du dernier ID connu
         if (data.id && data.id > lastMsgId) {
             lastMsgId = data.id;
             localStorage.setItem('lastMsgId_' + bizId, lastMsgId);
         }
-        // Mettre à jour la liste (preview + remonter en haut)
+        // ── Toujours remonter la conversation en haut de la liste ──
         updateConversationList(data);
 
+        const isMobile = window.innerWidth <= 768;
+
         if (data.wa_id === currentWaId) {
-            // Conversation ouverte → afficher la bulle directement
+            // Conversation actuellement ouverte → afficher la bulle directement
             addMessageBubble(data.role, data.content, data.timestamp, data.message_type, data.media_url, data.message_status, data.message_id || data.id);
         } else if (!currentWaId) {
-            // Aucune conversation ouverte → ouvrir automatiquement
+            // Aucune conversation ouverte (desktop ET mobile) → ouvrir automatiquement
             loadConversation(data.wa_id);
         } else {
-            // Autre conversation → badge non-lu + toast
-            unreadCounts[data.wa_id] = (unreadCounts[data.wa_id] || 0) + 1;
-            updateUnreadBadge(data.wa_id);
-            showMessageToast(data);
+            // Une autre conversation est déjà ouverte → badge non-lu + toast cliquable
+            if (data.role === 'user') {
+                unreadCounts[data.wa_id] = (unreadCounts[data.wa_id] || 0) + 1;
+                updateUnreadBadge(data.wa_id);
+                showMessageToast(data);
+            }
         }
         // ACK applicatif (P4)
         if (data.event_id) socket.emit('ack_event', { event_id: data.event_id });
@@ -646,7 +664,7 @@
     socket.on('nouveau_message', handleNouveauMessage);
 
     socket.on('statut_message', (data) => {
-        if (data.business_id !== bizId || data.wa_id !== currentWaId) return;
+        if (data.business_id != bizId || data.wa_id !== currentWaId) return;
         const bubble = document.getElementById(`msg-${data.message_id}`);
         if (bubble) {
             const statusSpan = bubble.querySelector('.msg-status');
@@ -768,6 +786,7 @@
     function closeMobileChat() {
         document.getElementById('chat-panel').classList.remove('active');
         // On mobile, the active style will just hide the panel, revealing the conv list again.
+        currentWaId = null;
     }
 
     function addMessageBubble(role, content, timestamp, msgType='text', mediaUrl=null, status='sent', msgId=null) {
@@ -999,13 +1018,21 @@
         const list = document.getElementById('conv-list');
         let item = list.querySelector(`.conv-item[data-waid="${data.wa_id}"]`);
 
-        const previewText = data.content.substring(0, 50) + (data.content.length > 50 ? '...' : '');
+        const previewText = (data.content || '').substring(0, 50) + ((data.content || '').length > 50 ? '...' : '');
+        const displayName = data.client_name || data.wa_id;
 
         if (item) {
-            item.querySelector('.conv-item-preview').textContent = previewText;
-            item.querySelector('.conv-item-time').textContent = formatTime(data.timestamp);
+            // Mettre à jour le preview et l'heure
+            const previewEl = item.querySelector('.conv-item-preview');
+            const timeEl = item.querySelector('.conv-item-time');
+            const nameEl = item.querySelector('.conv-item-name');
+            if (previewEl) previewEl.textContent = previewText;
+            if (timeEl) timeEl.textContent = formatTime(data.timestamp);
+            if (nameEl && data.client_name) nameEl.textContent = data.client_name;
+            // ── Toujours remonter en premier ──
             list.prepend(item);
         } else {
+            // Nouvelle conversation inconnue : créer la ligne
             const newItem = document.createElement('div');
             newItem.className = 'conv-item';
             newItem.setAttribute('data-waid', data.wa_id);
@@ -1014,13 +1041,14 @@
                 <div class="conv-item-avatar"><i class="fas fa-user"></i></div>
                 <div class="conv-item-info">
                     <div class="conv-item-top">
-                        <span class="conv-item-name">${data.wa_id}</span>
+                        <span class="conv-item-name">${escapeHtml(displayName)}</span>
                         <span class="conv-item-time">${formatTime(data.timestamp)}</span>
                     </div>
                     <div class="conv-item-preview">${escapeHtml(previewText)}</div>
                 </div>
                 <span class="unread-badge" style="display:none"></span>
             `;
+            // ── Toujours en premier ──
             list.prepend(newItem);
         }
     }
