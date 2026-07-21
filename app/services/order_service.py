@@ -16,33 +16,49 @@ def extract_and_save_reservation(reply, wa_id, business_id):
         return reply
 
     try:
-        start = reply.find("[RESERVATION:") + len("[RESERVATION:")
-        end = reply.find("]", start)
-        content = reply[start:end]
-
-        parts = content.split("|")
-        details_extract = parts[0].strip()
-        montant_extract = 0
-        prio_extract = "Normale"
-        date_extract = None
+        import re
+        
+        # Regex stricte : on s'attend exactement aux 6 champs dans l'ordre (tolérance sur les espaces)
+        pattern = r'\[RESERVATION:\s*(.*?)\s*\|\s*DATE:\s*(.*?)\s*\|\s*EMPLOYEE_ID:\s*(.*?)\s*\|\s*MONTANT:\s*(.*?)\s*\|\s*PRIORITE:\s*(.*?)\s*\|\s*TAGS:\s*(.*?)\]'
+        match = re.search(pattern, reply)
+        
+        if not match:
+            logger.warning("[ORDER] Le tag [RESERVATION] a été détecté mais la syntaxe est invalide. Fallback humain activé.")
+            # Fallback humain : créer une commande "Erreur IA" pour alerter le restaurateur
+            details_secours = "⚠️ ÉCHEC PARSING IA - Vérifiez manuellement la demande du client."
+            order_repo.save_reservation(business_id, wa_id, details_secours, priorite="Haute")
+            import uuid
+            try:
+                from app import socketio
+                socketio.emit('nouvelle_commande', {
+                    'event_id': str(uuid.uuid4()),
+                    'business_id': business_id,
+                    'wa_id': wa_id,
+                    'details': details_secours,
+                    'statut': 'En attente',
+                    'priorite': 'Haute',
+                    'timestamp': 'now'
+                }, room=business_id)
+            except Exception:
+                pass
+            return re.sub(r'\[RESERVATION:.*?\]', '', reply).strip()
+            
+        details_extract = match.group(1).strip()
+        raw_date = match.group(2).strip()
+        date_extract = None if raw_date.lower() == "none" or raw_date == "" else raw_date
+        
+        raw_emp = match.group(3).strip()
         emp_id_extract = None
-
-        for p in parts:
-            if "MONTANT:" in p:
-                raw_price = p.replace("MONTANT:", "").strip()
-                montant_extract = int(''.join(filter(str.isdigit, raw_price)) or 0)
-            elif "PRIORITE:" in p:
-                prio_extract = p.replace("PRIORITE:", "").strip()
-            elif "DATE:" in p:
-                raw_date = p.replace("DATE:", "").strip()
-                date_extract = None if raw_date.lower() == "none" or raw_date == "" else raw_date
-            elif "EMPLOYEE_ID:" in p:
-                try:
-                    emp_id_extract = int(p.replace("EMPLOYEE_ID:", "").strip())
-                except:
-                    pass
-            elif "TAGS:" in p:
-                tags_extract = p.replace("TAGS:", "").strip()
+        try:
+            emp_id_extract = int(raw_emp) if raw_emp.lower() != "none" and raw_emp != "" else None
+        except:
+            pass
+            
+        raw_price = match.group(4).strip()
+        montant_extract = int(''.join(filter(str.isdigit, raw_price)) or 0)
+        
+        prio_extract = match.group(5).strip()
+        tags_extract = match.group(6).strip()
 
         # Anti-doublon strict : on bloque la création si le client a DÉJÀ une commande en attente
         # MAIS on met à jour la commande existante si elle est toujours en attente (ex: ajout d'heure).

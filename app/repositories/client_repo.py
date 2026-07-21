@@ -10,12 +10,24 @@ from typing import Optional
 from app.models.schema import get_db_path
 
 
-def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = None) -> sqlite3.Row:
+import time
+
+_client_cache = {}
+CACHE_TTL = 300 # 5 minutes
+
+def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = None) -> dict:
     """
     Récupère un client existant ou en crée un nouveau.
-
-    Retourne toujours la ligne du client.
+    Retourne un dictionnaire (mise en cache en mémoire pour éviter les requêtes SQL répétées).
     """
+    cache_key = f"{business_id}_{wa_id}"
+    now = time.time()
+    
+    if cache_key in _client_cache:
+        cached_data, timestamp = _client_cache[cache_key]
+        if now - timestamp < CACHE_TTL:
+            return cached_data
+
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -37,11 +49,17 @@ def get_or_create(business_id: str, wa_id: str, nom_par_defaut: str = None) -> s
         row = cursor.fetchone()
 
     conn.close()
-    return row
+    
+    result_dict = dict(row)
+    _client_cache[cache_key] = (result_dict, now)
+    return result_dict
 
 
 def update_name(business_id: str, wa_id: str, nom: str) -> None:
     """Met à jour le nom légal (et initie display_name) d'un client existant ou le crée s'il n'existe pas."""
+    cache_key = f"{business_id}_{wa_id}"
+    if cache_key in _client_cache:
+        del _client_cache[cache_key]
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
@@ -58,6 +76,9 @@ def update_name(business_id: str, wa_id: str, nom: str) -> None:
 
 def set_display_name(business_id: str, wa_id: str, display_name: str) -> None:
     """Met à jour uniquement le nom d'usage (display_name)."""
+    cache_key = f"{business_id}_{wa_id}"
+    if cache_key in _client_cache:
+        del _client_cache[cache_key]
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(

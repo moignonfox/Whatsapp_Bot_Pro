@@ -175,33 +175,39 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     # -- Catalogue (source de vérité absolue) -------------------------------
     catalog_str = ""
     if biz_id:
-        products = catalog_repo.get_by_business(biz_id, only_available=True)
-        if products:
-            catalog_str = "CATALOGUE / MENU EXACT (Source de vérité absolue) :\n"
-            grouped = {}
-            for p in products:
-                cat = p['categorie'] or 'Général'
-                grouped.setdefault(cat, []).append(p)
+        msg_lower = user_message.lower()
+        CATALOG_KEYWORDS = ["menu", "prix", "commander", "carte", "produit", "catalogue", "disponible", "voir", "quoi", "propose", "acheter", "liste", "plat", "boisson", "article", "combien"]
+        needs_catalog = any(kw in msg_lower for kw in CATALOG_KEYWORDS)
+        
+        # Par défaut on n'envoie pas le catalogue si c'est juste un bonjour ou une question sans rapport
+        if needs_catalog:
+            products = catalog_repo.get_by_business(biz_id, only_available=True)
+            if products:
+                catalog_str = "CATALOGUE / MENU EXACT (Source de vérité absolue) :\n"
+                grouped = {}
+                for p in products:
+                    cat = p['categorie'] or 'Général'
+                    grouped.setdefault(cat, []).append(p)
+                    
+                needs_product_detail = any(kw in user_message.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
                 
-            needs_product_detail = any(kw in user_message.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
-            
-            for cat, items in grouped.items():
-                catalog_str += f"[{cat}]\n"
-                for p in items:
-                    if needs_product_detail and p['description']:
-                        desc = f" ({p['description']})"
-                    else:
-                        desc = ""
-                    catalog_str += f"- {p['nom']} : {p['prix']} FCFA{desc}\n"
-            catalog_str += (
-                "\nINTERDICTION STRICTE : Tu NE DOIS PROPOSER QUE ces produits. "
-                "Il t'est STRICTEMENT INTERDIT d'inventer des produits ou des prix "
-                "qui ne sont pas dans cette liste.\n"
-                f"\n💡 LIEN VERS LE CATALOGUE EN LIGNE (Vitrine) : {base_url}/v/{biz_id}\n"
-                "Règle d'usage du lien : Tu peux suggérer 2 ou 3 produits pertinents en texte, "
-                "mais indique toujours au client qu'il peut consulter l'intégralité du catalogue avec photos "
-                "en cliquant sur ce lien.\n"
-            )
+                for cat, items in grouped.items():
+                    catalog_str += f"[{cat}]\n"
+                    for p in items:
+                        if needs_product_detail and p['description']:
+                            desc = f" ({p['description']})"
+                        else:
+                            desc = ""
+                        catalog_str += f"- {p['nom']} : {p['prix']} FCFA{desc}\n"
+                catalog_str += (
+                    "\nINTERDICTION STRICTE : Tu NE DOIS PROPOSER QUE ces produits. "
+                    "Il t'est STRICTEMENT INTERDIT d'inventer des produits ou des prix "
+                    "qui ne sont pas dans cette liste.\n"
+                    f"\n💡 LIEN VERS LE CATALOGUE EN LIGNE (Vitrine) : {base_url}/v/{biz_id}\n"
+                    "Règle d'usage du lien : Tu peux suggérer 2 ou 3 produits pertinents en texte, "
+                    "mais indique toujours au client qu'il peut consulter l'intégralité du catalogue avec photos "
+                    "en cliquant sur ce lien.\n"
+                )
 
     # Vérifier si le client a déjà une commande en attente
     pending_order_str = ""
@@ -254,12 +260,13 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         if biz_tags:
             tag_lines = []
             for tag in biz_tags:
-                desc = tag.get('description', '')
+                t_dict = dict(tag)
+                desc = t_dict.get('description', '')
                 if desc:
                     words = desc.split()
                     if len(words) > 3:
                         desc = ' '.join(words[:3]) + '...'
-                tag_lines.append(f"{tag['name']} ({desc})" if desc else tag['name'])
+                tag_lines.append(f"{t_dict.get('name')} ({desc})" if desc else t_dict.get('name'))
             
             tags_str = (
                 "\n📋 TAGS DISPONIBLES : " + ", ".join(tag_lines) + "\n"
@@ -298,19 +305,9 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     has_pending = last_res and last_res['statut'] == 'En attente'
     needs_scheduling = any(kw in msg_lower for kw in SCHEDULING_KEYWORDS) or has_pending
 
-    agenda_context_str = ""
-    calendar_str = ""
-
-    if needs_scheduling:
-        from app.services.agenda_service import get_availability_context
-        agenda_context_str = get_availability_context(biz_id)
-        
-        calendar_lines = ["\n📅 CALENDRIER DES 14 PROCHAINS JOURS (Utilise ceci pour trouver la date exacte) :"]
-        for i in range(14):
-            d = now + timedelta(days=i)
-            suffix = " (Aujourd'hui)" if i == 0 else " (Demain)" if i == 1 else ""
-            calendar_lines.append(f"- {d.strftime('%A %d %B %Y')} -> {d.strftime('%Y-%m-%d')}{suffix}")
-        calendar_str = "\n".join(calendar_lines) + "\n"
+    from app.services.agenda_service import get_business_hours_context
+    # Fusion des horaires globaux et de l'agenda
+    hours_context_str = get_business_hours_context(business_info, days=14)
         
     # Règle anti-bonjour répétitif
     greeting_rule = ""
@@ -320,7 +317,7 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     system_rules = (
         "⚠️ DIRECTIVES ABSOLUES (priorité maximale) :\n"
         f"📅 Date et heure actuelles du système : {current_time_str}\n"
-        f"{calendar_str}"
+        f"{hours_context_str}\n"
         f"{pending_order_str}"
         f"{client_name_str}"
         f"{name_request_rule}"
@@ -330,50 +327,31 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         "- Si le client demande à changer de nom d'usage ou de surnom (ex: 'Appelle-moi KK', 'Je préfère Boss'), inclus UNIQUEMENT le tag [DISPLAY_NAME: Nouveau Surnom].\n"
         "- Si le client corrige une erreur sur son vrai nom légal (ex: 'Mon vrai nom c'est Koffi avec 2 f'), inclus le tag [NOM_CORRECTION: Vrai Nom].\n"
         "--------------------------------------\n"
-        "- Si le client passe une nouvelle commande/réservation, OU s'il ajoute/modifie une information (ex: l'heure, un article) à sa commande déjà en attente, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse pour mettre à jour la base de données : "
+        "- Si le client passe une nouvelle commande/réservation, OU s'il ajoute/modifie une information à sa commande déjà en attente, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse :\n"
         "[RESERVATION: résumé de la réservation/commande | DATE: YYYY-MM-DD HH:MM:00 | EMPLOYEE_ID: id_employé | MONTANT: chiffre | PRIORITE: Normale/Haute | TAGS: Tag1, Tag2]\n"
         "- IMPORTANT : Si aucune date ou heure n'est précisée par le client (par exemple une commande pour tout de suite), tu dois mettre DATE: None\n"
-        "ATTENTION: Quand tu ajoutes ce tag [RESERVATION:...], tu NE DOIS PAS dire au client que sa demande est 'confirmée'. "
-        "Dis-lui qu'elle est 'enregistrée et en attente de validation par notre équipe'. Seul un humain peut la confirmer définitivement.\n"
-        "Exemples :\n"
-        "1. Avec date : [RESERVATION: Table pour 2 | DATE: 2026-06-28 17:00:00 | EMPLOYEE_ID: 1 | MONTANT: 0 | PRIORITE: Normale | TAGS: VIP]\n"
-        "2. Sans date : [RESERVATION: 2 Burgers | DATE: None | EMPLOYEE_ID: None | MONTANT: 25 | PRIORITE: Normale | TAGS: aucun]\n"
-        f"{catalog_str}\n\n"          f"{tags_str}\n"
-        f"{agenda_context_str}\n"
+        "ATTENTION: Ne dis jamais que la demande est 'confirmée'. Dis qu'elle est 'enregistrée et en attente de validation'.\n"
+        "EXEMPLES DE FORMATAGE (FEW-SHOT) :\n"
+        "Client: 'Je veux réserver une table ce soir à 20h pour 2 personnes avec le boss'\n"
+        "Assistant: 'C'est noté, j'ai enregistré votre demande de table pour 2 ce soir à 20h avec notre gérant. Elle est en attente de validation. [RESERVATION: Table pour 2 personnes | DATE: 2026-07-21 20:00:00 | EMPLOYEE_ID: 1 | MONTANT: 0 | PRIORITE: Normale | TAGS: aucun]'\n"
+        "Client: 'Je veux 2 pizzas margherita en livraison maintenant'\n"
+        "Assistant: 'Votre commande de 2 pizzas margherita est enregistrée et en attente de validation. [RESERVATION: 2 pizzas margherita en livraison | DATE: None | EMPLOYEE_ID: None | MONTANT: 24000 | PRIORITE: Normale | TAGS: livraison]'\n"
+        "Client: 'Finalement ajoutez un coca à ma commande'\n"
+        "Assistant: 'J'ai bien ajouté un coca à votre commande en cours. [RESERVATION: 2 pizzas margherita en livraison + 1 coca | DATE: None | EMPLOYEE_ID: None | MONTANT: 25500 | PRIORITE: Normale | TAGS: livraison]'\n"
+        f"{catalog_str}\n\n"
+        f"{tags_str}\n"
     )
 
     # =========================================================================
     # NIVEAU 2 — RÈGLES DE L'ENTREPRISE (Master/Admin, toujours injecté)
     # =========================================================================
 
-    biz_prompt = business_info.get('prompt') or "Tu es un assistant professionnel. Réponds poliment et aide le client."
-
-    # Injection des horaires d'ouverture globaux
-    import json
-    biz_horaires_str = ""
-    raw_biz_horaires = business_info.get('horaires_json')
-    if raw_biz_horaires and raw_biz_horaires != '{}':
-        try:
-            h_data = json.loads(raw_biz_horaires)
-            jours = {'lun':'Lundi', 'mar':'Mardi', 'mer':'Mercredi', 'jeu':'Jeudi', 'ven':'Vendredi', 'sam':'Samedi', 'dim':'Dimanche'}
-            lignes = []
-            for k, v in jours.items():
-                plages = h_data.get(k, [])
-                if plages and len(plages) >= 2:
-                    lignes.append(f"- {v} : {plages[0]} à {plages[1]}")
-                else:
-                    lignes.append(f"- {v} : Fermé")
-            biz_horaires_str = (
-                "\nHORAIRES D'OUVERTURE DE L'ENTREPRISE :\n" 
-                + "\n".join(lignes) + 
-                "\n\n🚨 RÈGLE STRICTE SUR LES HORAIRES :\n"
-                "Tu ne DOIS SOUS AUCUN PRÉTEXTE accepter une commande ou réservation pour un jour ou une heure de fermeture.\n"
-                "Si le client demande un créneau fermé (ex: 'Fermé' ou en dehors des heures), refuse catégoriquement et propose un autre jour ouvert.\n"
-            )
-        except Exception:
-            pass
-
-    biz_prompt = biz_prompt + "\n" + biz_horaires_str
+    biz_prompt = business_info.get('prompt') or (
+        "Tu es l'employé virtuel du restaurant/commerce. Tu ne sors jamais de ce rôle.\n"
+        "Ne propose jamais de réductions ou de promesses non autorisées.\n"
+        "Si tu ne connais pas la réponse ou si c'est hors de ton périmètre, propose de transférer à un humain plutôt que d'inventer.\n"
+        "Fais des réponses courtes, directes et adaptées à WhatsApp (pas de longs paragraphes)."
+    )
 
     # =========================================================================
     # NIVEAU 3 — INCARNATION DE L'AGENT (contexte courant)
@@ -520,11 +498,19 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
             model="gemini-2.5-flash",
             contents=full_prompt,
             config=types.GenerateContentConfig(
-                max_output_tokens=8192
+                max_output_tokens=8192,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             )
         )
         reply = gemini_response.text.strip()
+        
+        # Log metadata to verify thinking budget is respected
+        if hasattr(gemini_response, 'usage_metadata') and gemini_response.usage_metadata:
+            logger.info(f"[GEMINI USAGE] {gemini_response.usage_metadata}")
+            
+        # Filet de sécurité au cas où le modèle ignorerait la consigne
         reply = re.sub(r'<think>.*?(</think>|$)', '', reply, flags=re.DOTALL).strip()
+        
         if not reply:
             raise Exception("Gemini a retourné une réponse vide après nettoyage du <think>.")
         return reply

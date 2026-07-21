@@ -14,6 +14,68 @@ def set_french_locale():
 
 from app.models.schema import get_db_path
 
+def get_business_hours_context(business_info: dict, days: int = 14) -> str:
+    """
+    Construit le contexte unifié des horaires et de l'agenda.
+    Ordre de priorité pour les horaires :
+    1. Si businesses.horaires_json est rempli et valide -> Horaires globaux
+    2. Sinon, on utilise les horaires des employés/tables
+    Ajoute également le calendrier des prochains jours et les réservations existantes.
+    """
+    set_french_locale()
+    now = datetime.now()
+    business_id = business_info.get('id')
+    
+    # -- 1. Le calendrier des X prochains jours --
+    calendar_lines = ["\n📅 CALENDRIER DES PROCHAINS JOURS (Utilise ceci pour trouver la date exacte) :"]
+    for i in range(days):
+        d = now + timedelta(days=i)
+        suffix = " (Aujourd'hui)" if i == 0 else " (Demain)" if i == 1 else ""
+        calendar_lines.append(f"- {d.strftime('%A %d %B %Y')} -> {d.strftime('%Y-%m-%d')}{suffix}")
+    calendar_str = "\n".join(calendar_lines) + "\n"
+
+    # -- 2. Horaires Globaux vs Employés --
+    horaires_globaux_str = ""
+    raw_biz_horaires = business_info.get('horaires_json')
+    has_global_hours = False
+    
+    if raw_biz_horaires and raw_biz_horaires != '{}':
+        try:
+            h_data = json.loads(raw_biz_horaires)
+            if any(h_data.values()): # Au moins un jour configuré
+                has_global_hours = True
+                jours = {'lun':'Lundi', 'mar':'Mardi', 'mer':'Mercredi', 'jeu':'Jeudi', 'ven':'Vendredi', 'sam':'Samedi', 'dim':'Dimanche'}
+                lignes = []
+                for k, v in jours.items():
+                    plages = h_data.get(k, [])
+                    if plages and len(plages) >= 2:
+                        lignes.append(f"- {v} : {plages[0]} à {plages[1]}")
+                    else:
+                        lignes.append(f"- {v} : Fermé")
+                horaires_globaux_str = (
+                    "\nHORAIRES D'OUVERTURE DE L'ENTREPRISE :\n" 
+                    + "\n".join(lignes) + 
+                    "\n\n🚨 RÈGLE STRICTE SUR LES HORAIRES :\n"
+                    "Tu ne DOIS SOUS AUCUN PRÉTEXTE accepter une commande ou réservation pour un jour ou une heure de fermeture.\n"
+                    "Si le client demande un créneau fermé, refuse catégoriquement et propose un autre jour ouvert.\n"
+                )
+        except Exception:
+            pass
+
+    # -- 3. Agenda et réservations (employés/tables) --
+    agenda_str = get_availability_context(business_id, days=days)
+    
+    # Si on a des horaires globaux, on garde l'agenda mais on évite la redondance d'erreur
+    # Si on n'a pas d'horaires globaux, l'agenda (qui contient les horaires employés) fait foi.
+    
+    final_context = f"{calendar_str}\n"
+    if has_global_hours:
+        final_context += f"{horaires_globaux_str}\n"
+    final_context += f"\n{agenda_str}\n"
+    
+    return final_context
+
+
 def get_availability_context(business_id: str, days: int = 7) -> str:
     """
     Génère un texte décrivant les disponibilités des employés et les réservations existantes
