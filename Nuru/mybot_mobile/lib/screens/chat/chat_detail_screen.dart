@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/chat_detail_notifier.dart';
 import '../../viewmodels/chat_notifier.dart';
-import '../../repositories/chat_repository.dart';
 import '../../models/conversation.dart';
 import '../../models/message.dart';
 import 'dart:io';
@@ -85,7 +85,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> with Widget
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: msg.mediaUrl != null
-                ? Image.network(_getFullMediaUrl(msg.mediaUrl!), width: 200, fit: BoxFit.cover)
+                ? CachedNetworkImage(
+                    imageUrl: _getFullMediaUrl(msg.mediaUrl!),
+                    width: 200,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 200,
+                      height: 200,
+                      color: isDark ? Colors.grey[800] : Colors.grey[300],
+                      child: Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor)),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 200,
+                      height: 200,
+                      color: isDark ? Colors.grey[800] : Colors.grey[300],
+                      child: Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey[500])),
+                    ),
+                  )
                 : Container(
                     width: 200,
                     height: 200,

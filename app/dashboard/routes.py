@@ -163,7 +163,9 @@ def pending(biz_id):
                 owner_phone,
                 dict(business).get('drip_j3_enabled', 0),
                 dict(business).get('drip_j3_msg'),
-                dict(business).get('debounce_delay', 3)
+                dict(business).get('debounce_delay', 3),
+                0, # buffer_minutes default
+                dict(business).get('email')
             )
             
         flash("Vos informations ont Ã©tÃ© enregistrÃ©es. Nous vous contacterons sous peu.", "success")
@@ -283,7 +285,8 @@ def business_settings(biz_id):
             drip_j3_enabled,
             drip_j3_msg,
             debounce_delay,
-            buffer_minutes
+            buffer_minutes,
+            dict(business).get('email')
         )
         
         if requested_bot_phone is not None:
@@ -326,7 +329,10 @@ def marketing_settings(biz_id):
             dict(business).get('is_active', 1) if business else 1,
             dict(business).get('owner_phone'),
             drip_j3_enabled,
-            drip_j3_msg
+            drip_j3_msg,
+            dict(business).get('debounce_delay', 3),
+            0, # buffer_minutes default
+            dict(business).get('email')
         )
         flash("ParamÃ¨tres de marketing automatisÃ© enregistrÃ©s avec succÃ¨s.", "success")
     else:

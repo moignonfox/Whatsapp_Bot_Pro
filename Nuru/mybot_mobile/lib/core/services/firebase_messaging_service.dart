@@ -43,14 +43,16 @@ class FirebaseMessagingService {
       _scheduleNavigation(message.data['wa_id']?.toString(), delay: 0);
     });
 
-    // ── Cas 3 : app était FERMÉE, lancée par tap sur notification ──
+    // ── Cas 3 : app était FERMÉE, lancée par tap sur notification (Cold Start) ──
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       debugPrint('🔔 App lancée par notification: ${initialMessage.data}');
-      // addPostFrameCallback garantit que le widget tree est monté avant de naviguer
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scheduleNavigation(initialMessage.data['wa_id']?.toString(), delay: 1200);
-      });
+      final waId = initialMessage.data['wa_id']?.toString();
+      if (waId != null && waId.isNotEmpty) {
+        // Au lieu de forcer une navigation sur un router non prêt,
+        // on met en file d'attente. GoRouter le lira dans son redirect() une fois auth prêt.
+        pendingWaIdToNavigate = waId;
+      }
     }
 
     // Envoyer le token FCM au backend

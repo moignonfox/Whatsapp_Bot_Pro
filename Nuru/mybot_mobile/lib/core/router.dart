@@ -25,6 +25,7 @@ import '../viewmodels/auth_notifier.dart';
 import '../viewmodels/profile_notifier.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
+String? pendingWaIdToNavigate;
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -56,8 +57,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (profileState.hasValue && profileState.value != null && !profileState.value!.isApproved) {
           return '/pending';
         }
+
+        // ── Cold Start Notification Queue ──
+        if (pendingWaIdToNavigate != null) {
+          final target = '/chat/detail/$pendingWaIdToNavigate?clientName=${Uri.encodeComponent(pendingWaIdToNavigate!)}';
+          pendingWaIdToNavigate = null; // Consume
+          return target;
+        }
       }
       return null;
+
     },
     routes: [
       GoRoute(

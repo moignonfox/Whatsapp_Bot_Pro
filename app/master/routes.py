@@ -165,10 +165,14 @@ def save_new_business():
     drip_j3_msg = existing['drip_j3_msg'] if existing else None
     debounce_delay = existing['debounce_delay'] if existing else 3
 
-    business_repo.add_or_update(biz_id, nom, phone_id, token, hashed_password, prompt,
-                                msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement,
-                                dict(existing).get('is_active', 1) if existing else 1,
-                                owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay)
+    business_repo.add_or_update(
+        biz_id, nom, phone_id, token, hashed_password, prompt,
+        msg_confirm, msg_cancel, msg_ready,
+        business_type, plan_abonnement, dict(existing).get('is_active', 1) if existing else 1,
+        owner_phone, drip_j3_enabled, drip_j3_msg, debounce_delay,
+        0, # buffer_minutes default
+        dict(existing).get('email') if existing else None
+    )
 
     # Sauvegarder les champs supplémentaires (email, approbation, dates)
     email = request.form.get('email', '').strip() or None

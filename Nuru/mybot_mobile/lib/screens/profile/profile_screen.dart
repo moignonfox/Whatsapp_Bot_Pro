@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/auth_notifier.dart';
 import '../../viewmodels/profile_notifier.dart';
 import '../../core/subscription_gate.dart';
@@ -53,7 +54,7 @@ class ProfileScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                       image: coverUrl != null
                           ? DecorationImage(
-                              image: NetworkImage(coverUrl),
+                              image: CachedNetworkImageProvider(coverUrl),
                               fit: BoxFit.cover,
                             )
                           : null,
@@ -70,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                             child: CircleAvatar(
                               radius: 40,
                               backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
+                              backgroundImage: logoUrl != null ? CachedNetworkImageProvider(logoUrl) : null,
                               child: logoUrl == null
                                   ? Text(
                                       profile.nom.isNotEmpty ? profile.nom.substring(0, 1).toUpperCase() : '?',

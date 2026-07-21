@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/catalog_notifier.dart';
 import '../../models/product.dart';
 import '../../core/api/api_client.dart';
@@ -159,10 +160,11 @@ class CatalogScreen extends ConsumerWidget {
                                       // Image Header
                                       Expanded(
                                         child: fullImageUrl.isNotEmpty
-                                            ? Image.network(
-                                                fullImageUrl,
+                                            ? CachedNetworkImage(
+                                                imageUrl: fullImageUrl,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => _buildPlaceholder(context),
+                                                placeholder: (context, url) => _buildPlaceholder(context),
+                                                errorWidget: (context, url, error) => _buildPlaceholder(context),
                                               )
                                             : _buildPlaceholder(context),
                                       ),
@@ -438,9 +440,11 @@ class _ProductBottomSheetContentState extends State<_ProductBottomSheetContent> 
                     : (widget.product?.imageUrl != null && widget.product!.imageUrl!.isNotEmpty)
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              '${apiClient.options.baseUrl.replaceAll('/api/v1', '')}${widget.product!.imageUrl!}',
+                            child: CachedNetworkImage(
+                              imageUrl: '${apiClient.options.baseUrl.replaceAll('/api/v1', '')}${widget.product!.imageUrl!}',
                               fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) => Icon(Icons.broken_image),
                             ),
                           )
                         : Column(

@@ -20,15 +20,36 @@ class HomeLayout extends ConsumerStatefulWidget {
   ConsumerState<HomeLayout> createState() => _HomeLayoutState();
 }
 
-class _HomeLayoutState extends ConsumerState<HomeLayout> {
+class _HomeLayoutState extends ConsumerState<HomeLayout> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(socketClientProvider).init();
       ref.read(firebaseMessagingProvider).init();
     });
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🔄 AppLifecycleState.resumed: Reconnecting sockets and refreshing data...');
+      ref.read(socketClientProvider).reconnect();
+      
+      // Refresh providers silently
+      ref.read(chatNotifierProvider.notifier).fetchConversations();
+      ref.read(todayNotifierProvider.notifier).fetchOrders();
+    }
+  }
+
 
   void _goBranch(int index, SubscriptionPlan plan) {
     // index 3 = Money (PREMIUM+)
