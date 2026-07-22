@@ -8,6 +8,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+    
+    <!-- PWA Manifest & Theme Color -->
+    <link rel="manifest" href="/manifest/{{ business.id }}.json">
+    <meta name="theme-color" content="{{ business.vitrine_color or '#25D366' }}">
+    
+    <!-- iOS PWA Full Screen Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ business.nom }}">
+    
 <style>
 
 :root {
@@ -966,6 +976,15 @@ document.addEventListener('click', e => {
     searchWrap.classList.remove('open');
   }
 });
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('[Vira PWA] Service worker enregistré!', reg))
+                .catch(err => console.log('[Vira PWA] Erreur Service worker:', err));
+        });
+    }
 </script>
 </body>
 </html>

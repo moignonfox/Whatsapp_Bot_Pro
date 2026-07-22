@@ -24,6 +24,72 @@ logger = logging.getLogger(__name__)
 _TONE_RANK = {'concis': 0, 'standard': 1, 'detaille': 2}
 
 
+def _classify_needs_catalog(user_message: str, history: list) -> bool:
+    """Détermine si le message client nécessite le catalogue complet.
+
+    1. Court-circuit déterministe : si le message contient un mot-clé de demande
+       explicite de catalogue (multilangue), retourne True immédiatement.
+    2. Sinon, classification légère via Groq.
+
+    Timeout 2s. Fallback = True pour ne jamais halluciner un produit inexistant.
+    """
+    # --- Court-circuit déterministe (multilangue) ---
+    # Couvre les demandes EXPLICITES de catalogue dans les langues courantes.
+    msg_lower = user_message.lower()
+    EXPLICIT_CATALOG_TRIGGERS = [
+        # Français
+        "catalogue", "menu", "carte", "produits", "ce que vous vendez", "ce que vous avez",
+        "ce que vous proposez", "disponible", "voir tout", "tout voir", "liste",
+        # Anglais
+        "catalog", "products", "what do you have", "what do you sell", "what you have",
+        "show me", "all products", "your products", "available", "what have you got",
+        # Allemand
+        "katalog", "produkte", "was haben sie", "angebot",
+        # Espagnol
+        "catálogo", "productos", "qué tienen", "que tienen",
+    ]
+    if any(kw in msg_lower for kw in EXPLICIT_CATALOG_TRIGGERS):
+        logger.debug("[CATALOG CLASSIFY] Mot-clé explicite détecté → catalogue forcé")
+        return True
+
+    # --- Classification Groq pour les formulations indirectes ---
+    context = ""
+    if history:
+        last = history[-1]
+        role = "Client" if last['role'] == 'user' else "Assistant"
+        context = f"Dernier échange — {role}: {last['content'][:200]}\n"
+
+    classify_prompt = (
+        "You are a binary classifier. Answer ONLY with 'yes' or 'no', no other text.\n\n"
+        f"{context}"
+        f"Client message: \"{user_message}\"\n\n"
+        "Question: Does this message require knowing the available products, menu, or prices?"
+    )
+
+    groq_url = "https://api.groq.com/openai/v1/chat/completions"
+    groq_headers = {
+        "Authorization": f"Bearer {cfg.GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [{"role": "user", "content": classify_prompt}],
+        "max_tokens": 5,
+        "temperature": 0,
+    }
+
+    try:
+        resp = requests.post(groq_url, json=payload, headers=groq_headers, timeout=2)
+        answer = resp.json()["choices"][0]["message"]["content"].strip().lower()
+        logger.debug("[CATALOG CLASSIFY] message=%r → %s", user_message[:60], answer)
+        # Accepter 'yes' (anglais) et 'oui' (français) selon la langue du modèle
+        return answer.startswith("yes") or answer.startswith("oui")
+    except Exception as e:
+        logger.warning("[CATALOG CLASSIFY] Erreur classifieur (%s) → fallback injection catalogue", e)
+        return True
+
+
+
 def _resolve_tone(biz_tone: str, agent_tone: str) -> str:
     """Retourne le ton le plus restrictif entre le business et l'agent.
     L'agent ne peut jamais être plus permissif que le business."""
@@ -173,52 +239,59 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     history = conversation_repo.get_recent_history(wa_id, biz_id, limit=5)
 
     # -- Catalogue (source de vérité absolue) -------------------------------
+    # Classification légère : on demande à Groq si le message nécessite le catalogue.
+    # Avantages vs mots-clés : couvre "vous avez ça ?", "y'a quoi de bon ?", etc.
+    # Timeout 2s, fallback = catalogue compact pour garantir zéro hallucination.
     catalog_str = ""
     if biz_id:
-        msg_lower = user_message.lower()
-        CATALOG_KEYWORDS = ["menu", "prix", "commander", "carte", "produit", "catalogue", "disponible", "voir", "quoi", "propose", "acheter", "liste", "plat", "boisson", "article", "combien"]
-        needs_catalog = any(kw in msg_lower for kw in CATALOG_KEYWORDS)
-        
-        # Par défaut on n'envoie pas le catalogue si c'est juste un bonjour ou une question sans rapport
-        if needs_catalog:
-            products = catalog_repo.get_by_business(biz_id, only_available=True)
-            if products:
+        products = catalog_repo.get_by_business(biz_id, only_available=True)
+        if products:
+            needs_catalog = _classify_needs_catalog(user_message, history)
+
+            if needs_catalog:
                 catalog_str = "CATALOGUE / MENU EXACT (Source de vérité absolue) :\n"
                 grouped = {}
                 for p in products:
                     cat = p['categorie'] or 'Général'
                     grouped.setdefault(cat, []).append(p)
-                    
-                needs_product_detail = any(kw in user_message.lower() for kw in ["détail", "composition", "ingrédient", "c'est quoi", "expliquer", "info", "allergi", "piment"])
-                
+
                 for cat, items in grouped.items():
                     catalog_str += f"[{cat}]\n"
                     for p in items:
-                        if needs_product_detail and p['description']:
-                            desc = f" ({p['description']})"
-                        else:
-                            desc = ""
+                        # Prix toujours injecté. Description injectée si elle existe en base.
+                        desc = f" — {p['description']}" if p.get('description') else ""
                         catalog_str += f"- {p['nom']} : {p['prix']} FCFA{desc}\n"
                 catalog_str += (
-                    "\nINTERDICTION STRICTE : Tu NE DOIS PROPOSER QUE ces produits. "
-                    "Il t'est STRICTEMENT INTERDIT d'inventer des produits ou des prix "
-                    "qui ne sont pas dans cette liste.\n"
-                    f"\n💡 LIEN VERS LE CATALOGUE EN LIGNE (Vitrine) : {base_url}/v/{biz_id}\n"
-                    "Règle d'usage du lien : Tu peux suggérer 2 ou 3 produits pertinents en texte, "
-                    "mais indique toujours au client qu'il peut consulter l'intégralité du catalogue avec photos "
-                    "en cliquant sur ce lien.\n"
+                    "\n🚨 STRICT RULE — OUT-OF-CATALOG:\n"
+                    "NEVER propose or accept an order for products NOT EXACTLY in the list above.\n"
+                    "If the client asks for a product not in the catalog, politely decline and suggest available products.\n"
+                    f"\n🔗 CATALOG LINK (MANDATORY): {base_url}/v/{biz_id}\n"
+                    "RULE: NEVER list all products in your text reply. Instead, mention 1-2 products max "
+                    "and ALWAYS share the link above so the client can browse the full catalog with photos.\n"
+                    "This rule applies in ALL languages — always give the link when catalog is requested.\n"
+                )
+            else:
+                # Catalogue non requis, mais on injecte la liste compacte (noms seuls)
+                # pour que l'IA sache quels produits EXISTENT même sans détails de prix.
+                # Cela évite toute hallucination sur l'existence d'un produit.
+                compact_lines = [f"- {p['nom']}" for p in products]
+                catalog_str = (
+                    "PRODUITS DISPONIBLES (liste de référence, pas de prix — catalogue non demandé) :\n"
+                    + "\n".join(compact_lines)
+                    + "\n🚨 Si le client demande un produit absent de cette liste, refuse poliment.\n"
                 )
 
     # Vérifier si le client a déjà une commande en attente
     pending_order_str = ""
-    last_res = order_repo.get_last_for_user(wa_id)
+    last_res = order_repo.get_last_for_user(wa_id, biz_id)
     if last_res:
         if last_res['statut'] == 'En attente':
             res_dict = dict(last_res)
             pending_order_str = (
-                f"ℹ️ INFO : Le client a DÉJÀ une commande EN ATTENTE dans le système ({res_dict['details']} | Date: {res_dict.get('date_heure_debut') or 'Aucune'}).\n"
-                "S'il demande à la modifier (ex: ajouter une heure) ou ajouter un article, tu DOIS générer un nouveau tag [RESERVATION:...] avec TOUTES les informations mises à jour.\n"
-                "S'il demande juste le statut, dis-lui qu'elle est en attente de validation.\n"
+                f"🚨 RÈGLE STRICTE (COMMANDE EN ATTENTE) : Le client a DÉJÀ une commande EN ATTENTE de validation ({res_dict['details']}).\n"
+                "Tu ne DOIS PAS prendre de nouvelle commande ni ajouter de produits tant que celle-ci n'est pas validée par le restaurateur.\n"
+                "Si le client essaie de commander autre chose, dis-lui poliment qu'il doit attendre la validation de sa commande en cours.\n"
+                "NE GÉNÈRE AUCUN TAG [RESERVATION:...] dans ce cas !\n"
             )
         elif last_res['statut'] in ['Confirmé ✅', 'Prêt']:
             pending_order_str = (
@@ -305,10 +378,21 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
     has_pending = last_res and last_res['statut'] == 'En attente'
     needs_scheduling = any(kw in msg_lower for kw in SCHEDULING_KEYWORDS) or has_pending
 
-    from app.services.agenda_service import get_business_hours_context
+    from app.services.agenda_service import get_business_hours_context, is_business_open_now
     # Fusion des horaires globaux et de l'agenda
     hours_context_str = get_business_hours_context(business_info, days=14)
-        
+    
+    # Règle d'ouverture (interdit de prendre une commande si c'est fermé)
+    is_open = is_business_open_now(business_info)
+    closed_rule = ""
+    if not is_open:
+        closed_rule = (
+            "- 🚨 RÈGLE D'OUVERTURE STRICTE : L'entreprise est ACTUELLEMENT FERMÉE (en dehors des heures d'ouverture).\n"
+            "  Tu ne DOIS SOUS AUCUN PRÉTEXTE accepter de commande immédiate ni générer le tag [RESERVATION:...].\n"
+            "  Si le client veut commander maintenant, refuse poliment, précise que c'est fermé en ce moment, "
+            "  et propose-lui (uniquement s'il le souhaite) de prendre une pré-commande pour la prochaine ouverture.\n"
+        )
+
     # Règle anti-bonjour répétitif
     greeting_rule = ""
     if len(history) > 1:
@@ -316,28 +400,32 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
 
     system_rules = (
         "⚠️ DIRECTIVES ABSOLUES (priorité maximale) :\n"
+        "🌍 LANGUE : Détecte la langue utilisée par le client dans son DERNIER message et réponds EXCLUSIVEMENT dans cette même langue. "
+        "Si le client écrit en anglais → réponds en anglais. En français → français. En allemand → allemand. En espagnol → espagnol. Etc. "
+        "Ne mélange JAMAIS deux langues dans la même réponse. Si le client change de langue, adapte-toi immédiatement.\n"
+        "📩 LONGUEUR : Réponses COURTES, max 3-4 phrases. WhatsApp, pas un roman.\n"
         f"📅 Date et heure actuelles du système : {current_time_str}\n"
         f"{hours_context_str}\n"
         f"{pending_order_str}"
         f"{client_name_str}"
         f"{name_request_rule}"
         f"{greeting_rule}"
+        f"{closed_rule}"
         "--- GESTION DES NOMS (IMPORTANT) ---\n"
         "- À la première interaction où le client donne son nom (ex: 'Je m'appelle Kofi'), inclus le tag [CLIENT: Son Nom] dans ta réponse.\n"
         "- Si le client demande à changer de nom d'usage ou de surnom (ex: 'Appelle-moi KK', 'Je préfère Boss'), inclus UNIQUEMENT le tag [DISPLAY_NAME: Nouveau Surnom].\n"
         "- Si le client corrige une erreur sur son vrai nom légal (ex: 'Mon vrai nom c'est Koffi avec 2 f'), inclus le tag [NOM_CORRECTION: Vrai Nom].\n"
         "--------------------------------------\n"
-        "- Si le client passe une nouvelle commande/réservation, OU s'il ajoute/modifie une information à sa commande déjà en attente, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse :\n"
+        "- Si le client passe une nouvelle commande/réservation, tu DOIS OBLIGATOIREMENT inclure exactement le tag suivant dans ta réponse :\n"
         "[RESERVATION: résumé de la réservation/commande | DATE: YYYY-MM-DD HH:MM:00 | EMPLOYEE_ID: id_employé | MONTANT: chiffre | PRIORITE: Normale/Haute | TAGS: Tag1, Tag2]\n"
         "- IMPORTANT : Si aucune date ou heure n'est précisée par le client (par exemple une commande pour tout de suite), tu dois mettre DATE: None\n"
+        "- RÈGLE SUR LE MONTANT : Le MONTANT doit correspondre au total strict des produits demandés. NE METS JAMAIS 0 si le client commande des produits payants.\n"
         "ATTENTION: Ne dis jamais que la demande est 'confirmée'. Dis qu'elle est 'enregistrée et en attente de validation'.\n"
         "EXEMPLES DE FORMATAGE (FEW-SHOT) :\n"
         "Client: 'Je veux réserver une table ce soir à 20h pour 2 personnes avec le boss'\n"
         "Assistant: 'C'est noté, j'ai enregistré votre demande de table pour 2 ce soir à 20h avec notre gérant. Elle est en attente de validation. [RESERVATION: Table pour 2 personnes | DATE: 2026-07-21 20:00:00 | EMPLOYEE_ID: 1 | MONTANT: 0 | PRIORITE: Normale | TAGS: aucun]'\n"
         "Client: 'Je veux 2 pizzas margherita en livraison maintenant'\n"
         "Assistant: 'Votre commande de 2 pizzas margherita est enregistrée et en attente de validation. [RESERVATION: 2 pizzas margherita en livraison | DATE: None | EMPLOYEE_ID: None | MONTANT: 24000 | PRIORITE: Normale | TAGS: livraison]'\n"
-        "Client: 'Finalement ajoutez un coca à ma commande'\n"
-        "Assistant: 'J'ai bien ajouté un coca à votre commande en cours. [RESERVATION: 2 pizzas margherita en livraison + 1 coca | DATE: None | EMPLOYEE_ID: None | MONTANT: 25500 | PRIORITE: Normale | TAGS: livraison]'\n"
         f"{catalog_str}\n\n"
         f"{tags_str}\n"
     )
@@ -499,26 +587,31 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 max_output_tokens=8192,
-                thinking_config=types.ThinkingConfig(thinking_budget=0)
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                http_options=types.HttpOptions(timeout=15000)  # 15s timeout
             )
         )
         reply = gemini_response.text.strip()
-        
+
         # Log metadata to verify thinking budget is respected
         if hasattr(gemini_response, 'usage_metadata') and gemini_response.usage_metadata:
             logger.info(f"[GEMINI USAGE] {gemini_response.usage_metadata}")
-            
+
         # Filet de sécurité au cas où le modèle ignorerait la consigne
         reply = re.sub(r'<think>.*?(</think>|$)', '', reply, flags=re.DOTALL).strip()
-        
+
         if not reply:
             raise Exception("Gemini a retourné une réponse vide après nettoyage du <think>.")
         return reply
 
     except Exception as e:
-        logger.warning("Erreur Gemini : %s", e)
+        logger.warning("[GEMINI ECHEC] Bascule vers Groq (fallback). Raison : %s", e)
 
     # -- Fallback Groq ----------------------------------------------------
+    logger.warning(
+        "[GROQ FALLBACK] Gemini indisponible pour wa_id=%s biz_id=%s — utilisation du fallback Groq.",
+        wa_id, biz_id
+    )
     try:
         groq_url = "https://api.groq.com/openai/v1/chat/completions"
         groq_headers = {
@@ -529,14 +622,15 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
         for msg in history:
             role = 'assistant' if msg.get('role') == 'assistant' else 'user'
             groq_messages.append({"role": role, "content": msg.get('content', '')})
-            
+
         groq_payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": groq_messages,
             "max_tokens": 2000,
         }
 
-        groq_resp = requests.post(groq_url, json=groq_payload, headers=groq_headers)
+        # Timeout explicite 8s — évite que le fallback bloque la conversation indéfiniment
+        groq_resp = requests.post(groq_url, json=groq_payload, headers=groq_headers, timeout=8)
         groq_data = groq_resp.json()
 
         if "choices" in groq_data:
@@ -544,13 +638,14 @@ def get_ai_response(wa_id: str, user_message: str, business_info: dict, agent_in
             reply = re.sub(r'<think>.*?(</think>|$)', '', reply, flags=re.DOTALL).strip()
             if not reply:
                 raise Exception("Groq a retourné une réponse vide après nettoyage du <think>.")
+            logger.info("[GROQ FALLBACK] Réponse Groq obtenue avec succès.")
             return reply
 
-        logger.warning("Groq réponse inattendue : %s", groq_data)
+        logger.warning("[GROQ FALLBACK] Réponse inattendue de Groq : %s", groq_data)
         raise Exception(f"Les deux IA sont indisponibles. Erreur Groq: {groq_data}")
 
     except Exception as e:
-        logger.error("Erreur Groq : %s", e)
+        logger.error("[GROQ FALLBACK] Échec définitif : %s", e)
         raise Exception(f"Les deux IA sont indisponibles. Dernière erreur: {e}")
 
 

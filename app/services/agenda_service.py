@@ -146,4 +146,81 @@ def get_availability_context(business_id: str, days: int = 7) -> str:
     context_lines.append("2. Vérifie qu'il n'y a pas déjà une réservation à cette heure-là dans [RÉSERVATIONS DÉJÀ PLANIFIÉES]. (Prends en compte la durée de la prestation/repas)")
     context_lines.append("3. Si le client te demande tes disponibilités pour une date, donne-lui les créneaux libres en te basant sur ces horaires et les réservations déjà planifiées.")
     
+    # Injection stricte des horaires globaux de l'entreprise au cas où
+    raw_biz_horaires = business_info.get('horaires_json')
+    if raw_biz_horaires and raw_biz_horaires != '{}':
+        try:
+            h_data = json.loads(raw_biz_horaires)
+            jours = {'lun':'Lundi', 'mar':'Mardi', 'mer':'Mercredi', 'jeu':'Jeudi', 'ven':'Vendredi', 'sam':'Samedi', 'dim':'Dimanche'}
+            lignes = []
+            for k, v in jours.items():
+                plages = h_data.get(k, [])
+                if plages and len(plages) >= 2:
+                    lignes.append(f"- {v} : {plages[0]} à {plages[1]}")
+                else:
+                    lignes.append(f"- {v} : Fermé")
+            context_lines.append(
+                "\nHORAIRES GLOBAUX DE L'ENTREPRISE :\n" + "\n".join(lignes) + 
+                "\n🚨 RÈGLE STRICTE SUR LES HORAIRES : Tu ne DOIS SOUS AUCUN PRÉTEXTE accepter une commande ou réservation pour un jour ou une heure de fermeture globale."
+                "\nSi le client demande un créneau en dehors des heures, refuse catégoriquement et propose un autre moment ouvert."
+            )
+        except Exception:
+            pass
+
     return "\n".join(context_lines)
+
+def is_business_open_now(business_info: dict) -> bool:
+    """Retourne True si l'entreprise est ouverte actuellement, False sinon.
+    Si les horaires ne sont pas définis, on considère par défaut que c'est ouvert.
+    Gère les horaires qui dépassent minuit (ex: 18:00 à 02:00).
+    """
+    raw_biz_horaires = business_info.get('horaires_json')
+    if not raw_biz_horaires or raw_biz_horaires == '{}':
+        return True
+        
+    try:
+        h_data = json.loads(raw_biz_horaires)
+        if not any(h_data.values()): # Aucun jour configuré
+            return True
+            
+        now = datetime.now()
+        # map weekday to key: Monday is 0
+        jours_keys = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim']
+        current_day_key = jours_keys[now.weekday()]
+        
+        plages = h_data.get(current_day_key, [])
+        
+        def parse_time(t_str):
+            parts = t_str.split(':')
+            return int(parts[0]) * 60 + int(parts[1])
+            
+        current_minutes = now.hour * 60 + now.minute
+        
+        # 1. Vérifier la plage d'aujourd'hui
+        if plages and len(plages) >= 2:
+            start_minutes = parse_time(plages[0])
+            end_minutes = parse_time(plages[1])
+            
+            if end_minutes < start_minutes:
+                # Cas où ça ferme le lendemain (ex: 18:00 à 02:00)
+                if current_minutes >= start_minutes or current_minutes <= end_minutes:
+                    return True
+            else:
+                if start_minutes <= current_minutes <= end_minutes:
+                    return True
+                    
+        # 2. Vérifier si on est dans la continuité du jour précédent qui a croisé minuit
+        prev_day_key = jours_keys[(now.weekday() - 1) % 7]
+        prev_plages = h_data.get(prev_day_key, [])
+        if prev_plages and len(prev_plages) >= 2:
+            p_start = parse_time(prev_plages[0])
+            p_end = parse_time(prev_plages[1])
+            if p_end < p_start: # La plage d'hier a croisé minuit
+                if current_minutes <= p_end:
+                    return True
+                    
+        return False
+        
+    except Exception as e:
+        # En cas d'erreur de parsing, on ne bloque pas les commandes par sécurité
+        return True
