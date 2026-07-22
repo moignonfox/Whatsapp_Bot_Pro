@@ -1399,6 +1399,66 @@ def vitrine_settings(biz_id):
                            plan=plan,
                            active_page='vitrine')
 
+@dashboard_bp.route('/sw.js')
+def service_worker():
+    """Sert le service worker à la racine pour avoir le scope global."""
+    from flask import send_from_directory, current_app
+    import os
+    return send_from_directory(os.path.join(current_app.root_path, 'static', 'js'), 'sw.js', mimetype='application/javascript')
+
+@dashboard_bp.route('/manifest/<biz_id>.json')
+def dynamic_manifest(biz_id):
+    """Génère le manifeste PWA dynamiquement pour un business."""
+    from flask import jsonify
+    business = business_repo.get_by_id(biz_id)
+    if not business:
+        return jsonify({"error": "Business not found"}), 404
+        
+    business_name = dict(business).get('nom', 'Catalogue')
+    
+    # Check for custom logo and color in vitrine settings
+    vitrine_settings = None
+    try:
+        vitrine_settings = business_repo.get_vitrine_settings(biz_id)
+    except Exception:
+        pass
+        
+    business_logo = "/static/images/default-logo.png"
+    theme_color = "#25D366"
+    
+    if vitrine_settings:
+        if vitrine_settings.get('logo_url'):
+            business_logo = vitrine_settings['logo_url']
+        if vitrine_settings.get('color'):
+            theme_color = vitrine_settings['color']
+    
+    # Fallback to business default logo if needed
+    if business_logo == "/static/images/default-logo.png" and dict(business).get('logo_url'):
+        business_logo = dict(business).get('logo_url')
+
+    manifest = {
+        "name": business_name,
+        "short_name": business_name,
+        "start_url": f"/v/{biz_id}",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": theme_color,
+        "icons": [
+            {
+                "src": business_logo,
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": business_logo,
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }
+    
+    return jsonify(manifest)
+
 @dashboard_bp.route('/v/<biz_id>')
 def public_vitrine(biz_id):
     """Route publique pour la vitrine du client."""

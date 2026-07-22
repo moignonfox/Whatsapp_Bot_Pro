@@ -487,7 +487,7 @@
                             <span class="conv-item-time conv-time-format">{{ conv.last_timestamp }}</span>
                         </div>
                     </div>
-                    <div class="conv-item-preview">{{ conv.last_message[:50] }}{% if conv.last_message|length > 50 %}...{% endif %}</div>
+                    <div class="conv-item-preview">{{ (conv.last_message or '')[:50] }}{% if (conv.last_message or '')|length > 50 %}...{% endif %}</div>
                 </div>
             </div>
             {% endfor %}

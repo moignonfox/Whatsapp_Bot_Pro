@@ -103,14 +103,18 @@ def update_status(res_id: int, new_status: str) -> Optional[str]:
     return row[0] if row else None
 
 
-def get_last_for_user(wa_id: str) -> Optional[sqlite3.Row]:
-    """Renvoie la dernière réservation d'un utilisateur donné."""
+def get_last_for_user(wa_id: str, business_id: str) -> Optional[sqlite3.Row]:
+    """Renvoie la dernière réservation d'un utilisateur pour un business donné.
+
+    IMPORTANT : business_id est obligatoire pour éviter toute fuite de données
+    entre tenants (multi-business). Ne jamais appeler sans ce paramètre.
+    """
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM reservations WHERE wa_id = ? ORDER BY timestamp DESC LIMIT 1",
-        (wa_id,),
+        "SELECT * FROM reservations WHERE wa_id = ? AND business_id = ? ORDER BY timestamp DESC LIMIT 1",
+        (wa_id, business_id),
     )
     row = cursor.fetchone()
     conn.close()

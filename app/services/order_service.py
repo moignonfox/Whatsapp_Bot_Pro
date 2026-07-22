@@ -18,12 +18,12 @@ def extract_and_save_reservation(reply, wa_id, business_id):
     try:
         import re
         
-        # Regex stricte : on s'attend exactement aux 6 champs dans l'ordre (tolérance sur les espaces)
+        # Regex stricte : on s'attend exactement aux 6 champs dans l'ordre (tolérance sur les espaces et sauts de ligne)
         pattern = r'\[RESERVATION:\s*(.*?)\s*\|\s*DATE:\s*(.*?)\s*\|\s*EMPLOYEE_ID:\s*(.*?)\s*\|\s*MONTANT:\s*(.*?)\s*\|\s*PRIORITE:\s*(.*?)\s*\|\s*TAGS:\s*(.*?)\]'
-        match = re.search(pattern, reply)
+        match = re.search(pattern, reply, re.DOTALL | re.IGNORECASE)
         
         if not match:
-            logger.warning("[ORDER] Le tag [RESERVATION] a été détecté mais la syntaxe est invalide. Fallback humain activé.")
+            logger.warning(f"[ORDER] Le tag [RESERVATION] a été détecté mais la syntaxe est invalide. Fallback humain activé. Reply content: {reply}")
             # Fallback humain : créer une commande "Erreur IA" pour alerter le restaurateur
             details_secours = "⚠️ ÉCHEC PARSING IA - Vérifiez manuellement la demande du client."
             order_repo.save_reservation(business_id, wa_id, details_secours, priorite="Haute")
@@ -41,7 +41,7 @@ def extract_and_save_reservation(reply, wa_id, business_id):
                 }, room=business_id)
             except Exception:
                 pass
-            return re.sub(r'\[RESERVATION:.*?\]', '', reply).strip()
+            return re.sub(r'\[RESERVATION:.*?\]', '', reply, flags=re.DOTALL | re.IGNORECASE).strip()
             
         details_extract = match.group(1).strip()
         raw_date = match.group(2).strip()
@@ -62,7 +62,7 @@ def extract_and_save_reservation(reply, wa_id, business_id):
 
         # Anti-doublon strict : on bloque la création si le client a DÉJÀ une commande en attente
         # MAIS on met à jour la commande existante si elle est toujours en attente (ex: ajout d'heure).
-        last_res = order_repo.get_last_for_user(wa_id)
+        last_res = order_repo.get_last_for_user(wa_id, business_id)
         if last_res and last_res['statut'] == 'En attente':
             logger.debug("[ORDER] Mise à jour de la commande En attente pour %s.", wa_id)
             order_repo.update_reservation(last_res['id'], details_extract, prio_extract, montant_extract, date_extract, emp_id_extract)
@@ -158,5 +158,5 @@ def extract_and_save_reservation(reply, wa_id, business_id):
         logger.error("[ORDER] Erreur extraction/sauvegarde: %s", e)
 
     import re
-    reply = re.sub(r'\[RESERVATION:.*?\]', '', reply).strip()
+    reply = re.sub(r'\[RESERVATION:.*?\]', '', reply, flags=re.DOTALL | re.IGNORECASE).strip()
     return reply

@@ -233,7 +233,7 @@ def process_debounced_messages(wa_id, business, phone_id):
                     from app.repositories import order_repo
                     
                     # Verification anti-spam : on recupere la derniere commande
-                    last_res = order_repo.get_last_for_user(wa_id)
+                    last_res = order_repo.get_last_for_user(wa_id, biz_id)
                     
                     # Si on a DEJA cree une alerte, on ignore (on ne spamme pas le dashboard)
                     if last_res and last_res['details'].startswith("⚠️ IA INDISPONIBLE"):
