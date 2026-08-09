@@ -3,16 +3,18 @@
 ══════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-    --bg:           #0D1117;
-    --surface:      #161B27;
-    --card:         #1C2333;
-    --card-hover:   #212d42;
-    --border:       #2A3347;
-    --border-light: #232d3f;
+    --bg:           #0a0a0f;
+    --surface:      #12121a;
+    --card:         #1a1924;
+    --card-hover:   #222131;
+    --border:       #2a2938;
+    --border-light: #232230;
+    --brand:        #7C3AED;
+    --brand-soft:   rgba(124,58,237,0.15);
     --green:        #25D366;
     --green-dim:    #1aaa50;
     --green-glow:   rgba(37,211,102,0.15);
-    --green-bg:     rgba(37,211,102,0.08);
+    --green-bg:     rgba(37,211,102,0.1);
     --green-border: rgba(37,211,102,0.25);
     --text:         #F0F6FC;
     --muted:        #8B949E;
@@ -24,23 +26,25 @@
     --amber-bg:     rgba(240,180,41,0.10);
     --blue:         #58a6ff;
     --blue-bg:      rgba(88,166,255,0.10);
+    --purple:       #9D6BF8;
+    --purple-bg:    rgba(157,107,248,0.10);
     --sidebar-w:    240px;
-    --shadow-sm:    0 2px 8px rgba(0,0,0,0.35);
-    --shadow:       0 24px 80px rgba(0,0,0,0.55);
-    --row-hover:    rgba(255,255,255,0.02);
-    --toggle-bg:    #2A3347;
-    --toggle-hover: #354055;
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.4);
+    --shadow:       0 12px 40px rgba(0,0,0,0.6);
+    --row-hover:    rgba(255,255,255,0.03);
+    --toggle-bg:    #2a2938;
+    --toggle-hover: #353447;
     --placeholder:  #4a5568;
     --blob1-opacity: 0.35;
     --blob2-opacity: 0.35;
     /* Chart.js colors */
-    --chart-grid:   rgba(42,51,71,0.7);
+    --chart-grid:   rgba(42,41,56,0.7);
     --chart-tick:   #8B949E;
-    --chart-tooltip-bg:     #1C2333;
-    --chart-tooltip-border: #2A3347;
+    --chart-tooltip-bg:     #1a1924;
+    --chart-tooltip-border: #2a2938;
     --chart-tooltip-title:  #F0F6FC;
     --chart-tooltip-body:   #8B949E;
-    --chart-point-border:   #1C2333;
+    --chart-point-border:   #1a1924;
 }
 
 /* ══════════════════════════════════════════════

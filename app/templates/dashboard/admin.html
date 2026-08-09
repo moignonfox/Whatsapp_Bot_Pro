@@ -305,24 +305,48 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div>
-                <h1>{{ vocab.title_dashboard }}</h1>
-                <p>Aperçu de l'activité en temps réel</p>
+                <h1>Bonjour {{ business.owner_name or business.nom }} 👋</h1>
+                <p>Voici ce qui se passe aujourd'hui</p>
             </div>
         </div>
         <div class="topbar-right">
-            <div class="refresh-badge">
-                <span class="refresh-dot"></span>
-                Actualisation auto · 30s
-            </div>
-
+            <!-- Search -->
+            <button class="topbar-btn" style="border-radius: 50%; width: 40px; height: 40px; border: 1px solid var(--border); background: transparent;">
+                <i class="fas fa-search"></i>
+            </button>
+            
             {% include 'dashboard/_notif_bell.html' %}
 
-            <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}" class="topbar-btn" title="Paramètres">
-                <i class="fas fa-cog"></i>
-            </a>
-            <a href="{{ url_for('dashboard.logout') }}" class="topbar-btn" title="Se déconnecter">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
+            <!-- Divider -->
+            <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
+
+            <!-- Profile -->
+            <div style="position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="document.getElementById('admin-profile-dropdown').classList.toggle('show')">
+                <img src="https://ui-avatars.com/api/?name={{ business.nom | urlencode }}&background=random" alt="User" style="width: 36px; height: 36px; border-radius: 50%;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text);">{{ business.nom[:15] }}</span>
+                    <span style="font-size: 11px; color: #7C3AED; font-weight: 500;">{{ (business.plan_abonnement|capitalize) if business.plan_abonnement else 'Pro Plan' }}</span>
+                </div>
+                <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--muted); margin-left: 4px;"></i>
+                
+                <div id="admin-profile-dropdown" class="profile-dropdown">
+                    <a href="{{ url_for('dashboard.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                </div>
+                <style>
+                    .profile-dropdown {
+                        position: absolute; top: 100%; right: 0; margin-top: 10px;
+                        background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+                        padding: 8px; display: none; flex-direction: column; min-width: 150px; z-index: 100;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-align: left;
+                    }
+                    .profile-dropdown.show { display: flex; }
+                    .profile-dropdown a {
+                        color: var(--text); text-decoration: none; font-size: 13px; padding: 10px 12px;
+                        border-radius: 8px; transition: background 0.2s; display: flex; align-items: center; gap: 10px;
+                    }
+                    .profile-dropdown a:hover { background: rgba(255,255,255,0.05); }
+                </style>
+            </div>
         </div>
     </header>
 
@@ -346,158 +370,175 @@
         {% set p_text = p_labels.get(current_period, "Aujourd'hui") %}
 
         <!-- ── Stats ── -->
+        <style>.stat-card::before { display: none !important; }</style>
         <div class="stat-grid">
-            <div class="stat-card" style="--accent: var(--green); --icon-bg: var(--green-bg); --icon-border: rgba(37,211,102,0.2);">
+            <div class="stat-card" style="padding: 24px;">
                 <div class="stat-header">
-                    <span class="stat-label">Total {{ vocab.nav_orders }}</span>
-                    <div class="stat-icon-wrap" style="color:var(--green);"><i class="fas fa-calendar-check"></i></div>
+                    <span class="stat-label">Conversations</span>
                 </div>
-                <div class="stat-value">{{ reservations|length }}</div>
-                <div class="stat-sub">📅 {{ p_text }}</div>
+                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">128</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+20%</div>
+                </div>
             </div>
 
-            <div class="stat-card" style="--accent: var(--red); --icon-bg: var(--red-bg); --icon-border: rgba(248,81,73,0.2);">
+            <div class="stat-card" style="padding: 24px;">
                 <div class="stat-header">
-                    <span class="stat-label">Annulations</span>
-                    <div class="stat-icon-wrap" style="color:var(--red);"><i class="fas fa-user-slash"></i></div>
+                    <span class="stat-label">IA Taux de réussite</span>
                 </div>
-                <div class="stat-value">{{ stats.taux_annul }}<span style="font-size:18px;font-weight:500;color:var(--muted);">%</span></div>
-                <div class="stat-sub">📅 {{ p_text }}</div>
+                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">96%</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+8%</div>
+                </div>
             </div>
 
-            <div class="stat-card" style="--accent: var(--amber); --icon-bg: var(--amber-bg); --icon-border: rgba(240,180,41,0.2);">
+            <div class="stat-card" style="padding: 24px;">
                 <div class="stat-header">
-                    <span class="stat-label">Revenus est.</span>
-                    <div class="stat-icon-wrap" style="color:var(--amber);"><i class="fas fa-coins"></i></div>
+                    <span class="stat-label">Nouveaux clients</span>
                 </div>
-                <div class="stat-value" style="font-size:22px;">{{ "{:,.0f}".format(stats.ca) }}</div>
-                <div class="stat-sub">📅 {{ p_text }}</div>
+                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">47</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+15%</div>
+                </div>
             </div>
 
-            <div class="stat-card" style="--accent: var(--blue); --icon-bg: var(--blue-bg); --icon-border: rgba(88,166,255,0.2);">
+            <div class="stat-card" style="padding: 24px;">
                 <div class="stat-header">
-                    <span class="stat-label">Heure de pointe</span>
-                    <div class="stat-icon-wrap" style="color:var(--blue);"><i class="fas fa-clock"></i></div>
+                    <span class="stat-label">Commandes</span>
                 </div>
-                <div class="stat-value" style="font-size:22px;">{{ peak_hour }}</div>
-                <div class="stat-sub">📅 {{ p_text }}</div>
+                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">84</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+12%</div>
+                </div>
             </div>
         </div>
 
-        <!-- ── Chart ── -->
-        <div class="section-card">
-            <div class="section-header">
-                <span class="section-title">
-                    <i class="fas fa-chart-line"></i>
-                    Activité : {{ p_text }}
-                </span>
-                <span style="font-size:12px;color:var(--muted);">Demandes reçues par le bot</span>
+        <!-- ── 3 Columns Layout ── -->
+        <style>
+            .grid-3-col {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 24px;
+            }
+            @media (max-width: 1024px) {
+                .grid-3-col { grid-template-columns: 1fr; }
+            }
+        </style>
+        <div class="grid-3-col">
+            <!-- Column 1: Conversations récentes -->
+            <div class="section-card" style="margin-bottom: 0;">
+                <div class="section-header" style="border-bottom: none; padding-bottom: 12px;">
+                    <span class="section-title">Conversations récentes</span>
+                </div>
+                <div class="section-body" style="padding: 0;">
+                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="https://ui-avatars.com/api/?name=Emma+L.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Emma L.</div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Où en est ma commande ?</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                            <span style="font-size: 11px; color: var(--muted);">10:42</span>
+                            <span style="font-size: 10px; font-weight: 700; background: var(--brand); color: white; padding: 2px 6px; border-radius: 10px;">2</span>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="https://ui-avatars.com/api/?name=Thomas+B.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Thomas B.</div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Merci beaucoup !</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                            <span style="font-size: 11px; color: var(--muted);">Hier</span>
+                        </div>
+                    </div>
+
+                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="https://ui-avatars.com/api/?name=Sophie+M.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Sophie M.</div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Je voudrais modifier...</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                            <span style="font-size: 11px; color: var(--muted);">Lun</span>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--brand); font-size: 13px; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--brand)'">
+                        Voir toutes les conversations
+                    </div>
+                </div>
             </div>
-            <div class="section-body">
-                {% if labels|length > 0 %}
-                <div class="chart-wrap">
-                    <canvas id="activityChart"></canvas>
+
+            <!-- Column 2: Commande récente -->
+            <div class="section-card" style="margin-bottom: 0;">
+                <div class="section-header" style="border-bottom: none; padding-bottom: 12px;">
+                    <span class="section-title">Commande récente</span>
                 </div>
-                {% else %}
-                <div class="empty-state" style="padding: 24px;">
-                    <i class="fas fa-chart-bar" style="font-size: 32px; color: var(--muted2); margin-bottom: 12px;"></i>
-                    <p style="font-size: 13.5px; color: var(--muted); line-height: 1.5;">Le graphique s'affichera ici dès que le bot recevra des interactions.</p>
+                <div class="section-body" style="padding: 0;">
+                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4829</span>
+                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--purple-bg); color: var(--purple);">En préparation</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">2x T-shirt Basic, 1x Hoodie</div>
+                        <div style="font-size: 12px; color: var(--muted2);">Il y a 15 min</div>
+                    </div>
+                    
+                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4828</span>
+                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green);">Livrée</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">1x Casquette Logo</div>
+                        <div style="font-size: 12px; color: var(--muted2);">Il y a 2h</div>
+                    </div>
+
+                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4827</span>
+                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green);">Livrée</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">3x Chaussettes Sport</div>
+                        <div style="font-size: 12px; color: var(--muted2);">Il y a 5h</div>
+                    </div>
+                    
+                    <div style="padding: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--brand); font-size: 13px; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--brand)'">
+                        Voir toutes les commandes
+                    </div>
                 </div>
-                {% endif %}
+            </div>
+
+            <!-- Column 3: Utilisation IA -->
+            <div class="section-card" style="margin-bottom: 0;">
+                <div class="section-header" style="border-bottom: none; padding-bottom: 0;">
+                    <span class="section-title">Utilisation IA</span>
+                </div>
+                <div class="section-body" style="display: flex; flex-direction: column; align-items: center; padding: 30px 24px;">
+                    <div style="position: relative; width: 150px; height: 150px; margin-bottom: 30px;">
+                        <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                            <path stroke="var(--border-light)" stroke-width="3" fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path stroke="var(--brand)" stroke-width="3" stroke-dasharray="80, 100" fill="none" stroke-linecap="round"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <span style="font-size: 32px; font-weight: 700; color: var(--text);">80%</span>
+                            <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Utilisé</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px;">80,000 / 100,000 mots</div>
+                    <div style="font-size: 13px; color: var(--muted);">Quota se renouvelle dans 8 jours</div>
+                </div>
             </div>
         </div>
-
-        <!-- ── Table ── -->
-        <div class="section-card">
-            <div class="section-header">
-                <span class="section-title">
-                    <i class="fab fa-whatsapp"></i>
-                    Demandes récentes
-                </span>
-                <span style="font-size:12px;color:var(--muted);">{{ reservations|length }} entrée(s)</span>
-            </div>
-            <div class="table-container">
-                {% if reservations %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client</th>
-                            <th>{{ vocab.col_details }}</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for res in reservations %}
-                        <tr>
-                            <td>
-                                <div class="client-cell">
-                                    <div class="client-avatar"><i class="fas fa-user"></i></div>
-                                    <div>
-                                        <div class="client-name">{{ res['client_name'] }}</div>
-                                        <div style="font-size:12px; color:var(--muted);">+{{ res['wa_id'] }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="detail-main">{{ res['details'] }}</div>
-                                {% if res.get('tags') %}
-                                <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
-                                    {% for t in res['tags'] %}
-                                    <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; background: {{ t.color }}20; color: {{ t.color }}; border: 1px solid {{ t.color }}40;">
-                                        {{ t.name }}
-                                    </span>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                {% if res['priorite'] == 'Haute' %}
-                                    <span class="priority-tag priority-high"><i class="fas fa-exclamation-circle"></i> Priorité haute</span>
-                                {% else %}
-                                    <span class="priority-tag priority-normal"><i class="fas fa-check-circle"></i> Priorité normale</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if res['statut'] == 'En attente' %}
-                                    <span class="badge badge-waiting"><i class="fas fa-hourglass-half"></i> En attente</span>
-                                {% elif res['statut'] == 'Confirmé ✅' %}
-                                    <span class="badge badge-confirmed"><i class="fas fa-check-circle"></i> Confirmé</span>
-                                {% elif res['statut'] == vocab.status_ready %}
-                                    <span class="badge badge-ready"><i class="fas fa-box"></i> {{ vocab.status_ready }}</span>
-                                {% elif 'Annulé' in res['statut'] %}
-                                    <span class="badge badge-cancelled"><i class="fas fa-times-circle"></i> Annulé</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="actions">
-                                    {% if res['statut'] == 'En attente' %}
-                                        <button onclick="actionOrder({{ res['id'] }}, 'confirm', this)" class="btn-act btn-confirm">
-                                            <i class="fas fa-check"></i> Confirmer</button>
-                                        <button onclick="actionOrder({{ res['id'] }}, 'cancel', this)" class="btn-act btn-cancel">
-                                            <i class="fas fa-times"></i> Annuler</button>
-                                    {% elif res['statut'] == 'Confirmé ✅' %}
-                                        <a href="{{ url_for('dashboard.ready_reservation', res_id=res['id']) }}" class="btn-act btn-ready">
-                                            <i class="fas fa-box"></i> {{ vocab.btn_ready }}
-                                        </a>
-                                    {% elif res['statut'] == vocab.status_ready %}
-                                        <span class="status-text"><i class="fas fa-check-double"></i> Terminé</span>
-                                    {% elif 'Annulé' in res['statut'] %}
-                                        <span class="status-text"><i class="fas fa-ban"></i> Fermé</span>
-                                    {% else %}
-                                        <span class="status-text"><i class="fas fa-ban"></i> Clos</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>Aucune demande pour le moment.<br>Le bot vous notifiera dès qu'un client vous contacte.</p>
-                </div>
-                {% endif %}
-            </div>
         </div>
 
     </div><!-- /content -->

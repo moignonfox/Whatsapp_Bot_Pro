@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
 
-    <!-- Injection du thème AVANT le rendu pour éviter le flash -->
     <script>
       (function(){
         var t = localStorage.getItem('mybot-theme');
@@ -19,27 +18,8 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    
     <style>
-        .iti { width: 100%; }
-        .iti__country-list { background-color: var(--surface); color: var(--text); border: 1px solid var(--border); }
-        .iti__country.iti__highlight { background-color: var(--surface-hover); }
-        .iti__divider { border-bottom: 1px solid var(--border); }
-
-        /* ══════════════════════════════════════════════
-           Transition douce entre les thèmes
-        ══════════════════════════════════════════════ */
-        body, .card, .field input, .field textarea, .btn-submit {
-            transition:
-                background 0.3s ease,
-                background-color 0.3s ease,
-                border-color 0.3s ease,
-                color 0.3s ease,
-                box-shadow 0.3s ease;
-        }
-
-        /* ══════════════════════════════════════════════
-           Base
-        ══════════════════════════════════════════════ */
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
@@ -48,200 +28,6 @@
             overflow-x: hidden;
         }
 
-        /* ── Ambient blobs ── */
-        .blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-        .blob-1 {
-            width: 420px; height: 420px;
-            background: var(--green);
-            opacity: var(--blob1-opacity);
-            top: -140px; right: -100px;
-            animation: drift 9s ease-in-out infinite alternate;
-        }
-        .blob-2 {
-            width: 300px; height: 300px;
-            background: #1565c0;
-            opacity: var(--blob2-opacity);
-            bottom: -80px; left: -80px;
-            animation: drift 12s ease-in-out infinite alternate-reverse;
-        }
-        @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(30px, 20px) scale(1.08); }
-        }
-
-        /* ── Page wrapper ── */
-        .page {
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* CSS pour l'en-tête (supprimé car conflit avec le sidebar) */
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            color: var(--muted);
-            text-decoration: none;
-            padding: 7px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--card);
-            transition: color 0.2s, border-color 0.2s, background 0.2s;
-        }
-        .back-link:hover {
-            color: var(--text);
-            border-color: var(--green-border);
-            background: var(--green-bg);
-        }
-
-        /* ── Card ── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 40px 44px;
-            box-shadow: var(--shadow), 0 0 0 1px var(--border);
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.4px;
-            margin-bottom: 4px;
-        }
-        .card-subtitle {
-            font-size: 13.5px;
-            color: var(--muted);
-            margin-bottom: 32px;
-            line-height: 1.5;
-        }
-
-        /* ── Séparateur de section ── */
-        .section-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--green);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin: 28px 0 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .section-label::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        /* ── Champs ── */
-        .field { margin-bottom: 16px; }
-        .field label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 7px;
-        }
-        .field input,
-        .field textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
-            outline: none;
-        }
-        .field textarea {
-            resize: vertical;
-            min-height: 110px;
-            line-height: 1.6;
-        }
-        .field input::placeholder,
-        .field textarea::placeholder { color: var(--placeholder); }
-        .field input:focus,
-        .field textarea:focus {
-            border-color: var(--green);
-            box-shadow: 0 0 0 3px var(--green-glow);
-        }
-
-        /* ── Bouton ── */
-        .btn-submit {
-            width: 100%;
-            padding: 13px;
-            background: var(--green);
-            color: #fff;
-            font-family: inherit;
-            font-size: 14.5px;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-top: 28px;
-            transition: filter 0.2s, transform 0.12s, box-shadow 0.2s;
-            letter-spacing: 0.2px;
-            box-shadow: 0 4px 20px var(--green-glow);
-        }
-        .btn-submit:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 6px 28px var(--green-glow);
-            transform: translateY(-1px);
-        }
-        .btn-submit:active { transform: translateY(0); }
-
-        /* ── Badge status ── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--green-bg);
-            border: 1px solid var(--green-border);
-            color: var(--green);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            letter-spacing: 0.3px;
-        }
-        .badge .dot {
-            width: 6px; height: 6px;
-            background: var(--green);
-            border-radius: 50%;
-            animation: pulse 2s ease infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 680px) {
-            body { padding: 16px; }
-            .card { padding: 28px 22px; }
-            #theme-toggle { top: 12px; right: 12px; }
-        }
-
-        /* ────────────────── MAIN ────────────────── */
         .main {
             margin-left: var(--sidebar-w);
             flex: 1;
@@ -250,443 +36,871 @@
             min-height: 100vh;
         }
 
-        /* Topbar */
-        .topbar {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 0 28px;
-            height: 60px;
+        /* ── Topbar (Settings Header) ── */
+        .settings-topbar {
+            padding: 32px 40px 16px 40px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            align-items: flex-start;
         }
-        .topbar-left h1 {
-            font-size: 16px;
+        .settings-title-area h1 {
+            font-size: 24px;
             font-weight: 600;
+            margin: 0 0 6px 0;
             color: var(--text);
-            letter-spacing: -0.3px;
+            letter-spacing: -0.5px;
         }
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .topbar-btn {
-            width: 36px; height: 36px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            display: flex; align-items: center; justify-content: center;
+        .settings-title-area p {
             color: var(--muted);
-            text-decoration: none;
-            font-size: 15px;
-            transition: color 0.2s, background 0.2s;
+            margin: 0;
+            font-size: 14px;
         }
-        .topbar-btn:hover { color: var(--text); background: var(--card-hover); }
+        .settings-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .search-box input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px 8px 36px;
+            color: var(--text);
+            font-size: 13px;
+            width: 200px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box input:focus { border-color: var(--brand); }
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+        .btn-save {
+            background: #FFB020;
+            color: #000;
+            border: none;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+        }
+        .btn-save:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .bell-icon {
+            position: relative; width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+            color: var(--text); cursor: pointer; margin-left: 8px;
+        }
+        .bell-icon .badge {
+            position: absolute; top: -2px; right: -2px; background: #FF3B30; color: white;
+            font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .profile-btn { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-left: 12px; }
+        .profile-btn img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .profile-info { display: flex; flex-direction: column; }
+        .profile-info .name { font-size: 13px; font-weight: 600; color: var(--text); }
+        .profile-info .plan { font-size: 11px; color: var(--brand); font-weight: 500; }
+        .profile-dropdown {
+            position: absolute; top: 100%; right: 0; margin-top: 10px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            padding: 8px; display: none; flex-direction: column; min-width: 150px; z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .profile-dropdown.show { display: flex; }
+        .profile-dropdown a {
+            color: var(--text); text-decoration: none; font-size: 13px; padding: 10px 12px;
+            border-radius: 8px; transition: background 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .profile-dropdown a:hover { background: rgba(255,255,255,0.05); }
 
-        .content {
-            padding: 32px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
+        /* ── Layout Principal ── */
+        .settings-container {
+            display: flex; gap: 32px; padding: 16px 40px 40px 40px;
+            max-width: 1400px; width: 100%; margin: 0 auto; box-sizing: border-box; align-items: flex-start;
         }
 
-        /* ── Reduced motion ── */
-        @media (prefers-reduced-motion: reduce) {
-            .blob, .badge .dot { animation: none; opacity: 1; transform: none; }
+        /* ── Colonne 1: Nav ── */
+        .settings-nav {
+            width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px;
         }
+        .settings-nav-title {
+            font-size: 11px; text-transform: uppercase; color: var(--muted);
+            margin-bottom: 12px; letter-spacing: 0.5px; font-weight: 600; padding-left: 12px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            border-radius: 12px; color: var(--muted); text-decoration: none;
+            transition: background 0.2s, color 0.2s; border: 1px solid transparent; cursor: pointer;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+        .nav-item.active {
+            background: rgba(124, 58, 237, 0.15); color: var(--text); border: 1px solid rgba(124, 58, 237, 0.3);
+        }
+        .nav-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .nav-item.active .nav-icon { background: transparent; color: var(--brand); }
+        .nav-item:not(.active) .nav-icon { color: var(--muted); }
+        .nav-text { display: flex; flex-direction: column; }
+        .nav-title { font-size: 14px; font-weight: 500; }
+        .nav-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+        /* ── Colonne 2: Formulaire ── */
+        .settings-content {
+            flex: 1; display: flex; flex-direction: column; gap: 24px; min-width: 0;
+        }
+        .tab-content {
+            display: none; flex-direction: column; gap: 24px;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+
+        .section-header {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 8px;
+        }
+        .section-header .icon-box {
+            width: 48px; height: 48px; border-radius: 12px; background: var(--brand);
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;
+        }
+        .settings-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 28px;
+        }
+        .settings-card h3 {
+            font-size: 16px; font-weight: 600; margin: 0 0 24px 0; color: var(--text);
+        }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .field { margin-bottom: 20px; }
+        .field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+        .field input, .field select, .field textarea {
+            width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+            font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand); }
+        .field textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+        
+        /* intl-tel-input override */
+        .iti { width: 100%; display: block; }
+        .iti__country-list { background-color: var(--surface); border: 1px solid var(--border); color: var(--text); }
+        .iti__country.iti__highlight { background-color: var(--surface-hover); }
+
+        .logo-upload-box {
+            background: rgba(255,255,255,0.02); border: 1px dashed var(--border);
+            border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; gap: 12px;
+        }
+        .logo-preview {
+            width: 80px; height: 80px; border-radius: 50%; background: #fff;
+            display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border);
+        }
+        .logo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* ── Colonne 3: Aperçu ── */
+        .settings-sidebar {
+            width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 24px;
+        }
+        .sidebar-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+        .sidebar-card h3 { font-size: 15px; font-weight: 600; margin: 0 0 20px 0; color: var(--text); }
+        .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .status-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+        .status-val { font-size: 13px; font-weight: 500; color: var(--text); }
+        .status-active { color: #4CAF50; }
+        .status-active::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4CAF50; margin-right: 6px; }
+        .status-inactive { color: #F44336; }
+        .status-inactive::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #F44336; margin-right: 6px; }
+        
+        .security-tip { display: flex; flex-direction: column; gap: 12px; }
+        .security-tip-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(124, 58, 237, 0.15); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .security-tip h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+        .security-tip p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+        .support-box { background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+        .schedule-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .schedule-row:last-child { border-bottom: none; }
+        
     </style>
 </head>
 <body>
 
-    <!-- theme-toggle moved to topbar -->
-
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
 {% include 'dashboard/_sidebar.html' %}
 
-<!-- ══════════ MAIN ══════════ -->
 <div class="main">
-    
-    <!-- Topbar (identique aux autres pages) -->
-    <header class="topbar">
-        <div class="topbar-left" style="display: flex; align-items: center; gap: 14px;">
-            <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="display: none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h1 style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-cog" style="color:var(--green);"></i> Paramètres</h1>
+    <header class="settings-topbar">
+        <div class="settings-title-area">
+            <h1>Paramètres</h1>
+            <p>Gérez votre entreprise, votre assistant IA et vos préférences.</p>
         </div>
-        <div class="topbar-right">
+        <div class="settings-actions">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Rechercher... (⌘ K)">
+            </div>
+            <button class="btn-cancel" onclick="window.location.reload()">Annuler</button>
+            <button class="btn-save" onclick="document.getElementById('settings-form').submit()">Enregistrer les modifications</button>
             {% include 'dashboard/_notif_bell.html' %}
-            {% include 'dashboard/_theme_toggle.html' %}
+            <div class="profile-btn" onclick="document.getElementById('profile-dropdown').classList.toggle('show')">
+                <img src="https://ui-avatars.com/api/?name={{ business.nom | urlencode }}&background=random" alt="Profile">
+                <div class="profile-info">
+                    <span class="name">{{ business.nom[:15] }}</span>
+                    <span class="plan">{{ (business.plan_abonnement|capitalize) if business.plan_abonnement else 'Pro Plan' }}</span>
+                </div>
+                <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--muted);"></i>
+                <div id="profile-dropdown" class="profile-dropdown">
+                    <a href="{{ url_for('dashboard.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                </div>
+            </div>
         </div>
     </header>
 
-    <div class="content">
-        <div class="page">
-
-        <!-- Card principale -->
-        <div class="card">
-            <div class="badge">
-                <span class="dot"></span>
-                Configuration du bot
+    <div class="settings-container">
+        <!-- COLONNE 1: Navigation -->
+        <div class="settings-nav">
+            <div class="settings-nav-title">Paramètres</div>
+            
+            <div class="nav-item active" data-tab="tab-entreprise">
+                <div class="nav-icon"><i class="fas fa-store"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Entreprise</span>
+                    <span class="nav-sub">Informations sur votre entreprise</span>
+                </div>
             </div>
-            <h1 class="card-title">⚙️ Réglages du Bot</h1>
-            <p class="card-subtitle">Personnalisez le comportement et les messages de votre assistant WhatsApp.</p>
+            
+            <div class="nav-item" data-tab="tab-assistant">
+                <div class="nav-icon"><i class="fas fa-robot"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Assistant IA</span>
+                    <span class="nav-sub">Configurez votre assistant</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-whatsapp">
+                <div class="nav-icon"><i class="fab fa-whatsapp"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">WhatsApp</span>
+                    <span class="nav-sub">Numéro et paramètres</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-agenda">
+                <div class="nav-icon"><i class="far fa-calendar-alt"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Agenda</span>
+                    <span class="nav-sub">Horaires et disponibilité</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-notifications">
+                <div class="nav-icon"><i class="far fa-bell"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Notifications</span>
+                    <span class="nav-sub">Alertes et sons</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-canaux">
+                <div class="nav-icon"><i class="fas fa-link"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Canaux</span>
+                    <span class="nav-sub">Gérez vos canaux</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-securite">
+                <div class="nav-icon"><i class="fas fa-lock"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Sécurité</span>
+                    <span class="nav-sub">Mot de passe et 2FA</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-abonnement">
+                <div class="nav-icon"><i class="far fa-credit-card"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Abonnement</span>
+                    <span class="nav-sub">Gérez votre plan</span>
+                </div>
+            </div>
+        </div>
 
+        <!-- COLONNE 2: Contenu Central -->
+        <div class="settings-content">
             <form method="POST" id="settings-form">
-
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <!-- Section : Identité -->
-                <div class="section-label">Identité</div>
+                
+                <!-- TAB 1: ENTREPRISE -->
+                <div id="tab-entreprise" class="tab-content active">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-store"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Entreprise</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Modifiez les informations principales de votre entreprise.</p>
+                        </div>
+                    </div>
 
-                <div class="field">
-                    <label>Nom de l'établissement</label>
-                    <input type="text" name="nom" value="{{ business.nom }}" placeholder="ex: Restaurant Chez Marie">
-                </div>
+                    <div class="settings-card">
+                        <h3>Informations générales</h3>
+                        <div class="grid-2">
+                            <div class="field">
+                                <label>Nom de l'entreprise</label>
+                                <input type="text" name="nom" value="{{ business.nom }}" placeholder="ex: Restaurant Chez Marie">
+                            </div>
+                            <div class="field">
+                                <label>Adresse</label>
+                                <input type="text" name="adresse" value="{{ business['adresse'] if business.get('adresse') else '' }}" placeholder="ex: 123 Rue de la Paix, Lomé, Togo">
+                            </div>
+                            
+                            <div class="field" style="position: relative;">
+                                <label>Numéro de téléphone</label>
+                                {% set phone = business['owner_phone'] %}
+                                {% if phone %}
+                                    {% set phone_str = phone | string %}
+                                    <input type="tel" id="owner_phone" value="{{ phone_str if phone_str.startswith('+') else '+' ~ phone_str }}">
+                                {% else %}
+                                    <input type="tel" id="owner_phone" value="">
+                                {% endif %}
+                            </div>
+                            <div class="field">
+                                <label>Site web (optionnel)</label>
+                                <input type="url" name="site_web" value="{{ business['site_web'] if business.get('site_web') else '' }}" placeholder="https://www.monsite.tg">
+                            </div>
+                            
+                            <div class="field">
+                                <label>Email professionnel</label>
+                                <input type="email" name="email" value="{{ business['email'] if business['email'] else '' }}" placeholder="contact@monsite.tg">
+                            </div>
+                            <div class="field" style="grid-row: span 2;">
+                                <label>Logo de l'entreprise</label>
+                                <div class="logo-upload-box">
+                                    <div class="logo-preview">
+                                    {% if business.vitrine_logo_url %}
+                                        <img src="{{ business.vitrine_logo_url }}" alt="Logo">
+                                    {% else %}
+                                        <span style="color: var(--brand); font-weight: 600; font-size: 24px;">{{ business.nom[:1] }}</span>
+                                    {% endif %}
+                                    </div>
+                                    <button type="button" class="btn-cancel" style="padding: 6px 12px;"><i class="fas fa-upload"></i> Modifier le logo</button>
+                                    <span style="font-size: 10px; color: var(--muted);">PNG, JPG ou SVG. Max 2MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="field">
-                    <label>Numéro WhatsApp du Gérant 📱</label>
-                    <input type="text" id="owner_phone" name="owner_phone" value="{% if business['owner_phone'] %}+{{ business['owner_phone'] }}{% endif %}" placeholder="ex: 22890000000">
-                    <div style="margin-top: 8px;">
-                        <a href="{{ url_for('dashboard.test_report', biz_id=business.id) }}" class="back-link" style="font-size:11px; padding: 4px 8px;">
-                            <i class="fas fa-paper-plane"></i> Tester l'envoi du rapport maintenant
-                        </a>
+                    <div class="settings-card">
+                        <h3>Préférences régionales</h3>
+                        <p style="font-size: 13px; color: var(--muted); margin: -16px 0 20px 0;">Définissez les paramètres par défaut pour votre entreprise.</p>
+                        
+                        <div class="grid-2">
+                            <div class="field">
+                                <label>Fuseau horaire</label>
+                                <select><option>(GMT+00:00) Lomé</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Langue</label>
+                                <select><option>Français</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Devise</label>
+                                <select><option>XOF - Franc CFA</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Format de date</label>
+                                <select><option>31/12/2025</option></select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="field">
-                    <label>Heure d'envoi du rapport quotidien 🕒</label>
-                    <input type="time" name="daily_report_time" value="{{ business['daily_report_time'] or '19:00' }}">
-                </div>
-
-                <div class="section-label" style="margin-top: 24px;">Agenda & Rendez-vous</div>
-                <div class="field">
-                    <label>Tampon entre deux réservations (Minutes) ⏳</label>
-                    <input type="number" name="buffer_minutes" value="{{ business['buffer_minutes'] or 0 }}" placeholder="ex: 15 (Pause nettoyage/préparation)">
-                </div>
-
-                <div class="field">
-                    <label>Horaires d'ouverture de l'établissement</label>
-                    <div id="schedule-builder" style="background: var(--surface); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
-                        <!-- généré par JS -->
+                <!-- TAB 2: ASSISTANT IA -->
+                <div id="tab-assistant" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-robot"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Assistant IA</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Personnalisez le comportement et les réponses de votre intelligence artificielle.</p>
+                        </div>
                     </div>
-                    <!-- On va injecter JSON brut ici pour que JS puisse le lire au chargement -->
-                    <textarea id="raw_horaires_json" style="display:none;">{{ business['horaires_json'] or '{}' }}</textarea>
-                    <textarea name="horaires_json" id="emp_horaires" style="display:none;"></textarea>
-                </div>
 
-                <div class="field">
-                    <label>Personnalité et Instructions (Prompt)</label>
-                    <textarea name="prompt" placeholder="Décrivez ici la personnalité et le rôle de votre bot…">{{ business.prompt }}</textarea>
-                </div>
-
-                <!-- Section : Comportement -->
-                <div class="section-label">Comportement</div>
-
-                <div class="field">
-                    <label>Délai de regroupement des messages (secondes)</label>
-                    <input type="number" name="debounce_delay" value="{{ business.debounce_delay if business.debounce_delay is not none else 3 }}" min="0" max="15" placeholder="ex: 3">
-                    <small style="color: var(--muted); font-size: 11px;">Temps que le bot attend avant de répondre pour regrouper plusieurs petits messages. Mettez 0 pour une réponse instantanée.</small>
-                </div>
-
-                <!-- Section : Messages automatiques -->
-                <div class="section-label">Messages automatiques</div>
-
-                <div class="field">
-                    <label>Message de Confirmation ✅</label>
-                    <input type="text" name="msg_confirm" value="{{ business.msg_confirm }}" placeholder="ex: Votre réservation est confirmée !">
-                </div>
-
-                <div class="field">
-                    <label>Message d'Annulation ❌</label>
-                    <input type="text" name="msg_cancel" value="{{ business.msg_cancel }}" placeholder="ex: Votre réservation a été annulée.">
-                </div>
-
-                <div class="field">
-                    <label>Message de Prêt 🛍️</label>
-                    <input type="text" name="msg_ready" value="{{ business.msg_ready }}" placeholder="ex: Votre commande est prête !">
-                </div>
-
-                <!-- Section : Affichage et Audio -->
-                <div class="section-label">Préférences d'Affichage & Audio</div>
-
-                <div class="field">
-                    <label>Son pour les Nouveaux Messages 💬</label>
-                    <select id="notif-sound-message" style="width:100%; padding:12px; border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;">
-                        <option value="ding_ding">Standard (Ding-Ding)</option>
-                        <option value="pop">Pop Doux</option>
-                        <option value="chime">Carillon Zen</option>
-                        <option value="success">Magique (Succès)</option>
-                        <option value="alert">Alerte (Bip Bip Bip)</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label>Son pour les Nouvelles Commandes 🛒</label>
-                    <select id="notif-sound-order" style="width:100%; padding:12px; border-radius:10px; background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;">
-                        <option value="success">Magique (Succès)</option>
-                        <option value="ding_ding">Standard (Ding-Ding)</option>
-                        <option value="pop">Pop Doux</option>
-                        <option value="chime">Carillon Zen</option>
-                        <option value="alert">Alerte (Bip Bip Bip)</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label>Volume des notifications sonores</label>
-                    <div style="display:flex; align-items:center; gap:12px; background:var(--surface); padding:10px 16px; border-radius:10px; border:1px solid var(--border);">
-                        <i class="fas fa-volume-down" style="color:var(--muted)"></i>
-                        <input type="range" id="notif-volume-slider" min="0" max="1" step="0.05" value="0.3" style="flex:1; cursor:pointer;">
-                        <i class="fas fa-volume-up" style="color:var(--text)"></i>
-                        <span id="notif-volume-val" style="font-size:12px; font-weight:bold; width:45px; text-align:right; color:var(--text);">30%</span>
+                    <div class="settings-card">
+                        <h3>Personnalité et Instructions</h3>
+                        <div class="field">
+                            <label>Prompt principal de l'IA</label>
+                            <textarea name="prompt" placeholder="Décrivez ici la personnalité et le rôle de votre bot…">{{ business.prompt }}</textarea>
+                            <small style="color: var(--muted); font-size: 11px;">Ces instructions dictent la façon dont l'IA interagit avec vos clients.</small>
+                        </div>
                     </div>
-                    <p style="font-size:11px; color:var(--muted); margin-top:6px;">Ajuste le volume du son joué à la réception d'un nouveau message ou commande. (Sera sauvegardé pour cet appareil).</p>
-                </div>
-                <!-- Section : Sécurité -->
-                <div class="section-label">Sécurité</div>
 
-                <div class="field">
-                    <label>Modifier mon Mot de Passe</label>
-                    <input type="password" name="password" placeholder="Laissez vide pour conserver l'actuel">
+                    <div class="settings-card">
+                        <h3>Messages automatiques & Comportement</h3>
+                        <div class="grid-2">
+                            <div class="field">
+                                <label>Message de Confirmation ✅</label>
+                                <input type="text" name="msg_confirm" value="{{ business.msg_confirm }}">
+                            </div>
+                            <div class="field">
+                                <label>Message d'Annulation ❌</label>
+                                <input type="text" name="msg_cancel" value="{{ business.msg_cancel }}">
+                            </div>
+                            <div class="field">
+                                <label>Message de Prêt 🛍️</label>
+                                <input type="text" name="msg_ready" value="{{ business.msg_ready }}">
+                            </div>
+                            <div class="field">
+                                <label>Délai de groupement (secondes)</label>
+                                <input type="number" name="debounce_delay" value="{{ business.debounce_delay if business.debounce_delay is not none else 3 }}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-submit">
-                    Enregistrer les modifications →
-                </button>
+                <!-- TAB 3: AGENDA -->
+                <div id="tab-agenda" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="far fa-calendar-alt"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Agenda & Horaires</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Définissez vos horaires d'ouverture et règles de réservation.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Horaires d'ouverture de l'établissement</h3>
+                        <div class="field">
+                            <div id="schedule-builder" style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border);"></div>
+                            <textarea id="raw_horaires_json" style="display:none;">{{ business['horaires_json'] or '{}' }}</textarea>
+                            <textarea name="horaires_json" id="emp_horaires" style="display:none;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Paramètres des Réservations</h3>
+                        <div class="grid-2">
+                            <div class="field">
+                                <label>Marge / Tampon (Minutes) ⏳</label>
+                                <input type="number" name="buffer_minutes" value="{{ business['buffer_minutes'] or 0 }}" placeholder="ex: 15 (Pause nettoyage/préparation)">
+                            </div>
+                            <div class="field">
+                                <label>Heure du rapport quotidien 🕒</label>
+                                <input type="time" name="daily_report_time" value="{{ business['daily_report_time'] or '19:00' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: NOTIFICATIONS -->
+                <div id="tab-notifications" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="far fa-bell"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Notifications</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez les alertes sonores et visuelles de l'application.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Sons d'alerte</h3>
+                        <div class="grid-2">
+                            <div class="field">
+                                <label>Son pour les Nouveaux Messages 💬</label>
+                                <select id="notif-sound-message">
+                                    <option value="ding_ding">Standard (Ding-Ding)</option>
+                                    <option value="pop">Pop Doux</option>
+                                    <option value="chime">Carillon Zen</option>
+                                    <option value="success">Magique (Succès)</option>
+                                    <option value="alert">Alerte (Bip Bip Bip)</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Son pour les Nouvelles Commandes 🛒</label>
+                                <select id="notif-sound-order">
+                                    <option value="success">Magique (Succès)</option>
+                                    <option value="ding_ding">Standard (Ding-Ding)</option>
+                                    <option value="pop">Pop Doux</option>
+                                    <option value="chime">Carillon Zen</option>
+                                    <option value="alert">Alerte (Bip Bip Bip)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field" style="margin-top: 16px;">
+                            <label>Volume des notifications (<span id="notif-volume-val">30%</span>)</label>
+                            <input type="range" id="notif-volume-slider" min="0" max="1" step="0.05" value="0.3" style="width:100%; accent-color:var(--brand);">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 5: SÉCURITÉ -->
+                <div id="tab-securite" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Sécurité</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos accès et la sécurité de votre compte.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Changer le mot de passe</h3>
+                        <div class="field">
+                            <label>Nouveau mot de passe</label>
+                            <input type="password" name="password" placeholder="Laissez vide pour conserver l'actuel">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 6: ABONNEMENT -->
+                <div id="tab-abonnement" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box" style="background: #FFB020;"><i class="fas fa-credit-card"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Abonnement</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez votre formule et consultez vos dates d'abonnement.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Détails de l'abonnement actuel -->
+                    <div class="settings-card" style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Détails de l'abonnement actuel</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                            <div>
+                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Forfait Actuel</label>
+                                <div style="font-size:18px; font-weight:700; color:var(--brand);">
+                                    {{ (business.plan_abonnement|upper) if business.plan_abonnement else 'FREE' }}
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de début</label>
+                                <div style="font-size:15px; font-weight:600; color:var(--text);">
+                                    {{ business.date_debut_abonnement.split(' ')[0] if business.date_debut_abonnement else 'N/A' }}
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de fin</label>
+                                <div style="font-size:15px; font-weight:600; color:var(--text);">
+                                    {{ business.date_fin_abonnement.split(' ')[0] if business.date_fin_abonnement else 'Renouvellement auto.' }}
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Statut</label>
+                                <div>
+                                    <span style="background:var(--green-bg); color:var(--green); font-size:12px; font-weight:700; padding:4px 8px; border-radius:4px; border:1px solid rgba(37,211,102,0.2);">Actif</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade / Changer de plan -->
+                    <div class="settings-card">
+                        <h3 style="margin-bottom: 8px;">Passer à une autre formule</h3>
+                        <p style="color: var(--muted); font-size: 13px; margin-bottom: 24px;">Sélectionnez le forfait qui correspond le mieux à l'évolution de votre activité pour débloquer de nouvelles capacités.</p>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            
+                            <!-- FREE -->
+                            <div style="border: 2px solid {% if business.plan_abonnement == 'FREE' %}var(--brand){% else %}var(--border){% endif %}; border-radius: 12px; padding: 20px; position: relative;">
+                                {% if business.plan_abonnement == 'FREE' %}<div style="position: absolute; top: -10px; right: 10px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">ACTUEL</div>{% endif %}
+                                <div style="font-size: 14px; font-weight: 700; color: var(--muted); margin-bottom: 8px;">FREE</div>
+                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Test<span style="font-size: 12px; color: var(--muted); font-weight: 400;">/14 jours</span></div>
+                                <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; font-size: 13px; color: var(--text);">
+                                    <li style="margin-bottom: 8px;">✓ 50 msgs IA/mois</li>
+                                    <li style="margin-bottom: 8px;">✓ Catalogue web</li>
+                                </ul>
+                                <button onclick="upgradePlan('FREE')" class="btn-primary" style="width: 100%; padding: 10px; font-size:13px; text-align: center; {% if business.plan_abonnement == 'FREE' %}background: var(--surface); color: var(--brand); border: 1px solid var(--brand);{% endif %}">
+                                    {% if business.plan_abonnement == 'FREE' %}Votre Plan{% else %}Sélectionner{% endif %}
+                                </button>
+                            </div>
+                            
+                            <!-- DISCOVERY -->
+                            <div style="border: 2px solid {% if business.plan_abonnement == 'DISCOVERY' %}var(--brand){% else %}var(--border){% endif %}; border-radius: 12px; padding: 20px; position: relative;">
+                                {% if business.plan_abonnement == 'DISCOVERY' %}<div style="position: absolute; top: -10px; right: 10px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">ACTUEL</div>{% endif %}
+                                <div style="font-size: 14px; font-weight: 700; color: #58A6FF; margin-bottom: 8px;">DISCOVERY</div>
+                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Starter</div>
+                                <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; font-size: 13px; color: var(--text);">
+                                    <li style="margin-bottom: 8px;">✓ 500 msgs IA/mois</li>
+                                    <li style="margin-bottom: 8px;">✓ Gestion commandes</li>
+                                </ul>
+                                <button onclick="upgradePlan('DISCOVERY')" class="btn-primary" style="width: 100%; padding: 10px; font-size:13px; text-align: center; {% if business.plan_abonnement == 'DISCOVERY' %}background: var(--surface); color: var(--brand); border: 1px solid var(--brand);{% endif %}">
+                                    {% if business.plan_abonnement == 'DISCOVERY' %}Votre Plan{% else %}Sélectionner{% endif %}
+                                </button>
+                            </div>
+
+                            <!-- GROWTH -->
+                            <div style="border: 2px solid {% if business.plan_abonnement == 'GROWTH' %}var(--brand){% else %}var(--border){% endif %}; border-radius: 12px; padding: 20px; position: relative; background: rgba(37, 211, 102, 0.03);">
+                                {% if business.plan_abonnement == 'GROWTH' %}<div style="position: absolute; top: -10px; right: 10px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">ACTUEL</div>{% endif %}
+                                <div style="font-size: 14px; font-weight: 700; color: #25D366; margin-bottom: 8px;">GROWTH</div>
+                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Business</div>
+                                <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; font-size: 13px; color: var(--text);">
+                                    <li style="margin-bottom: 8px;">✓ 2000 msgs IA/mois</li>
+                                    <li style="margin-bottom: 8px;">✓ Marketing basique</li>
+                                </ul>
+                                <button onclick="upgradePlan('GROWTH')" class="btn-primary" style="width: 100%; padding: 10px; font-size:13px; text-align: center; {% if business.plan_abonnement == 'GROWTH' %}background: var(--surface); color: var(--brand); border: 1px solid var(--brand);{% else %}background: #25D366; color: white; border: none;{% endif %}">
+                                    {% if business.plan_abonnement == 'GROWTH' %}Votre Plan{% else %}Passer à Growth{% endif %}
+                                </button>
+                            </div>
+
+                            <!-- SCALE -->
+                            <div style="border: 2px solid {% if business.plan_abonnement == 'SCALE' %}var(--brand){% else %}var(--border){% endif %}; border-radius: 12px; padding: 20px; position: relative;">
+                                {% if business.plan_abonnement == 'SCALE' %}<div style="position: absolute; top: -10px; right: 10px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">ACTUEL</div>{% endif %}
+                                <div style="font-size: 14px; font-weight: 700; color: #F0B429; margin-bottom: 8px;">SCALE</div>
+                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Automation+</div>
+                                <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; font-size: 13px; color: var(--text);">
+                                    <li style="margin-bottom: 8px;">✓ +10,000 msgs IA</li>
+                                    <li style="margin-bottom: 8px;">✓ Marketing Avancé</li>
+                                </ul>
+                                <button onclick="upgradePlan('SCALE')" class="btn-primary" style="width: 100%; padding: 10px; font-size:13px; text-align: center; {% if business.plan_abonnement == 'SCALE' %}background: var(--surface); color: var(--brand); border: 1px solid var(--brand);{% else %}background: #1a1a1a; color: #F0B429; border: none;{% endif %}">
+                                    {% if business.plan_abonnement == 'SCALE' %}Votre Plan{% else %}Passer à Scale{% endif %}
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Les autres onglets vides pour le moment (WhatsApp, Canaux) -->
+                <div id="tab-whatsapp" class="tab-content">
+                    <div class="section-header">
+                        <div class="icon-box" style="background: #25D366;"><i class="fab fa-whatsapp"></i></div>
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Intégration WhatsApp</h2>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez l'état de votre connexion WhatsApp Business API.</p>
+                        </div>
+                    </div>
+                    
+                    {% if business.is_approved == 1 and business.token_wa and business.whatsapp_phone_id %}
+                        <!-- STATE 2: Approved & Connected (Meta for Developers Style Preview) -->
+                        <div class="settings-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; padding: 0;">
+                            <div style="background: #25D366; color: white; padding: 20px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Profil WhatsApp Business</h3>
+                                    <span style="font-size: 13px; opacity: 0.9;">Compte officiel connecté</span>
+                                </div>
+                                <i class="fab fa-whatsapp" style="font-size: 32px;"></i>
+                            </div>
+                            
+                            <div style="padding: 24px; display: flex; gap: 24px; align-items: flex-start;">
+                                <!-- Avatar -->
+                                <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: #e0e0e0; flex-shrink: 0; border: 2px solid #25D366;">
+                                    <img src="{{ business.vitrine_logo_url if business.vitrine_logo_url else 'https://ui-avatars.com/api/?name=' + (business.nom | urlencode) + '&background=random' }}" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                                
+                                <!-- Details -->
+                                <div style="flex-grow: 1;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: var(--text);">{{ business.nom }}</h2>
+                                        <i class="fas fa-check-circle" style="color: #25D366; font-size: 16px;" title="Compte Vérifié"></i>
+                                    </div>
+                                    <p style="color: var(--brand); font-size: 13px; font-weight: 500; margin: 0 0 16px 0;">{{ business.business_type | capitalize }}</p>
+                                    
+                                    <div style="display: grid; gap: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
+                                            <i class="fas fa-phone-alt" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <span style="font-size: 14px; font-weight: 500;">{{ business.requested_bot_phone if business.requested_bot_phone else 'Numéro masqué' }}</span>
+                                        </div>
+                                        
+                                        {% if business.adresse %}
+                                        <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
+                                            <i class="fas fa-map-marker-alt" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <span style="font-size: 14px;">{{ business.adresse }}</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if business.email %}
+                                        <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
+                                            <i class="fas fa-envelope" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <span style="font-size: 14px;">{{ business.email }}</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div style="display: flex; align-items: flex-start; gap: 12px; color: var(--text); margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--border);">
+                                            <i class="fas fa-info-circle" style="color: var(--muted); width: 16px; text-align: center; margin-top: 2px;"></i>
+                                            <span style="font-size: 13px; color: var(--muted); line-height: 1.5;">{{ business.vitrine_description if business.vitrine_description else "Compte Business officiel propulsé par Vira." }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- STATE 1: Not Connected or Pending Approval -->
+                        <div class="settings-card">
+                            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
+                                <div style="flex-grow: 1;">
+                                    <h3 style="margin-bottom: 8px;">Connecter un numéro WhatsApp</h3>
+                                    <p style="color: var(--muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5;">Pour déployer votre assistant IA, vous devez associer un numéro de téléphone qui sera utilisé exclusivement pour l'API WhatsApp Business. Entrez le numéro ci-dessous pour soumettre votre demande.</p>
+                                    
+                                    <div class="field" style="position: relative; max-width: 400px;">
+                                        <label>Numéro WhatsApp dédié</label>
+                                        {% set bot_phone = business['requested_bot_phone'] %}
+                                        {% if bot_phone %}
+                                            {% set bot_phone_str = bot_phone | string %}
+                                            <input type="tel" id="requested_bot_phone" value="{{ bot_phone_str if bot_phone_str.startswith('+') else '+' ~ bot_phone_str }}">
+                                        {% else %}
+                                            <input type="tel" id="requested_bot_phone" value="">
+                                        {% endif %}
+                                        <p style="font-size: 11px; color: var(--muted); margin-top: 6px;"><i class="fas fa-exclamation-triangle" style="color: #FF9800;"></i> Ce numéro ne doit pas être actif sur l'application WhatsApp standard ou WhatsApp Business mobile.</p>
+                                    </div>
+                                    
+                                    {% if business.requested_bot_phone %}
+                                    <div style="margin-top: 24px; padding: 12px 16px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #FF9800; border-radius: 4px;">
+                                        <div style="display: flex; align-items: center; gap: 8px; color: #FF9800; font-weight: 500; font-size: 14px; margin-bottom: 4px;">
+                                            <i class="fas fa-hourglass-half"></i> Demande en cours de traitement
+                                        </div>
+                                        <p style="margin: 0; font-size: 12px; color: var(--muted);">L'équipe technique configure actuellement votre numéro avec l'API Meta. Vous recevrez une notification dès que l'intégration sera opérationnelle.</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                </div>
+                                
+                                <div style="width: 200px; padding: 24px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; text-align: center; flex-shrink: 0;">
+                                    <i class="fab fa-whatsapp" style="font-size: 48px; color: {% if business.requested_bot_phone %}#FF9800{% else %}var(--border){% endif %}; opacity: 0.8; margin-bottom: 12px;"></i>
+                                    <div style="font-size: 13px; font-weight: 500; color: var(--text);">
+                                        {% if business.requested_bot_phone %}
+                                            En attente<br>d'approbation
+                                        {% else %}
+                                            Non configuré
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div id="tab-canaux" class="tab-content">
+                    <div class="settings-card"><h3>Vos canaux connectés</h3><div id="channels-list"></div></div>
+                </div>
 
             </form>
+
+            <!-- Support Banner (toujours visible en bas) -->
+            <div class="support-box">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; color: var(--text);">Des questions sur les paramètres ?</h4>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">Consultez notre centre d'aide ou contactez le support.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-cancel" style="display: flex; align-items: center; gap: 8px;"><i class="far fa-question-circle"></i> Centre d'aide</button>
+                    <button class="btn-cancel" style="display: flex; align-items: center; gap: 8px;"><i class="far fa-comment-dots"></i> Contacter le support</button>
+                </div>
+            </div>
         </div>
 
+        <!-- COLONNE 3: Sidebar -->
+        <div class="settings-sidebar">
+            <div class="sidebar-card">
+                <h3>Aperçu</h3>
+                <div class="status-row">
+                    <span class="status-label"><i class="fas fa-toggle-on"></i> Statut</span>
+                    <span class="status-val {% if business['is_active'] %}status-active{% else %}status-inactive{% endif %}">
+                        {% if business['is_active'] %}Actif{% else %}Inactif{% endif %}
+                    </span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label"><i class="far fa-calendar-check"></i> Membre depuis</span>
+                    <span class="status-val">{{ business['date_debut_abonnement'].split(' ')[0] if business['date_debut_abonnement'] else 'Inconnu' }}</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label"><i class="fas fa-history"></i> Dernière modif.</span>
+                    <span class="status-val">Aujourd'hui</span>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <div class="security-tip">
+                    <div class="security-tip-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>Conseil de sécurité</h4>
+                    <p>Gardez vos informations à jour. Des informations exactes permettent à votre assistant IA de mieux servir vos clients.</p>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const volSlider = document.getElementById('notif-volume-slider');
-            const volVal = document.getElementById('notif-volume-val');
-            const bizId = "{{ biz_id }}";
-            
-            const LS_VOL_KEY = 'notif_volume_' + bizId;
-            let savedVol = localStorage.getItem(LS_VOL_KEY);
-            if (savedVol !== null) {
-                volSlider.value = parseFloat(savedVol);
-            } else {
-                volSlider.value = 0.3; // Default
-            }
-            
-            function updateVolText() {
-                volVal.textContent = Math.round(volSlider.value * 100) + '%';
-            }
-            updateVolText();
-            
-            volSlider.addEventListener('input', function() {
-                updateVolText();
-                localStorage.setItem(LS_VOL_KEY, volSlider.value);
-            });
-            
-            const selMsg = document.getElementById('notif-sound-message');
-            const selOrder = document.getElementById('notif-sound-order');
-            
-            const LS_SND_MSG_KEY = 'notif_snd_msg_' + bizId;
-            const LS_SND_ORD_KEY = 'notif_snd_ord_' + bizId;
-            
-            selMsg.value = localStorage.getItem(LS_SND_MSG_KEY) || 'ding_ding';
-            selOrder.value = localStorage.getItem(LS_SND_ORD_KEY) || 'success';
-            
-            selMsg.addEventListener('change', function() {
-                localStorage.setItem(LS_SND_MSG_KEY, this.value);
-                playAudioPreset(this.value, parseFloat(volSlider.value));
-            });
-            
-            selOrder.addEventListener('change', function() {
-                localStorage.setItem(LS_SND_ORD_KEY, this.value);
-                playAudioPreset(this.value, parseFloat(volSlider.value));
-            });
-
-            function playAudioPreset(preset, v) {
-                try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContext) return;
-                    const ctx = new AudioContext();
-                    if (ctx.state === 'suspended') ctx.resume();
-                    
-                    const playTone = (type, freq, time, duration, vol, slideFreq) => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        osc.type = type;
-                        osc.frequency.setValueAtTime(freq, time);
-                        if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, time + duration);
-                        gain.gain.setValueAtTime(0, time);
-                        gain.gain.linearRampToValueAtTime(vol, time + Math.min(0.02, duration/2));
-                        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.start(time);
-                        osc.stop(time + duration);
-                    };
-                    
-                    const t = ctx.currentTime;
-                    if (preset === 'pop') {
-                        playTone('sine', 800, t, 0.1, v, 300);
-                    } else if (preset === 'chime') {
-                        playTone('sine', 659.25, t, 0.4, v); // E5
-                        playTone('sine', 880, t + 0.15, 0.4, v); // A5
-                        playTone('sine', 1108.73, t + 0.3, 0.6, v); // C#6
-                    } else if (preset === 'success') {
-                        playTone('triangle', 523.25, t, 0.2, v); // C5
-                        playTone('triangle', 659.25, t + 0.1, 0.2, v); // E5
-                        playTone('triangle', 783.99, t + 0.2, 0.2, v); // G5
-                        playTone('triangle', 1046.50, t + 0.3, 0.5, v); // C6
-                    } else if (preset === 'alert') {
-                        playTone('square', 880, t, 0.1, v*0.5);
-                        playTone('square', 880, t + 0.2, 0.1, v*0.5);
-                        playTone('square', 880, t + 0.4, 0.1, v*0.5);
-                    } else { // ding_ding
-                        playTone('sine', 880, t, 0.3, v);
-                        playTone('sine', 1108.73, t + 0.1, 0.3, v);
-                    }
-                } catch(e) {}
-            }
-            
-            volSlider.addEventListener('change', function() {
-                // Jouer le son test au relâchement du clic (son des messages par défaut)
-                playAudioPreset(selMsg.value, parseFloat(volSlider.value));
-            });
-            
-            // --- Logique du Builder d'horaires ---
-            const jours = [
-                { id: 'lun', label: 'Lundi' },
-                { id: 'mar', label: 'Mardi' },
-                { id: 'mer', label: 'Mercredi' },
-                { id: 'jeu', label: 'Jeudi' },
-                { id: 'ven', label: 'Vendredi' },
-                { id: 'sam', label: 'Samedi' },
-                { id: 'dim', label: 'Dimanche' }
-            ];
-
-            function buildScheduleUI(targetId, hiddenInputId) {
-                const container = document.getElementById(targetId);
-                if (!container) return;
-                container.innerHTML = '';
-                
-                jours.forEach(j => {
-                    const row = document.createElement('div');
-                    row.style.display = 'flex';
-                    row.style.alignItems = 'center';
-                    row.style.justifyContent = 'space-between';
-                    row.style.marginBottom = '12px';
-                    row.style.borderBottom = '1px solid var(--border-light)';
-                    row.style.paddingBottom = '12px';
-                    
-                    row.innerHTML = `
-                        <div style="width: 120px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin:0;">
-                                <input type="checkbox" id="check_${j.id}" checked style="accent-color: var(--green); width:18px; height:18px;">
-                                <span style="font-weight: 500;">${j.label}</span>
-                            </label>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="time" id="start_${j.id}" value="09:00" class="form-control" style="width: auto; padding: 6px 12px;">
-                            <span style="color: var(--muted);">à</span>
-                            <input type="time" id="end_${j.id}" value="18:00" class="form-control" style="width: auto; padding: 6px 12px;">
-                        </div>
-                    `;
-                    
-                    const checkbox = row.querySelector(`#check_${j.id}`);
-                    const startInput = row.querySelector(`#start_${j.id}`);
-                    const endInput = row.querySelector(`#end_${j.id}`);
-                    
-                    const updateValues = () => {
-                        updateScheduleJSON(hiddenInputId);
-                    };
-
-                    checkbox.addEventListener('change', function() {
-                        startInput.disabled = !this.checked;
-                        endInput.disabled = !this.checked;
-                        if(!this.checked) {
-                            startInput.style.opacity = '0.4';
-                            endInput.style.opacity = '0.4';
-                        } else {
-                            startInput.style.opacity = '1';
-                            endInput.style.opacity = '1';
-                        }
-                        updateValues();
-                    });
-
-                    startInput.addEventListener('change', updateValues);
-                    endInput.addEventListener('change', updateValues);
-                    
-                    container.appendChild(row);
-                });
-                
-                // Remove last border
-                if(container.lastChild) {
-                    container.lastChild.style.borderBottom = 'none';
-                    container.lastChild.style.paddingBottom = '0';
-                    container.lastChild.style.marginBottom = '0';
-                }
-            }
-
-            function updateScheduleJSON(hiddenInputId) {
-                const data = {};
-                jours.forEach(j => {
-                    const checked = document.getElementById(`check_${j.id}`).checked;
-                    if(checked) {
-                        const start = document.getElementById(`start_${j.id}`).value || "09:00";
-                        const end = document.getElementById(`end_${j.id}`).value || "18:00";
-                        data[j.id] = [start, end];
-                    } else {
-                        data[j.id] = [];
-                    }
-                });
-                document.getElementById(hiddenInputId).value = JSON.stringify(data);
-            }
-
-            function loadScheduleIntoUI(jsonStr, hiddenInputId) {
-                try {
-                    const data = JSON.parse(jsonStr || '{}');
-                    jours.forEach(j => {
-                        const checkbox = document.getElementById(`check_${j.id}`);
-                        const startInput = document.getElementById(`start_${j.id}`);
-                        const endInput = document.getElementById(`end_${j.id}`);
-                        
-                        if(data[j.id] && data[j.id].length >= 2) {
-                            checkbox.checked = true;
-                            startInput.value = data[j.id][0];
-                            endInput.value = data[j.id][1];
-                        } else {
-                            checkbox.checked = false;
-                        }
-                        // Trigger visual update
-                        checkbox.dispatchEvent(new Event('change'));
-                    });
-                    updateScheduleJSON(hiddenInputId);
-                } catch(e) {
-                    console.error("Invalid JSON schedule:", e);
-                }
-            }
-
-            // Init builder
-            if(document.getElementById('schedule-builder')) {
-                buildScheduleUI('schedule-builder', 'emp_horaires');
-                const rawJson = document.getElementById('raw_horaires_json').value;
-                loadScheduleIntoUI(rawJson, 'emp_horaires');
-            }
-
-        });
-    </script>
-        </div>
-    </div> <!-- /content -->
-</div> <!-- /main -->
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
 <script>
+    // Tab switching logic
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Check if data-tab exists, otherwise ignore (some tabs might not have it yet)
+            const targetTab = item.getAttribute('data-tab');
+            if (!targetTab) return;
+            
+            // Save to sessionStorage
+            sessionStorage.setItem('activeSettingsTab', targetTab);
+            
+            // Remove active from all nav items
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            // Add active to clicked nav item
+            item.classList.add('active');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            // Show targeted tab content
+            const tabEl = document.getElementById(targetTab);
+            if(tabEl) tabEl.classList.add('active');
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTab = sessionStorage.getItem('activeSettingsTab');
+        if (savedTab) {
+            const tabBtn = document.querySelector(`.nav-item[data-tab="${savedTab}"]`);
+            if (tabBtn) {
+                // Remove default active
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                
+                tabBtn.classList.add('active');
+                const tabEl = document.getElementById(savedTab);
+                if(tabEl) tabEl.classList.add('active');
+            }
+        }
+    });
+
+    // Fix for intl-tel-input: parse the phone string appropriately
     const phoneInput = document.querySelector("#owner_phone");
+    // Ensure we have a hidden input for the actual value to submit
+    const hiddenPhoneInput = document.createElement("input");
+    hiddenPhoneInput.type = "hidden";
+    hiddenPhoneInput.name = "owner_phone";
+    hiddenPhoneInput.value = "{{ business['owner_phone'] if business.get('owner_phone') else '' }}";
+    
+    phoneInput.parentNode.insertBefore(hiddenPhoneInput, phoneInput.nextSibling);
+    
+    // Remove the name from the visible input so it doesn't get submitted directly
+    phoneInput.removeAttribute("name");
+
     const iti = window.intlTelInput(phoneInput, {
         initialCountry: "auto",
         geoIpLookup: function(callback) {
@@ -698,14 +912,202 @@
         utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
         separateDialCode: true
     });
+    
+    // Update hidden input dynamically on change ONLY
+    function updateHiddenPhone() {
+        if(phoneInput.value.trim() !== '') {
+            hiddenPhoneInput.value = iti.getNumber();
+        } else {
+            hiddenPhoneInput.value = '';
+        }
+    }
+    phoneInput.addEventListener('input', updateHiddenPhone);
+    phoneInput.addEventListener('change', updateHiddenPhone);
+    phoneInput.addEventListener('countrychange', updateHiddenPhone);
 
-    document.getElementById("settings-form").addEventListener("submit", function() {
-        phoneInput.value = iti.getNumber();
-    });
+    // Setup for requested_bot_phone (WhatsApp integration request)
+    const botPhoneInput = document.querySelector("#requested_bot_phone");
+    if (botPhoneInput) {
+        const hiddenBotPhoneInput = document.createElement("input");
+        hiddenBotPhoneInput.type = "hidden";
+        hiddenBotPhoneInput.name = "requested_bot_phone";
+        hiddenBotPhoneInput.value = "{{ business['requested_bot_phone'] if business.get('requested_bot_phone') else '' }}";
+        
+        botPhoneInput.parentNode.insertBefore(hiddenBotPhoneInput, botPhoneInput.nextSibling);
+        botPhoneInput.removeAttribute("name");
+
+        const itiBot = window.intlTelInput(botPhoneInput, {
+            initialCountry: "auto",
+            geoIpLookup: function(callback) {
+                fetch("https://ipapi.co/json")
+                  .then(res => res.json())
+                  .then(data => callback(data.country_code))
+                  .catch(() => callback("tg"));
+            },
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+            separateDialCode: true
+        });
+        
+        function updateHiddenBotPhone() {
+            if(botPhoneInput.value.trim() !== '') {
+                hiddenBotPhoneInput.value = itiBot.getNumber();
+            } else {
+                hiddenBotPhoneInput.value = '';
+            }
+        }
+        botPhoneInput.addEventListener('input', updateHiddenBotPhone);
+        botPhoneInput.addEventListener('change', updateHiddenBotPhone);
+        botPhoneInput.addEventListener('countrychange', updateHiddenBotPhone);
+    }
 </script>
 
-<!-- Fichier JS partagé (toggle + persistance) -->
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Volume ---
+        const volSlider = document.getElementById('notif-volume-slider');
+        const volVal = document.getElementById('notif-volume-val');
+        const bizId = "{{ biz_id }}";
+        
+        const LS_VOL_KEY = 'notif_volume_' + bizId;
+        let savedVol = localStorage.getItem(LS_VOL_KEY);
+        if (savedVol !== null) { volSlider.value = parseFloat(savedVol); }
+        else { volSlider.value = 0.3; }
+        
+        function updateVolText() { volVal.textContent = Math.round(volSlider.value * 100) + '%'; }
+        updateVolText();
+        
+        volSlider.addEventListener('input', function() {
+            updateVolText();
+            localStorage.setItem(LS_VOL_KEY, volSlider.value);
+        });
+        
+        const selMsg = document.getElementById('notif-sound-message');
+        const selOrder = document.getElementById('notif-sound-order');
+        const LS_SND_MSG_KEY = 'notif_snd_msg_' + bizId;
+        const LS_SND_ORD_KEY = 'notif_snd_ord_' + bizId;
+        
+        selMsg.value = localStorage.getItem(LS_SND_MSG_KEY) || 'ding_ding';
+        selOrder.value = localStorage.getItem(LS_SND_ORD_KEY) || 'success';
+        
+        selMsg.addEventListener('change', function() { localStorage.setItem(LS_SND_MSG_KEY, this.value); });
+        selOrder.addEventListener('change', function() { localStorage.setItem(LS_SND_ORD_KEY, this.value); });
+        
+        // --- Builder Horaires ---
+        const jours = [
+            { id: 'lun', label: 'Lundi' }, { id: 'mar', label: 'Mardi' }, { id: 'mer', label: 'Mercredi' },
+            { id: 'jeu', label: 'Jeudi' }, { id: 'ven', label: 'Vendredi' }, { id: 'sam', label: 'Samedi' }, { id: 'dim', label: 'Dimanche' }
+        ];
+
+        function buildScheduleUI(targetId, hiddenInputId) {
+            const container = document.getElementById(targetId);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            jours.forEach(j => {
+                const row = document.createElement('div');
+                row.className = 'schedule-row';
+                row.innerHTML = `
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin:0; font-size:13px;">
+                        <input type="checkbox" id="check_${j.id}" checked style="accent-color: var(--brand); width:16px; height:16px;">
+                        <span>${j.label}</span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="time" id="start_${j.id}" value="09:00" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px;">
+                        <span style="color: var(--muted); font-size:12px;">à</span>
+                        <input type="time" id="end_${j.id}" value="18:00" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px;">
+                    </div>
+                `;
+                
+                const checkbox = row.querySelector(`#check_${j.id}`);
+                const startInput = row.querySelector(`#start_${j.id}`);
+                const endInput = row.querySelector(`#end_${j.id}`);
+                
+                const updateValues = () => {
+                    const data = {};
+                    jours.forEach(jx => {
+                        if(document.getElementById(`check_${jx.id}`).checked) {
+                            data[jx.id] = [document.getElementById(`start_${jx.id}`).value, document.getElementById(`end_${jx.id}`).value];
+                        } else {
+                            data[jx.id] = [];
+                        }
+                    });
+                    document.getElementById(hiddenInputId).value = JSON.stringify(data);
+                };
+
+                checkbox.addEventListener('change', function() {
+                    startInput.disabled = !this.checked;
+                    endInput.disabled = !this.checked;
+                    startInput.style.opacity = this.checked ? '1' : '0.4';
+                    endInput.style.opacity = this.checked ? '1' : '0.4';
+                    updateValues();
+                });
+
+                startInput.addEventListener('change', updateValues);
+                endInput.addEventListener('change', updateValues);
+                
+                container.appendChild(row);
+            });
+        }
+
+        if(document.getElementById('schedule-builder')) {
+            buildScheduleUI('schedule-builder', 'emp_horaires');
+            try {
+                const data = JSON.parse(document.getElementById('raw_horaires_json').value || '{}');
+                jours.forEach(j => {
+                    const cb = document.getElementById(`check_${j.id}`);
+                    if(data[j.id] && data[j.id].length >= 2) {
+                        cb.checked = true;
+                        document.getElementById(`start_${j.id}`).value = data[j.id][0];
+                        document.getElementById(`end_${j.id}`).value = data[j.id][1];
+                    } else {
+                        cb.checked = false;
+                    }
+                    cb.dispatchEvent(new Event('change'));
+                });
+            } catch(e) {}
+        }
+    });
+
+    // --- Channels logic (minimized) ---
+    function getSettingsAuthHeader() {
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+    async function loadSettingsChannels() {
+        const listContainer = document.getElementById('channels-list');
+        try {
+            const r = await fetch('/api/v1/channels', { headers: getSettingsAuthHeader(), credentials: 'same-origin' });
+            const data = await r.json();
+            if (data.success && data.channels.length > 0) {
+                listContainer.innerHTML = '';
+                data.channels.forEach(ch => {
+                    const isConnected = ch.status === 'connected';
+                    listContainer.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                        <span style="font-size:13px; color:var(--text);"><i class="fab fa-${ch.icon}" style="color:${isConnected?'var(--brand)':'var(--muted)'}; width:16px;"></i> ${ch.label}</span>
+                        <span style="font-size:11px; padding:2px 6px; border-radius:10px; background:${isConnected?'rgba(76, 175, 80, 0.1)':'rgba(255,255,255,0.05)'}; color:${isConnected?'#4CAF50':'var(--muted)'};">${isConnected?'Connecté':'Inactif'}</span>
+                    </div>`;
+                });
+            } else {
+                listContainer.innerHTML = '<span style="font-size: 13px; color: var(--muted);">Aucun canal configuré</span>';
+            }
+        } catch (e) {}
+    }
+    document.addEventListener('DOMContentLoaded', loadSettingsChannels);
+</script>
+
+
+<script>
+function upgradePlan(plan) {
+    if ("{{ business.plan_abonnement }}" === plan) {
+        return; // Already on this plan
+    }
+    if (confirm("Pour modifier votre abonnement et passer au forfait " + plan + ", veuillez contacter notre service commercial. Voulez-vous continuer vers WhatsApp ?")) {
+        window.open("https://wa.me/22890000000?text=Bonjour,%20je%20souhaite%20upgrader%20mon%20abonnement%20Vira%20(ID:%20{{ business.id }})%20vers%20le%20forfait%20" + plan, '_blank');
+    }
+}
+</script>
 </body>
 </html>

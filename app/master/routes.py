@@ -37,9 +37,10 @@ def master_dashboard():
     metrics = {
         'total_businesses': len(businesses),
         'total_sectors': len(sectors),
-        'plan_basic': sum(1 for b in businesses if dict(b).get('plan_abonnement', 'BASIC') == 'BASIC'),
-        'plan_pro': sum(1 for b in businesses if dict(b).get('plan_abonnement') == 'PRO'),
-        'plan_premium': sum(1 for b in businesses if dict(b).get('plan_abonnement') == 'PREMIUM'),
+        'plan_free': sum(1 for b in businesses if dict(b).get('plan_abonnement', 'FREE') == 'FREE'),
+        'plan_discovery': sum(1 for b in businesses if dict(b).get('plan_abonnement') == 'DISCOVERY'),
+        'plan_growth': sum(1 for b in businesses if dict(b).get('plan_abonnement') == 'GROWTH'),
+        'plan_scale': sum(1 for b in businesses if dict(b).get('plan_abonnement') == 'SCALE'),
     }
     from app.repositories import settings_repo, conversation_repo
     global_settings = settings_repo.get_all_settings()
@@ -48,18 +49,20 @@ def master_dashboard():
     businesses_list = []
     for b in businesses:
         biz_dict = dict(b)
-        plan = biz_dict.get('plan_abonnement', 'BASIC')
-        if plan == 'PREMIUM':
-            quota_str = global_settings.get('quota_messages_premium', '10000')
-        elif plan == 'PRO':
-            quota_str = global_settings.get('quota_messages_pro', '2000')
+        plan = biz_dict.get('plan_abonnement', 'FREE')
+        if plan == 'SCALE':
+            quota_str = global_settings.get('quota_messages_scale', '10000')
+        elif plan == 'GROWTH':
+            quota_str = global_settings.get('quota_messages_growth', '2000')
+        elif plan == 'DISCOVERY':
+            quota_str = global_settings.get('quota_messages_discovery', '500')
         else:
-            quota_str = global_settings.get('quota_messages_basic', '500')
+            quota_str = global_settings.get('quota_messages_free', '50')
             
         try:
             quota = int(quota_str)
         except:
-            quota = 500
+            quota = 50
             
         usage = conversation_repo.get_monthly_ai_message_count(biz_dict['id'])
         biz_dict['ai_usage'] = usage
@@ -96,13 +99,15 @@ def save_limits():
 
     from app.repositories import settings_repo
     
-    settings_repo.set_setting('max_input_basic', request.form.get('max_input_basic', '500'))
-    settings_repo.set_setting('max_input_pro', request.form.get('max_input_pro', '1000'))
-    settings_repo.set_setting('max_input_premium', request.form.get('max_input_premium', '3000'))
+    settings_repo.set_setting('max_input_free', request.form.get('max_input_free', '50'))
+    settings_repo.set_setting('max_input_discovery', request.form.get('max_input_discovery', '500'))
+    settings_repo.set_setting('max_input_growth', request.form.get('max_input_growth', '1000'))
+    settings_repo.set_setting('max_input_scale', request.form.get('max_input_scale', '3000'))
     
-    settings_repo.set_setting('quota_messages_basic', request.form.get('quota_messages_basic', '500'))
-    settings_repo.set_setting('quota_messages_pro', request.form.get('quota_messages_pro', '2000'))
-    settings_repo.set_setting('quota_messages_premium', request.form.get('quota_messages_premium', '10000'))
+    settings_repo.set_setting('quota_messages_free', request.form.get('quota_messages_free', '50'))
+    settings_repo.set_setting('quota_messages_discovery', request.form.get('quota_messages_discovery', '500'))
+    settings_repo.set_setting('quota_messages_growth', request.form.get('quota_messages_growth', '2000'))
+    settings_repo.set_setting('quota_messages_scale', request.form.get('quota_messages_scale', '10000'))
     settings_repo.set_setting('overage_behavior', request.form.get('overage_behavior', 'FALLBACK'))
 
     return redirect(url_for('master.master_dashboard'))

@@ -213,14 +213,14 @@
     <div class="content">
 
         <!-- Metrics Grid -->
-        <div class="metrics-grid">
+        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
             <div class="metric-card">
                 <div class="metric-icon" style="background: rgba(88,166,255,0.1); color: #58A6FF;">
                     <i class="fas fa-store"></i>
                 </div>
                 <div class="metric-info">
                     <h3>{{ metrics.total_businesses }}</h3>
-                    <p>Sociétés Actives</p>
+                    <p>Sociétés</p>
                 </div>
             </div>
             <div class="metric-card">
@@ -228,8 +228,8 @@
                     <i class="fas fa-crown"></i>
                 </div>
                 <div class="metric-info">
-                    <h3>{{ metrics.plan_premium }}</h3>
-                    <p>Abonnements Premium</p>
+                    <h3>{{ metrics.plan_scale }}</h3>
+                    <p>Scale</p>
                 </div>
             </div>
             <div class="metric-card">
@@ -237,8 +237,17 @@
                     <i class="fas fa-rocket"></i>
                 </div>
                 <div class="metric-info">
-                    <h3>{{ metrics.plan_pro }}</h3>
-                    <p>Abonnements Pro</p>
+                    <h3>{{ metrics.plan_growth }}</h3>
+                    <p>Growth</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon" style="background: rgba(88,166,255,0.1); color: #58A6FF;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>{{ metrics.plan_discovery }}</h3>
+                    <p>Discovery</p>
                 </div>
             </div>
             <div class="metric-card">
@@ -246,8 +255,8 @@
                     <i class="fas fa-seedling"></i>
                 </div>
                 <div class="metric-info">
-                    <h3>{{ metrics.plan_basic }}</h3>
-                    <p>Abonnements Basic</p>
+                    <h3>{{ metrics.plan_free }}</h3>
+                    <p>Free</p>
                 </div>
             </div>
         </div>
@@ -267,17 +276,21 @@
                 <div>
                     <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Longueurs Max Input (Caractères)</h3>
                     <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">BASIC</label>
-                            <input type="number" name="max_input_basic" value="{{ global_settings.get('max_input_basic', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">FREE</label>
+                            <input type="number" name="max_input_free" value="{{ global_settings.get('max_input_free', '50') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PRO</label>
-                            <input type="number" name="max_input_pro" value="{{ global_settings.get('max_input_pro', '1000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">DISCOVERY</label>
+                            <input type="number" name="max_input_discovery" value="{{ global_settings.get('max_input_discovery', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PREMIUM</label>
-                            <input type="number" name="max_input_premium" value="{{ global_settings.get('max_input_premium', '3000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">GROWTH</label>
+                            <input type="number" name="max_input_growth" value="{{ global_settings.get('max_input_growth', '1000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">SCALE</label>
+                            <input type="number" name="max_input_scale" value="{{ global_settings.get('max_input_scale', '3000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
                     </div>
                 </div>
@@ -286,17 +299,21 @@
                 <div>
                     <h3 style="font-size: 15px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Quotas Mensuels (Nb Messages IA)</h3>
                     <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">BASIC</label>
-                            <input type="number" name="quota_messages_basic" value="{{ global_settings.get('quota_messages_basic', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">FREE</label>
+                            <input type="number" name="quota_messages_free" value="{{ global_settings.get('quota_messages_free', '50') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PRO</label>
-                            <input type="number" name="quota_messages_pro" value="{{ global_settings.get('quota_messages_pro', '2000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">DISCOVERY</label>
+                            <input type="number" name="quota_messages_discovery" value="{{ global_settings.get('quota_messages_discovery', '500') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">PREMIUM</label>
-                            <input type="number" name="quota_messages_premium" value="{{ global_settings.get('quota_messages_premium', '10000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">GROWTH</label>
+                            <input type="number" name="quota_messages_growth" value="{{ global_settings.get('quota_messages_growth', '2000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">SCALE</label>
+                            <input type="number" name="quota_messages_scale" value="{{ global_settings.get('quota_messages_scale', '10000') }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit;">
                         </div>
                     </div>
                 </div>
@@ -370,12 +387,14 @@
                         <td style="font-weight: 600;">{{ b.nom }}</td>
                         <td style="color: var(--muted); text-transform: capitalize;">{{ b.business_type }}</td>
                         <td>
-                            {% if b.plan_abonnement == 'PREMIUM' %}
-                            <span style="background: rgba(240,180,41,0.1); color: #F0B429; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">PREMIUM</span>
-                            {% elif b.plan_abonnement == 'PRO' %}
-                            <span style="background: rgba(37,211,102,0.1); color: #25D366; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">PRO</span>
+                            {% if b.plan_abonnement == 'SCALE' %}
+                            <span style="background: rgba(240,180,41,0.1); color: #F0B429; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">SCALE</span>
+                            {% elif b.plan_abonnement == 'GROWTH' %}
+                            <span style="background: rgba(37,211,102,0.1); color: #25D366; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">GROWTH</span>
+                            {% elif b.plan_abonnement == 'DISCOVERY' %}
+                            <span style="background: rgba(88,166,255,0.1); color: #58A6FF; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">DISCOVERY</span>
                             {% else %}
-                            <span style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">BASIC</span>
+                            <span style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">FREE</span>
                             {% endif %}
                         </td>
                         <td style="font-size: 13px; color: var(--text);">

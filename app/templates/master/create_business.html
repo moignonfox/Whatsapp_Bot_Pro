@@ -165,9 +165,15 @@
         /* ── Layout ── */
         .page {
             width: 100%;
-            max-width: 720px;
+            max-width: {% if business %}1200px{% else %}720px{% endif %};
             position: relative;
             z-index: 1;
+            {% if business %}
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            align-items: start;
+            {% endif %}
         }
 
         .master-badge {
@@ -626,8 +632,40 @@
                 </div>
 
             </form>
+        </div> <!-- Fin de la card Configuration -->
 
-            {% if business %}
+        {% if business %}
+        <!-- COLONNE DROITE : Multi-Canal et Employés -->
+        <div style="display: flex; flex-direction: column; gap: 32px;">
+
+            <!-- ── Section Canaux de communication ────────────────── -->
+            <div class="card">
+                <div class="section-label" style="margin-bottom: 16px;">🔌 Canaux de communication</div>
+                <p style="font-size:12.5px; color: var(--muted); margin-bottom:16px; line-height:1.6;">Configurez les connexions vers WhatsApp, Telegram, Instagram et Messenger pour ce business.</p>
+
+                <div id="channels-list" style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="text-align:center; padding:20px; color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement des canaux...</div>
+                </div>
+            </div>
+
+            <!-- Modale de configuration des canaux -->
+            <div id="channel-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+                <div class="card" style="width:100%; max-width:400px; padding:24px; position:relative; margin:0 20px;">
+                    <button type="button" onclick="closeChannelModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px;">&times;</button>
+                    <h2 id="channel-modal-title" style="margin-top:0; font-size:18px;">Configuration</h2>
+                    
+                    <div id="channel-modal-error" style="display:none; background:#ffebec; color:#ff4b4b; padding:10px; border-radius:6px; font-size:13px; margin-bottom:16px;"></div>
+
+                    <form id="channel-config-form" onsubmit="submitChannelConfig(event)">
+                        <input type="hidden" id="channel-type-input">
+                        <div id="channel-fields-container" style="display:flex; flex-direction:column; gap:16px;"></div>
+                        <div style="margin-top: 24px; display:flex; gap:12px; justify-content:flex-end;">
+                            <button type="button" class="btn-secondary" onclick="closeChannelModal()" style="padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:14px; font-weight:500;">Annuler</button>
+                            <button type="submit" class="btn-submit" id="channel-submit-btn" style="padding:10px 16px; border-radius:8px; background:var(--green); color:#fff; border:none; font-weight:600; cursor:pointer; font-size:14px;">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             <!-- ── Section Employés (Multi-Employés / PREMIUM) ────────────────── -->
             <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
                 <div class="section-label" style="margin-bottom: 16px;">👥 Équipe / Employés <span style="font-size:10px; background: rgba(240,180,41,0.15); color:#F0B429; border:1px solid rgba(240,180,41,0.3); padding:2px 8px; border-radius:4px; margin-left:8px;">PREMIUM</span></div>
@@ -667,14 +705,208 @@
                     <button type="submit" class="btn-add-emp">+ Ajouter</button>
                 </form>
             </div>
+            </div> <!-- Fin COLONNE DROITE -->
             {% endif %}
-
-        </div>
 
             </div> <!-- /page -->
         </div> <!-- /content -->
     </div> <!-- /main -->
 
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    
+    {% if business %}
+    <script>
+        // --- LOGIQUE MULTI-CANAL ---
+        const CHANNEL_FIELDS = {
+            whatsapp: [
+                { key: 'phone_id', label: 'Phone ID (WhatsApp Business API)', placeholder: 'ex: 123456789012345' },
+                { key: 'token_wa', label: 'Token d\\'accès temporaire/permanent', placeholder: 'EAA...' }
+            ],
+            telegram: [
+                { key: 'bot_token', label: 'Bot Token (BotFather)', placeholder: '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11' }
+            ],
+            instagram: [
+                { key: 'ig_user_id', label: 'Instagram User ID', placeholder: 'ex: 17841412345678901' },
+                { key: 'access_token', label: 'Token d\\'accès', placeholder: 'EAA...' }
+            ],
+            messenger: [
+                { key: 'page_id', label: 'Page ID', placeholder: 'ex: 1234567...' },
+                { key: 'page_token', label: 'Page Token', placeholder: 'EAA...' }
+            ]
+        };
+
+        let allChannels = [];
+        const businessId = "{{ business.id }}";
+
+        async function loadMasterChannels() {
+            const listContainer = document.getElementById('channels-list');
+            try {
+                const r = await fetch('/api/v1/channels?business_id=' + businessId, { credentials: 'same-origin' });
+                if (!r.ok) throw new Error('Erreur réseau');
+                const data = await r.json();
+                
+                if (data.success) {
+                    allChannels = data.channels;
+                    renderChannelsList();
+                } else {
+                    listContainer.innerHTML = `<div style="color:#ff4b4b;">Erreur: ${data.error || 'Impossible de charger les canaux'}</div>`;
+                }
+            } catch (e) {
+                listContainer.innerHTML = `<div style="color:#ff4b4b;">Erreur: Impossible de contacter le serveur</div>`;
+            }
+        }
+
+        function renderChannelsList() {
+            const listContainer = document.getElementById('channels-list');
+            listContainer.innerHTML = '';
+            
+            allChannels.forEach(ch => {
+                const isConnected = ch.status === 'connected';
+                const isComing = ch.status === 'coming_soon';
+                
+                let statusHtml = '';
+                if (isConnected) {
+                    statusHtml = `<span style="font-size:11px; font-weight:600; background:rgba(37,211,102,0.1); color:#25d366; padding:2px 8px; border-radius:12px;">Connecté</span>`;
+                } else if (isComing) {
+                    statusHtml = `<span style="font-size:11px; font-weight:600; background:var(--surface-hover); color:var(--muted); padding:2px 8px; border-radius:12px;">Bientôt</span>`;
+                } else {
+                    statusHtml = `<span style="font-size:11px; font-weight:600; background:rgba(255,180,41,0.1); color:#F0B429; padding:2px 8px; border-radius:12px;">Non connecté</span>`;
+                }
+
+                let btnHtml = '';
+                if (isComing) {
+                    btnHtml = `<button class="btn-secondary" style="opacity:0.5; cursor:not-allowed;" disabled>Bientôt</button>`;
+                } else {
+                    btnHtml = `<button class="btn-secondary" onclick="openChannelModal('${ch.type}')" style="background:var(--surface); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px;">${isConnected ? 'Configurer' : 'Connecter'}</button>`;
+                    if (isConnected) {
+                        btnHtml += `<button class="btn-secondary" onclick="disconnectChannel('${ch.id}')" style="color:#ff4b4b; border:1px solid rgba(255,75,75,0.3); background:rgba(255,75,75,0.1); padding:6px 10px; border-radius:8px; cursor:pointer;"><i class="fas fa-trash"></i></button>`;
+                    }
+                }
+
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--border); border-radius:8px; background:var(--surface);';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i class="fab fa-${ch.icon}" style="font-size:24px; color:${ch.type==='whatsapp'?'#25d366':ch.type==='telegram'?'#0088cc':ch.type==='messenger'?'#0084ff':'#E1306C'};"></i>
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-weight:600;">${ch.label}</span>
+                            <div>${statusHtml}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        ${btnHtml}
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function openChannelModal(type) {
+            const channel = allChannels.find(c => c.type === type);
+            if (!channel) return;
+
+            const isConnected = channel.status === 'connected';
+            document.getElementById('channel-modal-title').textContent = `${isConnected ? 'Configurer' : 'Connecter'} ${channel.label}`;
+            document.getElementById('channel-type-input').value = type;
+            
+            const container = document.getElementById('channel-fields-container');
+            container.innerHTML = '';
+            
+            const fields = CHANNEL_FIELDS[type] || [];
+            fields.forEach(f => {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
+                
+                const existingValue = channel.config ? channel.config[f.key] : null;
+                let valStr = '';
+                let isToken = f.key.toLowerCase().includes('token') || f.key.toLowerCase().includes('secret');
+                
+                if (existingValue && !isToken) {
+                    valStr = existingValue;
+                }
+                
+                fieldDiv.innerHTML = `
+                    <label style="font-size:13px; font-weight:500; color:var(--text);">${f.label}</label>
+                    <input type="text" id="ch-input-${f.key}" data-key="${f.key}" value="${valStr}" placeholder="${f.placeholder}" style="width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); box-sizing:border-box;">
+                    ${isConnected && isToken ? '<small style="color:var(--muted); font-size:11px;">(Laissez vide pour conserver le token actuel)</small>' : ''}
+                `;
+                container.appendChild(fieldDiv);
+            });
+            
+            document.getElementById('channel-modal-error').style.display = 'none';
+            document.getElementById('channel-modal').style.display = 'flex';
+        }
+
+        function closeChannelModal() {
+            document.getElementById('channel-modal').style.display = 'none';
+        }
+
+        async function submitChannelConfig(e) {
+            e.preventDefault();
+            const type = document.getElementById('channel-type-input').value;
+            const submitBtn = document.getElementById('channel-submit-btn');
+            const errorDiv = document.getElementById('channel-modal-error');
+            
+            const config = {};
+            const fields = CHANNEL_FIELDS[type] || [];
+            fields.forEach(f => {
+                const input = document.getElementById(`ch-input-${f.key}`);
+                const val = input.value.trim();
+                if (val !== '') {
+                    config[f.key] = val;
+                }
+            });
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const r = await fetch('/api/v1/channels/connect', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ type: type, config: config, business_id: businessId }), credentials: 'same-origin'
+                });
+                const data = await r.json();
+                
+                if (data.success) {
+                    closeChannelModal();
+                    await loadMasterChannels();
+                } else {
+                    errorDiv.textContent = data.error || 'Une erreur est survenue.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch(err) {
+                errorDiv.textContent = 'Erreur réseau lors de la communication avec le serveur.';
+                errorDiv.style.display = 'block';
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enregistrer';
+        }
+
+        async function disconnectChannel(id) {
+            if (!confirm('Êtes-vous sûr de vouloir déconnecter ce canal ?')) return;
+            
+            try {
+                const r = await fetch('/api/v1/channels/' + id + '?business_id=' + businessId, {
+                    method: 'DELETE', credentials: 'same-origin'
+                });
+                const data = await r.json();
+                if (data.success) {
+                    await loadMasterChannels();
+                } else {
+                    alert(data.error || 'Erreur lors de la déconnexion');
+                }
+            } catch(e) {
+                alert('Erreur réseau');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMasterChannels();
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

@@ -95,26 +95,43 @@
         /* ── Left Panel: Conversation List ── */
         .conv-panel {
             width: 340px;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
+            background: var(--bg);
+            border-right: 1px solid rgba(255,255,255,0.05);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
         }
         
         .conv-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
+            padding: 24px 20px 10px 20px;
         }
         .conv-header h2 {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             margin-bottom: 15px;
+            color: var(--text);
         }
+        .conv-badge {
+            background: rgba(124,58,237,0.2);
+            color: #c4a1ff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        
         .search-box {
             position: relative;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
         }
-        .search-box i {
+        .search-box .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        .search-box .input-wrapper i {
             position: absolute;
             left: 12px;
             top: 50%;
@@ -124,8 +141,8 @@
         }
         .search-box input {
             width: 100%;
-            background: var(--bg);
-            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 8px;
             padding: 10px 12px 10px 35px;
             color: var(--text);
@@ -134,7 +151,49 @@
             transition: border-color 0.2s;
         }
         .search-box input:focus {
-            border-color: var(--green);
+            border-color: var(--brand);
+        }
+        .filter-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.05);
+            color: var(--muted);
+            border-radius: 8px;
+            width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.05); }
+
+        .conv-tabs {
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 0 20px;
+        }
+        .conv-tab {
+            padding: 10px 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            position: relative;
+        }
+        .conv-tab.active {
+            color: var(--brand);
+            font-weight: 600;
+        }
+        .conv-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--brand);
+            border-radius: 2px 2px 0 0;
         }
 
         .conv-list {
@@ -145,34 +204,55 @@
         .conv-item {
             display: flex;
             padding: 15px 20px;
-            border-bottom: 1px solid var(--border-light);
             cursor: pointer;
             transition: background 0.2s;
             border-left: 3px solid transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
         }
         .conv-item:hover {
-            background: var(--card-hover);
+            background: rgba(255,255,255,0.02);
         }
         .conv-item.active {
-            background: var(--card);
-            border-left-color: var(--green);
+            background: rgba(255,255,255,0.03);
+            border-left-color: var(--brand);
         }
         .conv-item-avatar {
-            width: 40px; height: 40px;
+            width: 44px; height: 44px;
             border-radius: 50%;
-            background: var(--border);
+            background: #2a2a36;
             display: flex; align-items: center; justify-content: center;
             margin-right: 12px;
             flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
         }
+        .conv-item-avatar img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .wa-icon-small {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #25D366;
+            color: white;
+            font-size: 9px;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--bg);
+        }
+        
         .conv-item-info {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .conv-item-top {
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
+            align-items: center;
             margin-bottom: 4px;
         }
         .conv-item-name {
@@ -181,6 +261,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text);
         }
         .conv-item-time {
             font-size: 11px;
@@ -194,8 +275,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .unread-badge {
+            background: var(--brand);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
 
-        /* ── Right Panel: Chat Area ── */
+        /* ── Right Panel: Chat Area (Middle) ── */
         .chat-area {
             flex: 1;
             display: flex;
@@ -204,6 +294,7 @@
             position: relative;
             min-height: 0;
             min-width: 0;
+            border-right: 1px solid rgba(255,255,255,0.05);
         }
 
         .empty-state {
@@ -229,8 +320,8 @@
         .chat-header {
             height: 70px;
             padding: 0 24px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -242,45 +333,56 @@
             gap: 15px;
         }
         .chat-header-avatar {
-            width: 40px; height: 40px;
+            width: 44px; height: 44px;
             border-radius: 50%;
-            background: var(--green-bg);
-            color: var(--green);
+            background: #2a2a36;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            position: relative;
+        }
+        .chat-header-avatar img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
         }
         .chat-header-text h3 {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
         }
         .chat-header-text p {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--muted);
             margin-top: 2px;
         }
-
-        .mode-toggle {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
+        
+        .chat-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-icon-btn {
+            color: var(--muted);
+            font-size: 16px;
+            background: transparent;
+            border: none;
             cursor: pointer;
+            transition: color 0.2s;
+        }
+        .header-icon-btn:hover { color: var(--text); }
+        
+        .transfer-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            cursor: pointer;
+            transition: background 0.2s;
         }
-        .mode-toggle.ai {
-            background: var(--green-bg);
-            color: var(--green);
-            border-color: rgba(37,211,102,0.2);
-        }
-        .mode-toggle.human {
-            background: var(--amber-bg);
-            color: var(--amber);
-            border-color: rgba(240,180,41,0.2);
-        }
+        .transfer-btn:hover { background: rgba(255,255,255,0.05); }
 
         .chat-messages {
             flex: 1;
@@ -289,12 +391,27 @@
             padding-bottom: 40px;
             overflow-y: auto;
             display: block;
+            background: var(--bg);
+        }
+
+        .date-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        .date-divider span {
+            background: rgba(255,255,255,0.05);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 12px;
         }
 
         .message-row {
             display: flex;
             width: 100%;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
         .message-row.user {
             justify-content: flex-start;
@@ -314,31 +431,15 @@
             flex-direction: column;
         }
         .message-bubble.user {
-            background: var(--card);
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
             border-bottom-left-radius: 4px;
         }
-        .message-bubble.assistant {
-            background: rgba(37,211,102,0.12);
-            border: 1px solid rgba(37,211,102,0.2);
+        .message-bubble.assistant, .message-bubble.agent {
+            background: var(--brand);
+            color: #fff;
             border-bottom-right-radius: 4px;
         }
-        .message-bubble.agent {
-            background: rgba(88,166,255,0.12);
-            border: 1px solid rgba(88,166,255,0.2);
-            border-bottom-right-radius: 4px;
-        }
-
-        .msg-badge {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .msg-badge.bot { color: var(--green); }
-        .msg-badge.agent { color: var(--blue); }
 
         .msg-text {
             word-wrap: break-word;
@@ -346,31 +447,58 @@
         }
         .msg-time {
             font-size: 10px;
-            color: var(--muted);
+            color: rgba(255,255,255,0.6);
             align-self: flex-end;
             margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .chat-input-area {
-            padding: 20px 24px;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            flex-shrink: 0;
-        }
-        .chat-input-box {
-            flex: 1;
+            padding: 16px 24px;
             background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 16px;
+            border-top: none;
             display: flex;
             flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
         }
-        .chat-input-box textarea {
-            width: 100%;
+        
+        .ai-writing-indicator {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 16px;
+        }
+        .typing-dots { display:flex; gap:3px; }
+        .typing-dots div { width:6px; height:6px; border-radius:50%; background:var(--muted); opacity:0.5; }
+
+        .chat-input-wrapper {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .chat-input-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .chat-input-btn:hover { color: var(--text); }
+        
+        .chat-input-wrapper textarea {
+            flex: 1;
             background: transparent;
             border: none;
             color: var(--text);
@@ -379,64 +507,152 @@
             resize: none;
             outline: none;
             max-height: 120px;
-            overflow-y: auto;
+            padding: 8px 0;
         }
-        .chat-input-box textarea:disabled {
-            color: var(--muted);
-            cursor: not-allowed;
+        .chat-input-wrapper textarea::placeholder {
+            color: rgba(255,255,255,0.3);
         }
-        .send-btn {
-            width: 46px; height: 46px;
+        
+        .send-btn-new {
+            width: 36px; height: 36px;
             border-radius: 50%;
-            background: var(--green);
+            background: var(--brand);
             color: #fff;
             border: none;
             display: flex; align-items: center; justify-content: center;
             font-size: 16px;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
             flex-shrink: 0;
+            transition: background 0.2s;
         }
-        .send-btn:hover:not(:disabled) {
-            transform: scale(1.05);
-            background: var(--green-dim);
+        .send-btn-new:hover { background: var(--brand-hover); }
+
+        /* ── Right Panel: CRM Details ── */
+        .details-panel {
+            width: 320px;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
         }
-        .send-btn:disabled {
-            background: var(--border);
+        .details-tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 0 10px;
+        }
+        .details-tab {
+            flex: 1;
+            text-align: center;
+            padding: 20px 0 10px;
+            font-size: 13px;
+            font-weight: 500;
             color: var(--muted);
-            cursor: not-allowed;
+            cursor: pointer;
+            position: relative;
+        }
+        .details-tab.active {
+            color: var(--brand);
+            font-weight: 600;
+        }
+        .details-tab.active::after {
+            content: ''; position: absolute; bottom: -1px; left: 10%; width: 80%; height: 2px; background: var(--brand); border-radius: 2px 2px 0 0;
+        }
+        
+        .details-section {
+            padding: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .details-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .client-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .client-profile-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #2a2a36;
+        }
+        .client-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .client-info-list { display: flex; flex-direction: column; gap: 12px; }
+        .client-info-item {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px; color: var(--text);
+        }
+        .client-info-item i { width: 16px; color: var(--muted); text-align: center; }
+        
+        .client-tags {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+        }
+        .tag-pill {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        .tag-pill.brand {
+            background: rgba(124,58,237,0.15);
+            color: #c4a1ff;
+        }
+        .tag-add {
+            background: transparent; border: 1px dashed rgba(255,255,255,0.2);
+            color: var(--muted); width: 24px; height: 24px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .order-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .order-status-badge {
+            background: rgba(245,158,11,0.15);
+            color: #fbbf24;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .ai-info-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .ai-chart-circle {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: conic-gradient(var(--brand) 85%, rgba(255,255,255,0.05) 0);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .ai-chart-inner {
+            width: 58px; height: 58px;
+            background: var(--bg);
+            border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
         /* Scrollbar styles */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
-
-        /* Badge non-lu */
-        .unread-badge {
-            position: absolute;
-            top: 10px;
-            right: 12px;
-            min-width: 20px;
-            height: 20px;
-            background: var(--green, #25d366);
-            color: #fff;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 700;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5px;
-        }
-        .conv-item { position: relative; }
-        .conv-item.has-unread .conv-item-preview {
-            font-weight: 600;
-            color: var(--text);
-        }
-        .conv-item.has-unread .conv-item-name {
-            color: var(--green, #25d366);
-        }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
         /* Animation toast */
         @keyframes slideInToast {
@@ -457,99 +673,199 @@
     <!-- LEFT PANEL: CONVERSATIONS -->
     <div class="conv-panel">
         <div class="conv-header">
-            <div style="display:flex; align-items:center; gap:14px; margin-bottom:15px;">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
                 <button id="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h2 style="margin-bottom:0;">Conversations</h2>
+                <h2 style="margin-bottom:0; display:flex; align-items:center;">Conversations <span class="conv-badge">12</span></h2>
             </div>
             <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="conv-search" placeholder="Rechercher un client ou un message...">
+                <div class="input-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="conv-search" placeholder="Rechercher...">
+                </div>
+                <button class="filter-btn"><i class="fas fa-sliders-h"></i></button>
             </div>
+        </div>
+        <div class="conv-tabs">
+            <div class="conv-tab active">Tous</div>
+            <div class="conv-tab">Non lus</div>
+            <div class="conv-tab">En attente</div>
         </div>
         <div class="conv-list" id="conv-list">
             {% for conv in conversations %}
             <div class="conv-item" data-waid="{{ conv.wa_id }}" onclick="loadConversation('{{ conv.wa_id }}')">
-                <div class="conv-item-avatar"><i class="fas fa-user"></i></div>
+                <div class="conv-item-avatar">
+                    <img src="https://ui-avatars.com/api/?name={{ conv.client_display_name or conv.client_real_name or conv.client_name }}&background=random" alt="Avatar">
+                    <div class="wa-icon-small"><i class="fab fa-whatsapp"></i></div>
+                </div>
                 <div class="conv-item-info">
                     <div class="conv-item-top">
-                        <div class="conv-item-name" style="display:flex; flex-direction:column; line-height:1.2;">
-                              <span style="font-weight:600; color:var(--text);">{{ conv.client_display_name or conv.client_real_name or conv.client_name }}</span>
-                              {% if conv.client_display_name and conv.client_real_name and conv.client_display_name != conv.client_real_name %}
-                              <span style="font-size:11px; font-weight:400; color:var(--muted); margin-top:2px;">{{ conv.client_real_name }}</span>
-                              {% endif %}
-                          </div>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            {% if unread_counts and unread_counts.get(conv.wa_id) %}
-                            <span style="font-size:10px;background:#F85149;color:#fff;padding:1px 6px;border-radius:10px;font-weight:700;">{{ unread_counts.get(conv.wa_id) }}</span>
-                            {% endif %}
-                            <span class="conv-item-time conv-time-format">{{ conv.last_timestamp }}</span>
-                        </div>
+                        <div class="conv-item-name">{{ conv.client_display_name or conv.client_real_name or conv.client_name }}</div>
+                        <span class="conv-item-time conv-time-format">{{ conv.last_timestamp }}</span>
                     </div>
-                    <div class="conv-item-preview">{{ (conv.last_message or '')[:50] }}{% if (conv.last_message or '')|length > 50 %}...{% endif %}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="conv-item-preview">{{ (conv.last_message or '')[:40] }}{% if (conv.last_message or '')|length > 40 %}...{% endif %}</div>
+                        {% if unread_counts and unread_counts.get(conv.wa_id) %}
+                        <span class="unread-badge">{{ unread_counts.get(conv.wa_id) }}</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- RIGHT PANEL: CHAT AREA -->
+    <!-- RIGHT PANEL: CHAT AREA (Now Middle) -->
     <div class="chat-area" id="chat-area">
         <!-- Empty State -->
         <div class="empty-state" id="empty-state">
             <i class="fas fa-comments"></i>
-            <p>Sélectionnez une conversation pour afficher l'historique</p>
+            <p>Sélectionnez une conversation</p>
         </div>
 
-        <!-- Chat Content (Hidden initially) -->
-        <div id="chat-panel" class="chat-panel-mobile" style="display: none; flex-direction: column; flex: 1; min-height: 0; width: 100%; background: var(--bg);">
+        <!-- Chat Content -->
+        <div id="chat-panel" class="chat-panel-mobile" style="display: none; flex-direction: column; flex: 1; min-height: 0; width: 100%;">
             
             <div class="chat-header">
                 <div class="chat-header-info">
                     <button id="mobile-back-btn" onclick="closeMobileChat()" style="display:none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; margin-right:10px;">
                         <i class="fas fa-arrow-left"></i>
                     </button>
-                    <div class="chat-header-avatar"><i class="fas fa-user"></i></div>
+                    <div class="chat-header-avatar">
+                        <img src="https://ui-avatars.com/api/?name=Client&background=random" alt="Client" id="chat-client-avatar">
+                    </div>
                     <div class="chat-header-text">
-                        <h3 id="chat-client-name">Nom du client</h3>
+                        <h3 style="display: flex; align-items: center; gap: 8px;">
+                            <span id="chat-client-name">Nom du client</span>
+                            <i class="fab fa-whatsapp" style="color:#25D366; font-size:14px;"></i>
+                        </h3>
                         <p id="chat-client-waid">+123456789</p>
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <button id="manual-order-btn" class="mode-toggle" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" onclick="openManualOrderModal()">
-                        <i class="fas fa-plus"></i> Forçage Manuel
-                    </button>
-                    <button id="mode-toggle" class="mode-toggle ai" onclick="toggleMode()">
-                        <i class="fas fa-robot"></i> Mode IA
-                    </button>
+                <div class="chat-header-actions">
+                    <button class="header-icon-btn"><i class="far fa-star"></i></button>
+                    <button class="header-icon-btn"><i class="fas fa-paperclip"></i></button>
+                    <button class="header-icon-btn"><i class="fas fa-ellipsis-h"></i></button>
+                    <button class="transfer-btn"><i class="far fa-user"></i> Transférer à un humain</button>
                 </div>
             </div>
 
             <div class="chat-messages" id="chat-messages">
+                <div class="date-divider"><span>Aujourd'hui</span></div>
                 <!-- Messages will be injected here via JS -->
             </div>
 
-            <div id="window-alert" style="display:none; padding:10px; text-align:center; color:var(--amber); font-size:13px; background:var(--amber-bg); border-top:1px solid rgba(240,180,41,0.2);">
-                Le client ne vous a pas écrit depuis plus de 24h. L'envoi libre est désactivé par Meta.
-            </div>
             <div class="chat-input-area">
-                <input type="file" id="media-input" style="display:none;" accept="image/*,audio/*,video/*" onchange="uploadMedia(event)">
-                <button id="attach-btn" class="send-btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" disabled onclick="document.getElementById('media-input').click()">
-                    <i class="fas fa-paperclip"></i>
-                </button>
-                <div class="chat-input-box">
-                    <textarea id="chat-input" rows="1" placeholder="Activez le mode humain pour répondre..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                <div class="ai-writing-indicator" id="ai-writing-indicator" style="display:none;">
+                    L'IA est en train d'écrire...
+                    <div class="typing-dots">
+                        <div></div><div></div><div></div>
+                    </div>
                 </div>
-                <button id="record-btn" class="send-btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" disabled onclick="toggleRecording()">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button id="send-btn" class="send-btn" disabled onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+                <div class="chat-input-wrapper">
+                    <button class="chat-input-btn"><i class="far fa-smile"></i></button>
+                    <button class="chat-input-btn" onclick="document.getElementById('media-input').click()"><i class="fas fa-paperclip"></i></button>
+                    <button class="chat-input-btn"><i class="fas fa-magic"></i></button>
+                    <textarea id="chat-input" rows="1" placeholder="Écrire un message..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                    <button id="record-btn" class="send-btn-new" onclick="toggleRecording()">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button id="send-btn" class="send-btn-new" style="display:none;" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <input type="file" id="media-input" style="display:none;" accept="image/*,audio/*,video/*" onchange="uploadMedia(event)">
             </div>
         </div>
-
+    </div>
+    
+    <!-- FAR RIGHT PANEL: CRM DETAILS -->
+    <div class="details-panel" id="details-panel" style="display:none;">
+        <div class="details-tabs">
+            <div class="details-tab active">Détails</div>
+            <div class="details-tab">CRM</div>
+            <div class="details-tab">Historique</div>
+        </div>
+        
+        <div class="details-section">
+            <div class="details-section-title">
+                Détails client <button class="header-icon-btn" onclick="openEditClientModal()"><i class="far fa-edit"></i></button>
+            </div>
+            <div class="client-profile-header">
+                <div class="client-profile-avatar">
+                    <img src="https://ui-avatars.com/api/?name=Client&background=random" id="crm-client-avatar" alt="Avatar">
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px;">
+                        <span id="crm-client-name">Nom Client</span>
+                        <i class="fab fa-whatsapp" style="color:#25D366; font-size:14px;"></i>
+                    </div>
+                    <span style="font-size:11px; background:rgba(124,58,237,0.15); color:#c4a1ff; padding:2px 6px; border-radius:4px; font-weight:600;">Client</span>
+                </div>
+            </div>
+            
+            <div class="client-info-list">
+                <div class="client-info-item"><i class="fas fa-phone-alt"></i> <span id="crm-client-phone">+228 90 12 34 56</span></div>
+                <div class="client-info-item"><i class="far fa-envelope"></i> <span style="color:var(--muted);">client@email.com</span></div>
+                <div class="client-info-item"><i class="fas fa-map-marker-alt"></i> <span style="color:var(--muted);">Lomé, Togo</span></div>
+                <div class="client-info-item"><i class="far fa-calendar-alt"></i> <span style="color:var(--muted); flex:1;">Client depuis</span> <span style="font-size:11px; color:var(--text);">12 Mai 2025</span></div>
+                <div class="client-info-item" style="align-items:flex-start;"><i class="fas fa-tags" style="margin-top:2px;"></i> 
+                    <div style="color:var(--muted); flex:1;">Tags
+                        <div class="client-tags">
+                            <span class="tag-pill brand">Fidèle</span>
+                            <span class="tag-pill brand">VIP</span>
+                            <span class="tag-pill brand">Pizza Lover</span>
+                            <button class="tag-add"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <div class="details-section-title">
+                Commande en cours <a href="#" style="font-size:12px; font-weight:500; color:var(--brand); text-decoration:none;">Voir tout</a>
+            </div>
+            <div class="order-card">
+                <span class="order-status-badge">En préparation</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0;">
+                    <span style="font-weight:600; color:var(--text);">#CMD-5821</span>
+                    <span style="font-size:11px; color:var(--muted);">10:31</span>
+                </div>
+                <ul style="list-style:none; padding:0; margin:0; font-size:13px; color:var(--muted); line-height:1.8;">
+                    <li>• Pizza 4 fromages</li>
+                    <li>• 1 Coca Cola</li>
+                </ul>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size:13px; color:var(--muted);">Total</span>
+                    <span style="font-weight:600; color:var(--text);">8 500 FCFA</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="details-section" style="border-bottom:none;">
+            <div class="details-section-title">Informations IA</div>
+            <div class="ai-info-card">
+                <div class="ai-chart-circle">
+                    <div class="ai-chart-inner">
+                        <span style="font-size:16px; font-weight:700; color:var(--text);">85%</span>
+                        <span style="font-size:8px; color:var(--muted);">Confiance</span>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Intention détectée</div>
+                    <span style="font-size:11px; background:rgba(124,58,237,0.15); color:#c4a1ff; padding:2px 8px; border-radius:12px; font-weight:500; display:inline-block; margin-bottom:12px;">Commande</span>
+                    
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Sentiment</div>
+                    <span style="font-size:11px; background:rgba(37,211,102,0.15); color:#25D366; padding:2px 8px; border-radius:12px; font-weight:500; display:inline-block;">Positif</span>
+                </div>
+            </div>
+            
+            <button style="width:100%; margin-top:24px; padding:12px; background:transparent; border:1px solid rgba(124,58,237,0.3); color:#c4a1ff; border-radius:8px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.1)'" onmouseout="this.style.background='transparent'">
+                <i class="far fa-user"></i> Voir le profil CRM complet
+            </button>
+        </div>
     </div>
 </div>
 
@@ -736,6 +1052,7 @@
 
                 document.getElementById('empty-state').style.display = 'none';
                 document.getElementById('chat-panel').style.display = 'flex';
+                document.getElementById('details-panel').style.display = 'flex';
                 document.getElementById('chat-panel').classList.add('active');
 
                 chatArea.scrollTop = chatArea.scrollHeight;
@@ -764,21 +1081,27 @@
             }
         }
         
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const recordBtn = document.getElementById('record-btn');
+
         if (!isWithin24h && isHumanMode) {
-            alertBox.style.display = 'block';
-            document.getElementById('chat-input').disabled = true;
-            document.getElementById('chat-input').placeholder = "Fenêtre de 24h dépassée. Seuls les modèles Meta sont autorisés.";
-            document.getElementById('send-btn').disabled = true;
-            document.getElementById('attach-btn').disabled = true;
-            document.getElementById('record-btn').disabled = true;
+            if (alertBox) alertBox.style.display = 'block';
+            if (input) {
+                input.disabled = true;
+                input.placeholder = "Fenêtre de 24h dépassée. Seuls les modèles Meta sont autorisés.";
+            }
+            if (sendBtn) sendBtn.disabled = true;
+            if (recordBtn) recordBtn.disabled = true;
         } else {
-            alertBox.style.display = 'none';
+            if (alertBox) alertBox.style.display = 'none';
             if (isHumanMode) {
-                document.getElementById('chat-input').disabled = false;
-                document.getElementById('chat-input').placeholder = "Tapez votre message pour le client...";
-                document.getElementById('send-btn').disabled = false;
-                document.getElementById('attach-btn').disabled = false;
-                document.getElementById('record-btn').disabled = false;
+                if (input) {
+                    input.disabled = false;
+                    input.placeholder = "Écrire un message...";
+                }
+                if (sendBtn) sendBtn.disabled = false;
+                if (recordBtn) recordBtn.disabled = false;
             }
         }
     }
@@ -800,9 +1123,7 @@
         bubble.className = `message-bubble ${role}`;
         
         let badge = '';
-        if (role === 'assistant') badge = '<div class="msg-badge bot"><i class="fas fa-robot"></i> Bot AI</div>';
-        else if (role === 'agent') badge = '<div class="msg-badge agent"><i class="fas fa-user-tie"></i> Vous</div>';
-        
+        // Badges removed for clean design
         let mediaHtml = '';
         if (msgType === 'image') {
             if (mediaUrl) {
@@ -903,27 +1224,35 @@
         const recordBtn = document.getElementById('record-btn');
         
         if (isHumanMode) {
-            toggle.innerHTML = '<i class="fas fa-user-tie"></i> Mode Humain (Actif)';
-            toggle.className = 'mode-toggle human';
-            input.disabled = false;
-            input.placeholder = 'Tapez votre message pour le client...';
-            sendBtn.disabled = false;
-            attachBtn.disabled = false;
-            recordBtn.disabled = false;
+            if (toggle) {
+                toggle.innerHTML = '<i class="fas fa-user-tie"></i> Mode Humain (Actif)';
+                toggle.className = 'mode-toggle human';
+            }
+            if (input) {
+                input.disabled = false;
+                input.placeholder = 'Écrire un message...';
+            }
+            if (sendBtn) sendBtn.disabled = false;
+            if (attachBtn) attachBtn.disabled = false;
+            if (recordBtn) recordBtn.disabled = false;
             // Also need to check 24h window without reloading the whole history
             if (window.currentMessages) {
                 check24hWindow(window.currentMessages);
             }
         } else {
-            toggle.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
-            toggle.className = 'mode-toggle ai';
-            input.disabled = true;
-            input.placeholder = 'Activez le mode humain pour prendre le relais et répondre...';
-            input.value = '';
-            input.style.height = '';
-            sendBtn.disabled = true;
-            attachBtn.disabled = true;
-            recordBtn.disabled = true;
+            if (toggle) {
+                toggle.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
+                toggle.className = 'mode-toggle ai';
+            }
+            if (input) {
+                input.disabled = true;
+                input.placeholder = "L'IA gère cette conversation...";
+                input.value = '';
+                input.style.height = '';
+            }
+            if (sendBtn) sendBtn.disabled = true;
+            if (attachBtn) attachBtn.disabled = true;
+            if (recordBtn) recordBtn.disabled = true;
         }
     }
 

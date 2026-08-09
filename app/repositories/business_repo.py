@@ -31,7 +31,9 @@ def add_or_update(
     drip_j3_msg: str = None,
     debounce_delay: int = 3,
     buffer_minutes: int = 0,
-    email: str = None
+    email: str = None,
+    adresse: str = None,
+    site_web: str = None
 ) -> None:
     """Ajoute ou met à jour un business dans la base (token_wa chiffré)."""
     conn = sqlite3.connect(get_db_path())
@@ -50,22 +52,22 @@ def add_or_update(
                nom = ?, whatsapp_phone_id = ?, token_wa = ?, password = ?,
                prompt = ?, msg_confirm = ?, msg_cancel = ?, msg_ready = ?,
                business_type = ?, plan_abonnement = ?, is_active = ?,
-               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?, email = ?
+               owner_phone = ?, drip_j3_enabled = ?, drip_j3_msg = ?, debounce_delay = ?, buffer_minutes = ?, email = ?, adresse = ?, site_web = ?
                WHERE id = ?""",
             (nom, phone_id, encrypted_token, password, prompt, msg_confirm, msg_cancel, msg_ready,
              business_type, plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg,
-             debounce_delay, buffer_minutes, email, biz_id)
+             debounce_delay, buffer_minutes, email, adresse, site_web, biz_id)
         )
     else:
         cursor.execute(
             """INSERT INTO businesses
                (id, nom, whatsapp_phone_id, token_wa, password,
                 prompt, msg_confirm, msg_cancel, msg_ready, business_type, plan_abonnement, is_active, owner_phone,
-                drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, email)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                drip_j3_enabled, drip_j3_msg, debounce_delay, buffer_minutes, email, adresse, site_web)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (biz_id, nom, phone_id, encrypted_token, password, prompt, msg_confirm, msg_cancel, msg_ready,
              business_type, plan_abonnement, is_active, owner_phone, drip_j3_enabled, drip_j3_msg,
-             debounce_delay, buffer_minutes, email),
+             debounce_delay, buffer_minutes, email, adresse, site_web),
         )
 
     conn.commit()

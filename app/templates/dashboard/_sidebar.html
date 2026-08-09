@@ -37,12 +37,10 @@
 
     {# ── Logo ── #}
     <div class="sidebar-logo">
-        <div class="logo-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
+        <div class="logo-icon" style="display:flex; align-items:center; justify-content:center;">
+            <img src="{{ url_for('static', filename='img/vira_app_icon.svg') }}" alt="Vira Logo" style="width: 32px; height: 32px;">
         </div>
-        <span class="logo-text">My<span>Bot</span></span>
+        <span class="logo-text" style="font-weight: 800; font-size: 20px; letter-spacing: 0.5px; margin-left: 10px; color: var(--text);">VIRA</span>
         <button class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open')" aria-label="Fermer le menu">
             <i class="fas fa-times"></i>
         </button>
@@ -56,13 +54,40 @@
                 <div class="biz-name">{{ business.nom }}</div>
                 <div class="biz-id-label" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                     <span>{{ biz_id }}</span>
-                    {% if plan == 'PREMIUM' %}
-                        <span style="font-size:9px;font-weight:700;background:#F0B429;color:#1a1a1a;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">PREMIUM</span>
-                    {% elif plan == 'PRO' %}
-                        <span style="font-size:9px;font-weight:700;background:#25D366;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">PRO</span>
+                    {% if plan == 'SCALE' %}
+                        <span style="font-size:9px;font-weight:700;background:#F0B429;color:#1a1a1a;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">SCALE</span>
+                    {% elif plan == 'GROWTH' %}
+                        <span style="font-size:9px;font-weight:700;background:#25D366;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">GROWTH</span>
+                    {% elif plan == 'DISCOVERY' %}
+                        <span style="font-size:9px;font-weight:700;background:#58A6FF;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">DISCOVERY</span>
                     {% else %}
-                        <span style="font-size:9px;font-weight:700;background:#58A6FF;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">BASIC</span>
+                        <span style="font-size:9px;font-weight:700;background:#8b949e;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">FREE</span>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Sélecteur de Canal (Workspace Pattern) ── #}
+    <div class="channel-selector-wrapper" id="channel-selector-wrapper">
+        <div class="channel-selector-label">Canal actif</div>
+        <div class="channel-selector" id="channel-selector-btn" onclick="toggleChannelDropdown()" title="Changer de canal">
+            <div class="channel-selector-icon" id="cs-icon">
+                <i class="fab fa-whatsapp" style="color:#25d366;"></i>
+            </div>
+            <span class="channel-selector-name" id="cs-name">Chargement...</span>
+            <div class="channel-selector-status-dot" id="cs-status-dot"></div>
+            <i class="fas fa-chevron-down channel-selector-arrow" id="cs-arrow"></i>
+        </div>
+        <div class="channel-dropdown" id="channel-dropdown" style="display:none;">
+            <div class="channel-dropdown-item channel-all-item" onclick="selectChannel('all', 'Tous les canaux', 'all')" data-channel-id="all">
+                <i class="fas fa-layer-group" style="color:#5b6af0;"></i>
+                <span>Tous les canaux</span>
+                <span class="ch-badge ch-badge-all">Global</span>
+            </div>
+            <div id="channel-list-items">
+                <div style="padding:10px; color:var(--muted); font-size:12px; text-align:center;">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement...
                 </div>
             </div>
         </div>
@@ -70,110 +95,89 @@
 
     {# ── Navigation principale ── #}
     <nav class="sidebar-nav">
-        <div class="nav-section-label">Principal</div>
-
         <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}"
            href="{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}">
-            <i class="fas fa-chart-pie"></i> Tableau de bord
-        </a>
-
-        <a class="nav-item {% if active_page == 'orders' %}active{% endif %}"
-           href="{{ url_for('dashboard.business_orders', biz_id=biz_id) }}">
-            <i class="fas fa-calendar-check"></i> Historique (Commandes)
-        </a>
-
-        <a class="nav-item {% if active_page == 'agenda' %}active{% endif %}"
-           href="{{ url_for('dashboard.business_agenda', biz_id=biz_id) }}">
-            <i class="fas fa-calendar-alt"></i> Agenda Visuel
-        </a>
-
-        <a class="nav-item {% if active_page == 'catalog' %}active{% endif %}"
-           href="{{ url_for('dashboard.business_catalog', biz_id=biz_id) }}">
-            <i class="fas fa-book-open"></i> Catalogue / Menu
-        </a>
-
-        <a class="nav-item {% if active_page == 'vitrine' %}active{% endif %}"
-           href="{{ url_for('dashboard.vitrine_settings', biz_id=biz_id) }}">
-            <i class="fas fa-globe"></i> Vitrine Web
+            <i class="fas fa-home"></i> Dashboard
         </a>
 
         <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}" id="nav-chat-link">
-            <i class="fas fa-comments"></i> Conversations
+            <i class="fas fa-comment-dots"></i> Conversations
             {% if global_unread_count and global_unread_count > 0 %}
-            <span id="global-notif-msg-badge" style="font-size:10.5px;background:#F85149;color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
+            <span id="global-notif-msg-badge" style="font-size:10.5px;background:var(--brand);color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
             {% endif %}
         </a>
 
         <a class="nav-item {% if active_page == 'clients' %}active{% endif %}"
            href="{{ url_for('dashboard.business_clients', biz_id=biz_id) }}">
-            <i class="fas fa-users"></i> Clients
+            <i class="fas fa-users"></i> CRM
         </a>
 
-        {# ── Section Croissance ── #}
-        <div class="nav-section-label">Croissance</div>
+        <a class="nav-item {% if active_page == 'orders' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_orders', biz_id=biz_id) }}">
+            <i class="fas fa-shopping-bag"></i> Commandes
+        </a>
 
-        {% if plan in ['PRO', 'PREMIUM'] %}
         <a class="nav-item {% if active_page == 'marketing' %}active{% endif %}"
            href="{{ url_for('dashboard.business_marketing', biz_id=biz_id) }}">
-            <i class="fas fa-bullhorn"></i> Marketing
+            <i class="fas fa-bullhorn"></i> Campagnes
         </a>
-        {% else %}
-        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
-            <i class="fas fa-bullhorn"></i> Marketing
-            <span style="font-size:9px;background:rgba(88,166,255,.12);color:#58A6FF;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PRO+</span>
-        </div>
-        {% endif %}
 
-        {% if plan == 'PREMIUM' %}
+        <a class="nav-item {% if active_page == 'agenda' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_agenda', biz_id=biz_id) }}">
+            <i class="fas fa-calendar-alt"></i> Agenda
+        </a>
+
         <a class="nav-item {% if active_page == 'payments' %}active{% endif %}"
            href="{{ url_for('dashboard.business_payments', biz_id=biz_id) }}">
-            <i class="fas fa-credit-card"></i> Paiements
+            <i class="fas fa-file-invoice"></i> Facturation
         </a>
-        {% else %}
-        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
-            <i class="fas fa-credit-card"></i> Paiements
-            <span style="font-size:9px;background:rgba(240,180,41,.12);color:#F0B429;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PREMIUM</span>
-        </div>
-        {% endif %}
-
-        {# ── Configuration ── #}
-        <div class="nav-section-label">Configuration</div>
 
         <a class="nav-item {% if active_page == 'settings' %}active{% endif %}"
            href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}">
             <i class="fas fa-cog"></i> Paramètres
         </a>
 
+        {# Sous-menu ou autres pages moins prioritaires #}
+        <div style="margin-top: 20px; margin-bottom: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding-left: 14px;">Avancé</div>
+        
+        <a class="nav-item {% if active_page == 'catalog' %}active{% endif %}"
+           href="{{ url_for('dashboard.business_catalog', biz_id=biz_id) }}">
+            <i class="fas fa-book-open"></i> Catalogue
+        </a>
         <a class="nav-item {% if active_page == 'tags' %}active{% endif %}"
            href="{{ url_for('dashboard.tags', biz_id=biz_id) }}">
-            <i class="fas fa-tags"></i> Mes Tags (IA)
+            <i class="fas fa-tags"></i> Tags
         </a>
-
-        <a class="nav-item {% if active_page == 'employees' %}active{% endif %}"
-           href="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}">
-            <i class="fas fa-user-friends"></i> Équipe & Horaires
-        </a>
-
-        {% if plan == 'PREMIUM' %}
-        <a class="nav-item {% if active_page == 'agents' %}active{% endif %}"
-           href="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}">
-            <i class="fas fa-robot"></i> Équipe IA
-        </a>
-        {% else %}
-        <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;">
-            <i class="fas fa-robot"></i> Équipe IA
-            <span style="font-size:9px;background:rgba(240,180,41,.12);color:#F0B429;padding:1px 5px;border-radius:3px;margin-left:auto;"><i class="fas fa-lock" style="margin-right:3px;"></i>PREMIUM</span>
-        </div>
-        {% endif %}
-
-
-
     </nav>
 
-    {# ── Footer ── #}
-    <div class="sidebar-footer">
-        <a class="nav-item" href="{{ url_for('dashboard.logout') }}">
-            <i class="fas fa-sign-out-alt"></i> Se déconnecter
+    {# ── Footer (Plan Pro & Aide) ── #}
+    <div class="sidebar-footer" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; border-top: none;">
+        <!-- Plan Pro Card -->
+        <div style="background: linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0.03) 100%); border: 1px solid rgba(124,58,237,0.15); border-radius: 12px; padding: 16px; position: relative; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <i class="fas fa-crown" style="color: #9D6BF8;"></i>
+                <span style="font-size: 14px; font-weight: 700; color: var(--text);">Plan Pro</span>
+            </div>
+            <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">
+                Renouvellement le<br>23 Juin 2025
+            </div>
+            <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}" style="display: block; text-align: center; background: rgba(124,58,237,0.15); color: #c4a1ff; font-size: 12px; font-weight: 600; padding: 6px 0; border-radius: 6px; text-decoration: none; border: 1px solid rgba(124,58,237,0.25); transition: background 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
+                Gérer mon abonnement
+            </a>
+        </div>
+        
+        <!-- Besoin d'aide -->
+        <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; text-decoration: none; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background='transparent'">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 32px; height: 32px; background: transparent; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 16px;">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text);">Besoin d'aide ?</span>
+                    <span style="font-size: 11px; color: var(--muted);">Contactez le support</span>
+                </div>
+            </div>
+            <i class="fas fa-chevron-right" style="font-size: 10px; color: var(--muted);"></i>
         </a>
     </div>
 
@@ -789,4 +793,273 @@
 })();
 </script>
 {% endif %}
+
+{# ── Sélecteur de Canal : CSS ── #}
+<style>
+.channel-selector-wrapper {
+    margin: 0 12px 8px;
+    position: relative;
+}
+.channel-selector-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    padding-left: 4px;
+}
+.channel-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-secondary, #1a1d2e);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    user-select: none;
+}
+.channel-selector:hover {
+    border-color: var(--brand);
+    background: var(--surface-hover, #2a2d3d);
+}
+.channel-selector-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.channel-selector-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.channel-selector-status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--muted);
+}
+.channel-selector-status-dot.connected   { background: #25d366; box-shadow: 0 0 6px #25d36666; }
+.channel-selector-status-dot.not_connected { background: #F0B429; }
+.channel-selector-status-dot.coming_soon { background: #8b92a5; }
+.channel-selector-status-dot.all         { background: #5b6af0; box-shadow: 0 0 6px #5b6af066; }
+.channel-selector-arrow {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform .25s;
+    flex-shrink: 0;
+}
+.channel-selector-arrow.open { transform: rotate(180deg); }
+/* Dropdown */
+.channel-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    z-index: 9999;
+    animation: csDropIn .18s ease;
+}
+@keyframes csDropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.channel-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    transition: background .15s;
+}
+.channel-dropdown-item:hover { background: var(--surface-hover, #2a2d3d); }
+.channel-dropdown-item.active { background: rgba(91,106,240,.15); }
+.channel-dropdown-item .ch-name { flex: 1; }
+.ch-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: .3px;
+}
+.ch-badge-connected    { background: rgba(37,211,102,.15); color: #25d366; }
+.ch-badge-not_connected{ background: rgba(240,180,41,.15);  color: #F0B429; }
+.ch-badge-coming_soon  { background: rgba(139,146,165,.12); color: #8b92a5; }
+.ch-badge-all          { background: rgba(91,106,240,.15);  color: #5b6af0; }
+.channel-dropdown-item.disabled { opacity: .5; cursor: default; pointer-events: none; }
+</style>
+
+{# ── Sélecteur de Canal : JS ── #}
+<script>
+(function() {
+    const STORAGE_KEY = 'vira_active_channel';
+    const API_BASE = '/api/v1';
+    let _channelsCache = null;
+
+    // ── Récupère le JWT depuis le cookie/session (pattern existant dans l'app)
+    function getAuthHeader() {
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+        return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    // ── Chargement des canaux depuis l'API
+    async function loadChannels() {
+        try {
+            const r = await fetch(API_BASE + '/channels', { headers: getAuthHeader() });
+            if (!r.ok) return null;
+            const data = await r.json();
+            return data.success ? data.channels : null;
+        } catch(e) {
+            return null;
+        }
+    }
+
+    // ── Icônes par type de canal
+    function channelIcon(type) {
+        const icons = {
+            whatsapp:  '<i class="fab fa-whatsapp" style="color:#25d366;"></i>',
+            telegram:  '<i class="fab fa-telegram" style="color:#229ED9;"></i>',
+            instagram: '<i class="fab fa-instagram" style="color:#E1306C;"></i>',
+            messenger: '<i class="fab fa-facebook-messenger" style="color:#0084FF;"></i>',
+            all:       '<i class="fas fa-layer-group" style="color:#5b6af0;"></i>',
+        };
+        return icons[type] || '<i class="fas fa-plug"></i>';
+    }
+
+    // ── Badge texte par statut
+    function statusLabel(s) {
+        if (s === 'connected')    return ['Actif',        'ch-badge-connected'];
+        if (s === 'not_connected') return ['Non connecté', 'ch-badge-not_connected'];
+        if (s === 'coming_soon')  return ['Bientôt',      'ch-badge-coming_soon'];
+        return [s, ''];
+    }
+
+    // ── Met à jour l'affichage du bouton principal
+    function updateSelectorDisplay(id, name, status) {
+        const icon   = document.getElementById('cs-icon');
+        const label  = document.getElementById('cs-name');
+        const dot    = document.getElementById('cs-status-dot');
+        if (!icon || !label || !dot) return;
+        icon.innerHTML = channelIcon(id === 'all' ? 'all' : (id + '').replace(/\d+/, _typeForId(id)));
+        // Utilise le type stocké si disponible
+        const ch = _channelsCache && id !== 'all'
+            ? _channelsCache.find(c => String(c.id) === String(id)) : null;
+        icon.innerHTML = channelIcon(ch ? ch.type : (id === 'all' ? 'all' : 'whatsapp'));
+        label.textContent = name;
+        dot.className = 'channel-selector-status-dot ' + (id === 'all' ? 'all' : status);
+    }
+
+    function _typeForId(id) {
+        if (!_channelsCache) return 'whatsapp';
+        const ch = _channelsCache.find(c => String(c.id) === String(id));
+        return ch ? ch.type : 'whatsapp';
+    }
+
+    // ── Construit le contenu du dropdown
+    function renderDropdown(channels) {
+        const container = document.getElementById('channel-list-items');
+        if (!container) return;
+        if (!channels || channels.length === 0) {
+            container.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:12px;text-align:center;">Aucun canal disponible.</div>';
+            return;
+        }
+        const activeId = sessionStorage.getItem(STORAGE_KEY) || 'all';
+        container.innerHTML = channels.map(ch => {
+            const [badgeText, badgeClass] = statusLabel(ch.status);
+            const isComingSoon = ch.status === 'coming_soon';
+            const isActive = String(ch.id) === String(activeId) || (activeId === 'all' && false);
+            return `<div class="channel-dropdown-item${isComingSoon ? ' disabled' : ''}${isActive ? ' active' : ''}"
+                        onclick="selectChannel('${ch.id}', '${ch.label}', '${ch.status}')"
+                        data-channel-id="${ch.id}">
+                        ${channelIcon(ch.type)}
+                        <span class="ch-name">${ch.label}</span>
+                        <span class="ch-badge ${badgeClass}">${badgeText}</span>
+                    </div>`;
+        }).join('');
+    }
+
+    // ── Sélection d'un canal (exposé globalement)
+    window.selectChannel = function(id, name, status) {
+        sessionStorage.setItem(STORAGE_KEY, String(id));
+        sessionStorage.setItem(STORAGE_KEY + '_name', name);
+        sessionStorage.setItem(STORAGE_KEY + '_status', status);
+        updateSelectorDisplay(id, name, status);
+        // Fermer le dropdown
+        const dd = document.getElementById('channel-dropdown');
+        const arrow = document.getElementById('cs-arrow');
+        if (dd) dd.style.display = 'none';
+        if (arrow) arrow.classList.remove('open');
+        // Notifier les pages qui écoutent (ex: dashboard stats)
+        window.dispatchEvent(new CustomEvent('channelChanged', {
+            detail: { channelId: id, channelName: name, status: status }
+        }));
+        // Marquer l'item actif dans le dropdown
+        document.querySelectorAll('.channel-dropdown-item').forEach(el => {
+            el.classList.toggle('active', String(el.dataset.channelId) === String(id));
+        });
+    };
+
+    // ── Toggle dropdown
+    window.toggleChannelDropdown = function() {
+        const dd = document.getElementById('channel-dropdown');
+        const arrow = document.getElementById('cs-arrow');
+        if (!dd) return;
+        const isOpen = dd.style.display !== 'none';
+        dd.style.display = isOpen ? 'none' : 'block';
+        if (arrow) arrow.classList.toggle('open', !isOpen);
+    };
+
+    // ── Fermer si clic en dehors
+    document.addEventListener('click', function(e) {
+        const wrapper = document.getElementById('channel-selector-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            const dd = document.getElementById('channel-dropdown');
+            const arrow = document.getElementById('cs-arrow');
+            if (dd) dd.style.display = 'none';
+            if (arrow) arrow.classList.remove('open');
+        }
+    });
+
+    // ── Init au chargement
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Restaurer l'état précédent depuis sessionStorage
+        const savedId     = sessionStorage.getItem(STORAGE_KEY) || 'all';
+        const savedName   = sessionStorage.getItem(STORAGE_KEY + '_name') || 'Tous les canaux';
+        const savedStatus = sessionStorage.getItem(STORAGE_KEY + '_status') || 'all';
+        updateSelectorDisplay(savedId, savedName, savedStatus);
+
+        // Charger les canaux depuis l'API
+        const channels = await loadChannels();
+        _channelsCache = channels;
+        if (channels) {
+            renderDropdown(channels);
+            // Si le canal sauvé n'est plus valide, revenir sur 'all'
+            if (savedId !== 'all') {
+                const still = channels.find(c => String(c.id) === savedId && c.status !== 'coming_soon');
+                if (!still) window.selectChannel('all', 'Tous les canaux', 'all');
+            }
+            // Si aucun canal n'était sélectionné, choisir le premier connecté automatiquement
+            if (savedId === 'all') {
+                const first = channels.find(c => c.status === 'connected');
+                if (first) updateSelectorDisplay(first.id, first.label, first.status);
+            }
+        }
+    });
+})();
+</script>
 

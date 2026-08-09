@@ -91,7 +91,7 @@
             margin-top: 10px;
         }
         .badge-pro { background: rgba(37,211,102,0.12); color: #25D366; border: 1px solid rgba(37,211,102,0.25); }
-        .badge-premium { background: rgba(240,180,41,0.12); color: #F0B429; border: 1px solid rgba(240,180,41,0.25); }
+        .badge-scale { background: rgba(240,180,41,0.12); color: #F0B429; border: 1px solid rgba(240,180,41,0.25); }
 
         .coming-soon-overlay {
             position: absolute;
@@ -191,16 +191,16 @@
 
         <!-- Hero plan -->
         <div class="plan-hero">
-            {% if plan == 'PREMIUM' %}
+            {% if plan == 'SCALE' %}
             <div class="plan-hero-icon" style="background:rgba(240,180,41,0.1); border:1px solid rgba(240,180,41,0.25);">🚀</div>
             <div>
-                <h2>Marketing Avancé — Plan PREMIUM</h2>
+                <h2>Marketing Avancé — Plan SCALE</h2>
                 <p>Accès complet à toutes les fonctionnalités marketing : campagnes ciblées, messages séquentiels avec délais anti-spam, et automatisation avancée.</p>
             </div>
             {% else %}
             <div class="plan-hero-icon" style="background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.25);">📣</div>
             <div>
-                <h2>Marketing Campagnes — Plan PRO</h2>
+                <h2>Marketing Campagnes — Plan GROWTH</h2>
                 <p>Envoyez des campagnes ciblées à tous vos clients. Passez au plan PREMIUM pour débloquer les messages séquentiels, les délais anti-spam et l'automatisation avancée.</p>
             </div>
             {% endif %}
@@ -218,33 +218,33 @@
                 <div class="feature-icon" style="background:var(--green-bg); color:var(--green);">🎯</div>
                 <div class="feature-title">Ciblage par activité</div>
                 <div class="feature-desc">Filtrez vos destinataires selon leur dernière interaction avec le bot (actifs / inactifs).</div>
-                {% if plan == 'PREMIUM' %}
+                {% if plan == 'SCALE' %}
                 <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
                 {% else %}
-                <span class="feature-badge badge-premium">🔒 PREMIUM requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan PREMIUM</span></div>
+                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
+                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
                 {% endif %}
             </div>
             <div class="feature-card" style="--accent: #F0B429;">
                 <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;">⏱️</div>
                 <div class="feature-title">Délais anti-spam</div>
                 <div class="feature-desc">Messages envoyés avec des intervalles aléatoires pour simuler un comportement humain naturel et éviter les blocages WhatsApp.</div>
-                {% if plan == 'PREMIUM' %}
+                {% if plan == 'SCALE' %}
                 <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
                 {% else %}
-                <span class="feature-badge badge-premium">🔒 PREMIUM requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan PREMIUM</span></div>
+                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
+                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
                 {% endif %}
             </div>
             <div class="feature-card" style="--accent: #F0B429;">
                 <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;">🔁</div>
                 <div class="feature-title">Séquences automatisées</div>
                 <div class="feature-desc">Créez des séries de messages espacés dans le temps : rappels J+1, J+3, J+7 pour maximiser la conversion.</div>
-                {% if plan == 'PREMIUM' %}
+                {% if plan == 'SCALE' %}
                 <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
                 {% else %}
-                <span class="feature-badge badge-premium">🔒 PREMIUM requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan PREMIUM</span></div>
+                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
+                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
                 {% endif %}
             </div>
         </div>
@@ -263,11 +263,11 @@
                         <label>Destinataires</label>
                         <select name="target" id="campaign-target">
                             <option value="all">Tous les clients ({{ clients|length }})</option>
-                            <option value="active" {% if plan != 'PREMIUM' %}disabled{% endif %}>
-                                Clients actifs (7 derniers jours) {% if plan != 'PREMIUM' %}🔒 (PREMIUM){% endif %}
+                            <option value="active" {% if plan != 'SCALE' %}disabled{% endif %}>
+                                Clients actifs (7 derniers jours) {% if plan != 'SCALE' %}🔒 (SCALE){% endif %}
                             </option>
-                            <option value="inactive" {% if plan != 'PREMIUM' %}disabled{% endif %}>
-                                Clients inactifs (+ de 30 jours) {% if plan != 'PREMIUM' %}🔒 (PREMIUM){% endif %}
+                            <option value="inactive" {% if plan != 'SCALE' %}disabled{% endif %}>
+                                Clients inactifs (+ de 30 jours) {% if plan != 'SCALE' %}🔒 (SCALE){% endif %}
                             </option>
                         </select>
                     </div>
@@ -283,7 +283,7 @@
                     <div class="delay-notice">
                         <i class="fas fa-info-circle"></i>
                         <span>
-                            {% if plan == 'PREMIUM' %}
+                            {% if plan == 'SCALE' %}
                                 <strong>Mode anti-spam activé :</strong> Les messages seront envoyés avec un délai aléatoire entre 8 et 25 secondes pour chaque destinataire, simulant un comportement humain naturel.
                             {% else %}
                                 Les messages seront envoyés les uns après les autres. Passez au plan <strong>PREMIUM</strong> pour activer les délais anti-spam et éviter les blocages WhatsApp.
@@ -307,12 +307,12 @@
         <div class="client-campaign-section" style="margin-top: 24px;">
             <div class="section-header">
                 <span class="section-title"><i class="fas fa-sync-alt"></i> Séquences Automatisées (Relance J+3)</span>
-                {% if plan != 'PREMIUM' %}
-                <span class="badge badge-premium" style="font-size:11px;">🔒 PREMIUM</span>
+                {% if plan != 'SCALE' %}
+                <span class="badge badge-scale" style="font-size:11px;">🔒 SCALE</span>
                 {% endif %}
             </div>
             <div class="section-body" style="position:relative;">
-                {% if plan != 'PREMIUM' %}
+                {% if plan != 'SCALE' %}
                 <div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:10; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); border-radius:12px;">
                     <div style="background:var(--card); padding:16px 24px; border-radius:12px; box-shadow:var(--shadow); text-align:center; border:1px solid var(--border);">
                         <i class="fas fa-lock" style="font-size:24px; color:var(--text-light); margin-bottom:12px; display:block;"></i>
@@ -325,7 +325,7 @@
                 <form class="campaign-form" method="POST" action="{{ url_for('dashboard.marketing_settings', biz_id=biz_id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-field" style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-direction:row;">
-                        <input type="checkbox" name="drip_j3_enabled" id="drip_j3_enabled" value="1" {% if business.drip_j3_enabled %}checked{% endif %} style="width:auto; margin:0; cursor:pointer;" {% if plan != 'PREMIUM' %}disabled{% endif %}>
+                        <input type="checkbox" name="drip_j3_enabled" id="drip_j3_enabled" value="1" {% if business.drip_j3_enabled %}checked{% endif %} style="width:auto; margin:0; cursor:pointer;" {% if plan != 'SCALE' %}disabled{% endif %}>
                         <label for="drip_j3_enabled" style="margin:0; cursor:pointer; font-weight:600;">
                             Activer la relance automatique à J+3
                         </label>
@@ -334,10 +334,10 @@
                     <div class="form-field">
                         <label>Message de Relance automatique (Utilisez {prenom})</label>
                         <p style="font-size:12px; color:var(--muted); margin-bottom:8px; line-height:1.4;">Ce message sera envoyé automatiquement aux clients n'ayant pas interagi avec le bot depuis exactement 3 jours.</p>
-                        <textarea name="drip_j3_msg" placeholder="ex: Bonjour {prenom}, ça fait 3 jours ! Avez-vous aimé notre service ? Laissez un avis !" {% if plan != 'PREMIUM' %}disabled{% endif %}>{{ business.drip_j3_msg or 'Bonjour {prenom}, ça fait 3 jours que vous avez goûté nos plats ! Laissez-nous un avis svp 😊' }}</textarea>
+                        <textarea name="drip_j3_msg" placeholder="ex: Bonjour {prenom}, ça fait 3 jours ! Avez-vous aimé notre service ? Laissez un avis !" {% if plan != 'SCALE' %}disabled{% endif %}>{{ business.drip_j3_msg or 'Bonjour {prenom}, ça fait 3 jours que vous avez goûté nos plats ! Laissez-nous un avis svp 😊' }}</textarea>
                     </div>
                     
-                    <button type="submit" class="btn-campaign" style="background:var(--card); color:var(--text); border:1px solid var(--border); box-shadow:0 2px 4px rgba(0,0,0,0.05);" {% if plan != 'PREMIUM' %}disabled{% endif %}>
+                    <button type="submit" class="btn-campaign" style="background:var(--card); color:var(--text); border:1px solid var(--border); box-shadow:0 2px 4px rgba(0,0,0,0.05);" {% if plan != 'SCALE' %}disabled{% endif %}>
                         <i class="fas fa-save"></i> Enregistrer les paramètres
                     </button>
                 </form>

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../viewmodels/stats_notifier.dart';
+import '../../viewmodels/channel_notifier.dart';
 import '../../viewmodels/today_notifier.dart';
 import '../../viewmodels/profile_notifier.dart';
 import '../../core/feature_gate_widget.dart';
 import '../../core/subscription_gate.dart';
+import '../../widgets/channel_selector_bar.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -20,7 +20,9 @@ class TodayScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsState = ref.watch(statsNotifierProvider);
+    // Utilise le nouveau channelStatsProvider (canal actif + période)
+    final statsState = ref.watch(channelStatsProvider);
+    final activeChannel = ref.watch(activeChannelProvider);
     final todayState = ref.watch(todayNotifierProvider);
     final profileState = ref.watch(profileNotifierProvider);
     final planStr = profileState.value?.planAbonnement ?? 'BASIC';
@@ -75,7 +77,7 @@ class TodayScreen extends ConsumerWidget {
                           ),
                         ) : const SizedBox(),
                         loading: () => const SizedBox(),
-                        error: (_, __) => const SizedBox(),
+                        error: (e, _) => const SizedBox(),
                       ),
                       const SizedBox(width: 12),
                       CircleAvatar(
@@ -84,7 +86,7 @@ class TodayScreen extends ConsumerWidget {
                         child: profileState.when(
                           data: (p) => Text(p?.nom.substring(0, 2).toUpperCase() ?? 'MB', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                           loading: () => const SizedBox(),
-                          error: (_, __) => const Text('MB', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          error: (e, _) => const Text('MB', style: TextStyle(color: Colors.white, fontSize: 12)),
                         ),
                       ),
                     ],
@@ -92,6 +94,11 @@ class TodayScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+              // CHANNEL SELECTOR BAR
+              SliverToBoxAdapter(
+                child: const ChannelSelectorBar(),
+              ),
 
               // GREETING BAR
               SliverToBoxAdapter(
@@ -102,7 +109,9 @@ class TodayScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Bonjour 👋 Voici votre résumé du jour',
+                        activeChannel == null
+                            ? 'Vue globale — Tous les canaux'
+                            : 'Canal : ${activeChannel.label}',
                         style: TextStyle(color: Theme.of(context).cardColor, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                       Text(
@@ -136,20 +145,19 @@ class TodayScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-
                     statsState.when(
                       data: (stats) => Padding(
                         padding: const EdgeInsets.only(left: 4, bottom: 8),
                         child: Text(
-                          'ACTIVITÉ : ${stats.periodLabel.toUpperCase()}', 
+                          'ACTIVITÉ : ${stats.period.toUpperCase()}',
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey, letterSpacing: 0.5)
                         ),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (e, _) => const SizedBox(),
                     ),
 
-                    // STATS GRID
+                    // STATS GRID (branché sur channelStatsProvider)
                     statsState.when(
                       data: (stats) => GridView.count(
                         shrinkWrap: true,
@@ -160,28 +168,28 @@ class TodayScreen extends ConsumerWidget {
                         childAspectRatio: 1.6,
                         children: [
                           _buildStatCard(context,
-                              label: 'Chiffre d\'affaires',
+                            label: 'Chiffre d\'affaires',
                             value: '${stats.revenue.toInt()} F',
-                            valueColor: Theme.of(context).colorScheme.primary, // Indigo
+                            valueColor: Theme.of(context).colorScheme.primary,
                             delta: 'Généré via chat',
                           ),
                           _buildStatCard(context,
-                              label: 'Validées',
+                            label: 'Commandes',
                             value: '${stats.ordersCount}',
-                            valueColor: Colors.teal, // Better contrast against indigo
+                            valueColor: Colors.teal,
                             delta: '${stats.pendingCount} en attente',
                           ),
                           _buildStatCard(context,
-                              label: 'En attente',
-                            value: '${stats.pendingCount}',
-                            valueColor: Colors.amber.shade700,
-                            delta: 'À traiter',
+                            label: 'Messages',
+                            value: '${stats.messagesSent}',
+                            valueColor: Colors.indigo,
+                            delta: '${stats.messagesReceived} reçus',
                           ),
                           _buildStatCard(context,
-                              label: 'Annulées',
-                            value: '${stats.cancellations}',
-                            valueColor: Colors.redAccent,
-                            delta: 'Aujourd\'hui',
+                            label: 'Conversations',
+                            value: '${stats.totalConversations}',
+                            valueColor: Colors.amber.shade700,
+                            delta: '${stats.totalClients} clients',
                           ),
                         ],
                       ),
@@ -230,7 +238,7 @@ class TodayScreen extends ConsumerWidget {
                         ),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (e, _) => const SizedBox(),
                     ),
                     const SizedBox(height: 12),
 
@@ -298,8 +306,11 @@ class TodayScreen extends ConsumerWidget {
                               Divider(height: 1, color: Theme.of(context).dividerColor),
                               ...orders.take(3).map((order) {
                                 Color dotColor = Colors.orange;
-                                if (order.statut.contains('Confirmé') || order.statut.contains('Prêt')) dotColor = Theme.of(context).colorScheme.secondary;
-                                else if (order.statut.contains('Annulé')) dotColor = Colors.red;
+                                if (order.statut.contains('Confirmé') || order.statut.contains('Prêt')) {
+                                  dotColor = Theme.of(context).colorScheme.secondary;
+                                } else if (order.statut.contains('Annulé')) {
+                                  dotColor = Colors.red;
+                                }
 
                                 return Container(
                                   padding: const EdgeInsets.all(12),
@@ -324,13 +335,13 @@ class TodayScreen extends ConsumerWidget {
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                         );
                       },
-                      loading: () => Center(child: CircularProgressIndicator()),
-                      error: (_, __) => Center(child: Text('Erreur chargement')),
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => const Center(child: Text('Erreur chargement')),
                     ),
                     const SizedBox(height: 24),
                   ]),
@@ -390,20 +401,21 @@ class TodayScreen extends ConsumerWidget {
   }
 
   Widget _buildFilterChip(BuildContext context, String label, String value, WidgetRef ref) {
-    final active = ref.watch(statsPeriodProvider) == value;
+    // Utilise statsPeriodForChannelProvider (syncé avec channelStatsProvider)
+    final active = ref.watch(statsPeriodForChannelProvider) == value;
     return GestureDetector(
-      onTap: () => ref.read(statsPeriodProvider.notifier).setPeriod(value),
+      onTap: () => ref.read(statsPeriodForChannelProvider.notifier).setPeriod(value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active ? Theme.of(context).colorScheme.primary : Colors.transparent,
-          border: Border.all(color: active ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.3)),
+          border: Border.all(color: active ? Theme.of(context).colorScheme.primary : Colors.grey.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: active ? Colors.white : (Theme.of(context).textTheme.bodyLarge?.color ??Colors.black87),
+            color: active ? Colors.white : (Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87),
             fontSize: 12,
             fontWeight: active ? FontWeight.w600 : FontWeight.w500,
           ),

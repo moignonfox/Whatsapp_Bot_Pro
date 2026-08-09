@@ -338,10 +338,9 @@
             <label>Mot de passe</label>
             <input type="password" id="password" placeholder="••••••••">
         </div>
-        <div class="input-group">
-            <label>Numéro WhatsApp dédié au Bot</label>
-            <input type="text" id="bot_phone" placeholder="+228 99 00 00 00">
-            <span style="font-size:11px; color:var(--muted); margin-top:4px; display:block;">C'est le numéro que vos clients contacteront.</span>
+        <div style="background:rgba(91,106,240,0.1); border:1px solid var(--brand); border-radius:10px; padding:14px 16px; font-size:13px; color:var(--muted); margin-top:4px;">
+            <i class="fas fa-info-circle" style="color:var(--brand); margin-right:6px;"></i>
+            Votre numéro WhatsApp dédié au bot sera configuré depuis votre tableau de bord après inscription.
         </div>
     </div>
 
@@ -459,12 +458,8 @@
         utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
         separateDialCode: true
     });
-    
-    const itiBot = window.intlTelInput(document.querySelector("#bot_phone"), {
-        initialCountry: "tg",
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-        separateDialCode: true
-    });
+    // Note: Le numéro du bot WhatsApp est désormais configuré depuis le Dashboard (canaux.html)
+    // après inscription. Plus de saisie ici.
     
     // UI Interactions for options
     document.querySelectorAll('.option-card input[type="checkbox"]').forEach(input => {
@@ -519,7 +514,7 @@
             if(!document.getElementById('email').value) return false;
             if(!document.getElementById('password').value) return false;
             if(!document.getElementById('owner_phone').value) return false;
-            if(!document.getElementById('bot_phone').value) return false;
+            // bot_phone supprimé : configuré après inscription depuis le Dashboard
         } else if (step === 2) {
             if(!document.getElementById('biz_name').value) return false;
             if(!document.getElementById('location').value) return false;
@@ -593,7 +588,8 @@
             owner_phone: itiOwner.getNumber(),
             email: document.getElementById('email').value,
             password: document.getElementById('password').value,
-            requested_bot_phone: itiBot.getNumber(),
+            // requested_bot_phone : laissé vide, sera configuré depuis le Dashboard
+            requested_bot_phone: '',
             
             nom: document.getElementById('biz_name').value,
             business_type: document.getElementById('biz_type').value,

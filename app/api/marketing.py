@@ -19,7 +19,7 @@ def send_campaign():
     if not business:
         return jsonify({"success": False, "error": "Business introuvable"}), 404
 
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
     
     data = request.get_json() or {}
     message_text = data.get('message', '').strip()
@@ -42,23 +42,22 @@ def send_campaign():
     else:
         return jsonify({"success": False, "error": "Le message ou le template est vide"}), 400
 
-    # 1. Vérification de la fréquence (1/3 jours BASIC, 1/jour PRO, 3/jour PREMIUM)
-    today_count = marketing_repo.get_today_campaigns_count(biz_id)
-    if plan == 'BASIC':
-        if today_count >= 1: # Simplification: on limite à 1 par jour au lieu de 1/3 jours pour éviter une requête SQL complexe
-            return jsonify({"success": False, "error": "Plan BASIC : Limite de 1 campagne par jour atteinte."}), 403
-    elif plan == 'PRO':
-        if today_count >= 1:
-            return jsonify({"success": False, "error": "Plan PRO : Limite de 1 campagne par jour atteinte."}), 403
-    else: # PREMIUM
-        if today_count >= 3:
-            return jsonify({"success": False, "error": "Plan PREMIUM : Limite de 3 campagnes par jour atteinte."}), 403
+    # 1. Block access for FREE/DISCOVERY
+    if plan in ('FREE', 'DISCOVERY'):
+        return jsonify({"success": False, "error": f"Le plan {plan} n'a pas accès aux campagnes marketing."}), 403
 
-    # 2. Vérification des cibles selon le plan
-    if plan == 'BASIC':
-        target = 'all'
-    elif plan == 'PRO' and target == 'inactive':
-        target = 'active' # PRO n'a pas accès à inactive (30j)
+    # 2. Vérification de la fréquence (1/jour GROWTH, 3/jour SCALE)
+    today_count = marketing_repo.get_today_campaigns_count(biz_id)
+    if plan == 'GROWTH':
+        if today_count >= 1:
+            return jsonify({"success": False, "error": "Plan GROWTH : Limite de 1 campagne par jour atteinte."}), 403
+    else: # SCALE
+        if today_count >= 3:
+            return jsonify({"success": False, "error": "Plan SCALE : Limite de 3 campagnes par jour atteinte."}), 403
+
+    # 3. Vérification des cibles selon le plan
+    if plan == 'GROWTH' and target == 'inactive':
+        target = 'active' # GROWTH n'a accès qu'aux actifs 7 jours
 
     all_clients = conversation_repo.get_conversations_for_business(biz_id)
     clients_to_send = []
@@ -84,8 +83,8 @@ def send_campaign():
     else:
         clients_to_send = all_clients
 
-    # 3. Vérification de la limite de clients par plan
-    max_clients = 100 if plan == 'BASIC' else (500 if plan == 'PRO' else len(clients_to_send))
+    # 4. Vérification de la limite de clients par plan
+    max_clients = 500 if plan == 'GROWTH' else len(clients_to_send)
     clients_to_send = clients_to_send[:max_clients]
 
     if not clients_to_send:
@@ -108,21 +107,20 @@ def estimate_campaign():
     if not business:
         return jsonify({"success": False, "error": "Business introuvable"}), 404
 
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
     data = request.get_json() or {}
     target = data.get('target', 'all')
     
-    today_count = marketing_repo.get_today_campaigns_count(biz_id)
-    if plan == 'BASIC' and today_count >= 1:
-        return jsonify({"success": False, "error": "Plan BASIC : Limite de 1 campagne par jour atteinte."}), 403
-    elif plan == 'PRO' and today_count >= 1:
-        return jsonify({"success": False, "error": "Plan PRO : Limite de 1 campagne par jour atteinte."}), 403
-    elif plan == 'PREMIUM' and today_count >= 3:
-        return jsonify({"success": False, "error": "Plan PREMIUM : Limite de 3 campagnes par jour atteinte."}), 403
+    if plan in ('FREE', 'DISCOVERY'):
+        return jsonify({"success": False, "error": f"Le plan {plan} n'a pas accès aux campagnes marketing."}), 403
 
-    if plan == 'BASIC':
-        target = 'all'
-    elif plan == 'PRO' and target == 'inactive':
+    today_count = marketing_repo.get_today_campaigns_count(biz_id)
+    if plan == 'GROWTH' and today_count >= 1:
+        return jsonify({"success": False, "error": "Plan GROWTH : Limite de 1 campagne par jour atteinte."}), 403
+    elif plan == 'SCALE' and today_count >= 3:
+        return jsonify({"success": False, "error": "Plan SCALE : Limite de 3 campagnes par jour atteinte."}), 403
+
+    if plan == 'GROWTH' and target == 'inactive':
         target = 'active'
 
     all_clients = conversation_repo.get_conversations_for_business(biz_id)
@@ -149,7 +147,7 @@ def estimate_campaign():
     else:
         clients_to_send = all_clients
 
-    max_clients = 100 if plan == 'BASIC' else (500 if plan == 'PRO' else len(clients_to_send))
+    max_clients = 500 if plan == 'GROWTH' else len(clients_to_send)
     count = min(len(clients_to_send), max_clients)
 
     return jsonify({"success": True, "count": count}), 200

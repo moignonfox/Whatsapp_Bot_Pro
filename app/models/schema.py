@@ -61,7 +61,7 @@ def init_db() -> None:
             msg_ready         TEXT,
             human_mode        TEXT DEFAULT '{}',
             business_type     TEXT DEFAULT 'restaurant',
-            plan_abonnement   TEXT DEFAULT 'BASIC',
+            plan_abonnement   TEXT DEFAULT 'FREE',
             is_active         INTEGER DEFAULT 1,
             owner_phone       TEXT,
             drip_j3_enabled   INTEGER DEFAULT 0,
@@ -232,6 +232,28 @@ def init_db() -> None:
         )
     ''')
 
+    # --- Table channels (Multi-Canal / Workspace Pattern) ---
+    # SECURITE : Le champ `config` est un JSON qui peut contenir des tokens
+    # sensibles (ex: token_wa Meta). Il NE DOIT PAS être renvoyé tel quel
+    # dans les réponses API. Filtrer les champs sensibles avant tout renvoi.
+    # Pour une sécurité maximale en production, chiffrer ce champ via
+    # la clé SECRET_KEY de l'environnement avant écriture.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS channels (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id  TEXT NOT NULL,
+            type         TEXT NOT NULL,
+            status       TEXT NOT NULL DEFAULT 'not_connected',
+            config       TEXT DEFAULT '{}',
+            connected_at DATETIME,
+            created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
+        )
+    """)
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_channels_business_type ON channels (business_id, type)"
+    )
+
     conn.commit()
     conn.close()
 
@@ -260,6 +282,16 @@ def update_schema() -> None:
         cursor.execute("ALTER TABLE reservations ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
     except sqlite3.OperationalError:
         pass  # La colonne existe déjà
+        
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN adresse TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE businesses ADD COLUMN site_web TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     try:
         cursor.execute("ALTER TABLE history ADD COLUMN business_id TEXT")
@@ -307,9 +339,18 @@ def update_schema() -> None:
         pass  # La colonne existe déjà
 
     try:
-        cursor.execute("ALTER TABLE businesses ADD COLUMN plan_abonnement TEXT DEFAULT 'BASIC'")
+        cursor.execute("ALTER TABLE businesses ADD COLUMN plan_abonnement TEXT DEFAULT 'FREE'")
     except sqlite3.OperationalError:
         pass  # La colonne existe déjà
+
+    # Migration des anciens plans (V1) vers les nouveaux plans stratégiques (V2)
+    try:
+        cursor.execute("UPDATE businesses SET plan_abonnement = 'DISCOVERY' WHERE plan_abonnement = 'BASIC'")
+        cursor.execute("UPDATE businesses SET plan_abonnement = 'GROWTH' WHERE plan_abonnement = 'PRO'")
+        cursor.execute("UPDATE businesses SET plan_abonnement = 'SCALE' WHERE plan_abonnement = 'PREMIUM'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
     try:
         cursor.execute("ALTER TABLE businesses ADD COLUMN is_active INTEGER DEFAULT 1")
@@ -601,6 +642,63 @@ def update_schema() -> None:
             PRIMARY KEY (wa_id, business_id, tag_id)
         )
     ''')
+
+    # --- Table channels (Multi-Canal / Workspace Pattern) ---
+    # SECURITE : Le champ `config` est un JSON qui peut contenir des tokens
+    # sensibles (ex: token_wa Meta). Il NE DOIT PAS être renvoyé tel quel
+    # dans les réponses API. Filtrer les champs sensibles avant tout renvoi.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS channels (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id  TEXT NOT NULL,
+            type         TEXT NOT NULL,
+            status       TEXT NOT NULL DEFAULT 'not_connected',
+            config       TEXT DEFAULT '{}',
+            connected_at DATETIME,
+            created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
+        )
+    """)
+    try:
+        cursor.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_channels_business_type ON channels (business_id, type)"
+        )
+    except Exception:
+        pass
+
+    # --- Migration Douce V11 : whatsapp_phone_id → channels ---
+    # Pour chaque business ayant un numéro WhatsApp configuré,
+    # on crée une ligne dans `channels` si elle n'existe pas encore.
+    # Idempotent : sûr de relancer autant de fois que nécessaire.
+    # Les colonnes whatsapp_phone_id et token_wa sont CONSERVÉES dans
+    # `businesses` pour la rétrocompatibilité (supprimer seulement
+    # quand tout est stable en production).
+    import json as _json
+    cursor.execute("""
+        SELECT id, whatsapp_phone_id, token_wa
+        FROM businesses
+        WHERE whatsapp_phone_id IS NOT NULL
+          AND whatsapp_phone_id != ''
+    """)
+    businesses_to_migrate = cursor.fetchall()
+    migrated_count = 0
+    for (biz_id, phone_id, token_wa) in businesses_to_migrate:
+        cursor.execute(
+            "SELECT id FROM channels WHERE business_id = ? AND type = 'whatsapp'",
+            (biz_id,)
+        )
+        if cursor.fetchone() is None:
+            config_data = _json.dumps({
+                "whatsapp_phone_id": phone_id,
+                "token_wa": token_wa or ""
+            })
+            cursor.execute("""
+                INSERT INTO channels (business_id, type, status, config, connected_at)
+                VALUES (?, 'whatsapp', 'connected', ?, CURRENT_TIMESTAMP)
+            """, (biz_id, config_data))
+            migrated_count += 1
+    if migrated_count > 0:
+        print(f"Migration V11: {migrated_count} compte(s) WhatsApp migrés vers la table 'channels'.")
 
     conn.commit()
     conn.close()

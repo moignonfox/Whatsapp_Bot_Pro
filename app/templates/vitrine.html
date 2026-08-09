@@ -21,11 +21,7 @@
 <style>
 
 :root {
-  {% if plan == 'BASIC' %}
-  --brand:      {{ business.vitrine_color or '#5b6af0' }};
-  {% else %}
-  --brand:      {{ business.vitrine_color or '#5b6af0' }};
-  {% endif %}
+  --brand:      {{ business.vitrine_color or \'#5b6af0\' }};
   --brand-soft: #eef0ff;
   --brand-text: #3a47d4;
   --bg:         #f9f8f6;
@@ -661,7 +657,7 @@ footer {
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo" style="display:flex; align-items:center; gap:10px;">
-    {% if plan != 'BASIC' and business.logo_url %}
+    {% if business.logo_url %}
       <img src="{{ business.logo_url }}" alt="Logo" style="height:32px; border-radius:4px; object-fit:contain;">
     {% endif %}
     {{ business.nom }}
@@ -673,15 +669,9 @@ footer {
   </div>
 
   <div class="nav-right">
-    {% if plan == 'BASIC' %}
-      <a href="https://wa.me/{{ business.requested_bot_phone|replace('+', '') if business.requested_bot_phone else (business.owner_phone|replace('+', '') if business.owner_phone else '') }}" class="cart-btn" style="text-decoration: none; background: #25d366;">
-        <i class="fab fa-whatsapp"></i> Contacter
-      </a>
-    {% else %}
       <button class="cart-btn" id="cart-btn">
         🛒 Panier <span class="cart-count" id="cart-count">0</span>
       </button>
-    {% endif %}
   </div>
 </nav>
 
@@ -723,13 +713,11 @@ footer {
           <p class="card-desc">{{ p.description if p.description else '' }}</p>
           <div class="card-footer">
             <span class="card-price">{{ "{:,.0f}".format(p.prix).replace(',', ' ') }} FCFA</span>
-            {% if plan != 'BASIC' %}
               {% if p.disponible %}
                 <button class="add-btn" title="Ajouter au panier">+</button>
               {% else %}
                 <button class="add-btn" disabled style="background:var(--border); color:var(--muted); cursor:not-allowed;" title="Produit épuisé">+</button>
               {% endif %}
-            {% endif %}
           </div>
         </div>
       </div>
@@ -768,7 +756,6 @@ footer {
   <a href="https://wa.me/{{ business.requested_bot_phone|replace('+', '') if business.requested_bot_phone else (business.owner_phone|replace('+', '') if business.owner_phone else '') }}" class="footer-wa">💬 Commander sur WhatsApp</a>
 </footer>
 
-{% if plan != 'BASIC' %}
 <!-- PANIER DRAWER -->
 <div class="drawer-overlay" id="overlay"></div>
 <div class="drawer" id="drawer">
@@ -784,7 +771,7 @@ footer {
       <span class="drawer-total-label">Total estimé</span>
       <span class="drawer-total-value" id="drawer-total">0 FCFA</span>
     </div>
-    {% if plan == 'PREMIUM' %}
+    {% if plan == 'SCALE' %}
     <button class="wa-order-btn" id="premium-pay-btn" disabled style="background:#2b2d42;">
       💳 Paiement en ligne
     </button>
@@ -796,7 +783,7 @@ footer {
   </div>
 </div>
 
-{% if plan == 'PREMIUM' %}
+{% if plan == 'SCALE' %}
 <!-- FAKE PAYMENT MODAL -->
 <div class="drawer-overlay" id="payment-overlay"></div>
 <div class="drawer" id="payment-modal" style="padding:2rem; text-align:center; display:none; flex-direction:column; justify-content:center; gap:1.5rem;">
@@ -808,13 +795,10 @@ footer {
   <button style="background:transparent; color:var(--ink-3); border:none; cursor:pointer; margin-top:1rem;" onclick="closePaymentModal()">Annuler</button>
 </div>
 {% endif %}
-{% endif %}
-
 <script>
   const bizId = '{{ business.id }}';
   const WA_NUMBER = '{{ business.requested_bot_phone|replace("+", "") if business.requested_bot_phone else (business.owner_phone|replace("+", "") if business.owner_phone else "") }}';
 
-{% if plan != 'BASIC' %}
 /* ── Panier state ── */
 const cart = [];
 
@@ -827,7 +811,7 @@ function renderDrawer() {
   const totalEl = document.getElementById('drawer-total');
   const countEl = document.getElementById('cart-count');
   
-  {% if plan == 'PREMIUM' %}
+  {% if plan == 'SCALE' %}
   const actionBtn = document.getElementById('premium-pay-btn');
   {% else %}
   const actionBtn = document.getElementById('wa-order-btn');
@@ -870,7 +854,7 @@ function renderDrawer() {
     return msg;
   };
 
-  {% if plan == 'PREMIUM' %}
+  {% if plan == 'SCALE' %}
   actionBtn.onclick = () => {
     // Open payment modal instead of directly WhatsApp
     closeDrawer();
@@ -892,7 +876,7 @@ function renderDrawer() {
   {% endif %}
 }
 
-{% if plan == 'PREMIUM' %}
+{% if plan == 'SCALE' %}
 function closePaymentModal() {
   document.getElementById('payment-modal').classList.remove('open');
   document.getElementById('payment-overlay').classList.remove('open');

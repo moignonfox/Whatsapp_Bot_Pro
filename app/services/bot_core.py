@@ -99,7 +99,7 @@ def process_debounced_messages(wa_id, business, phone_id):
         logger.debug("[DEBOUNCE] %d messages regroupés pour %s", len(pending_msgs), safe_id)
 
         # Troncature Intelligente
-        plan = business.get('plan_abonnement', 'BASIC')
+        plan = business.get('plan_abonnement', 'FREE')
         from app.repositories.settings_repo import get_setting
         
         if plan == 'PREMIUM':
@@ -142,14 +142,18 @@ def process_debounced_messages(wa_id, business, phone_id):
         from app.repositories import settings_repo
         
         current_ai_usage = conversation_repo.get_monthly_ai_message_count(biz_id)
-        if plan == 'PREMIUM':
-            quota = int(settings_repo.get_setting('quota_messages_premium', '10000'))
-        elif plan == 'PRO':
-            quota = int(settings_repo.get_setting('quota_messages_pro', '2000'))
+        if plan == 'SCALE':
+            quota = int(settings_repo.get_setting('quota_messages_scale', '10000'))
+        elif plan == 'GROWTH':
+            quota = int(settings_repo.get_setting('quota_messages_growth', '2000'))
+        elif plan == 'DISCOVERY':
+            quota = int(settings_repo.get_setting('quota_messages_discovery', '500'))
         else:
-            quota = int(settings_repo.get_setting('quota_messages_basic', '500'))
+            quota = int(settings_repo.get_setting('quota_messages_free', '50'))
             
         overage_behavior = settings_repo.get_setting('overage_behavior', 'FALLBACK')
+        if plan == 'FREE':
+            overage_behavior = 'BLOCK' # Vrai blocage pour le plan FREE
         
         # Alerte à 80% (une seule fois exacte)
         if current_ai_usage == int(quota * 0.8):

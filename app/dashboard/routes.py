@@ -27,11 +27,11 @@ def check_active_status():
 @dashboard_bp.context_processor
 def inject_dashboard_context():
     user_id = session.get('user_id')
-    ctx = {'global_unread_count': 0, 'plan': 'BASIC'}
+    ctx = {'global_unread_count': 0, 'plan': 'FREE'}
     if user_id:
         business = business_repo.get_by_id(user_id)
         if business:
-            ctx['plan'] = dict(business).get('plan_abonnement', 'BASIC')
+            ctx['plan'] = dict(business).get('plan_abonnement', 'FREE')
         ctx['global_unread_count'] = conversation_repo.get_unread_message_count_for_business(user_id)
     return ctx
 
@@ -158,7 +158,7 @@ def pending(biz_id):
                 business['token_wa'], business['password'], business['prompt'],
                 business['msg_confirm'], business['msg_cancel'], business['msg_ready'],
                 dict(business).get('business_type', 'restaurant'),
-                dict(business).get('plan_abonnement', 'BASIC'),
+                dict(business).get('plan_abonnement', 'FREE'),
                 dict(business).get('is_active', 1),
                 owner_phone,
                 dict(business).get('drip_j3_enabled', 0),
@@ -212,8 +212,8 @@ def admin_dashboard(biz_id):
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
 
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
-    employees = employee_repo.get_by_business(biz_id) if plan == 'PREMIUM' else []
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
+    employees = employee_repo.get_by_business(biz_id) if plan in ('GROWTH', 'SCALE') else []
 
     return render_template('dashboard/admin.html',
                            reservations=reservations,
@@ -247,13 +247,16 @@ def business_settings(biz_id):
         msg_cancel = request.form.get('msg_cancel')
         msg_ready = request.form.get('msg_ready')
         password = request.form.get('password')
+        email = request.form.get('email', dict(business).get('email'))
+        adresse = request.form.get('adresse', dict(business).get('adresse'))
+        site_web = request.form.get('site_web', dict(business).get('site_web'))
 
         # Si un nouveau mot de passe est saisi, on le hache, sinon on garde l'ancien (dÃ©jÃ  hachÃ©)
         final_password = business['password']
         if password:
             final_password = generate_password_hash(password)
 
-        current_plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+        current_plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
         
         # On conserve les paramÃ¨tres marketing existants
         drip_j3_enabled = dict(business).get('drip_j3_enabled', 0) if business else 0
@@ -286,7 +289,9 @@ def business_settings(biz_id):
             drip_j3_msg,
             debounce_delay,
             buffer_minutes,
-            dict(business).get('email')
+            email,
+            adresse,
+            site_web
         )
         
         if requested_bot_phone is not None:
@@ -302,7 +307,7 @@ def business_settings(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
     return render_template('dashboard/settings.html', business=business, vocab=vocab, biz_id=biz_id, plan=plan, active_page='settings')
 
@@ -314,9 +319,9 @@ def marketing_settings(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
-    if plan == 'PREMIUM':
+    if plan == 'SCALE':
         drip_j3_enabled = 1 if request.form.get('drip_j3_enabled') else 0
         drip_j3_msg = request.form.get('drip_j3_msg')
 
@@ -494,7 +499,7 @@ def business_orders(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant')
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
 
     reservations = order_repo.get_by_business(biz_id)
     
@@ -536,7 +541,7 @@ def business_catalog(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant')
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
 
     products = catalog_repo.get_by_business(biz_id)
     
@@ -646,7 +651,7 @@ def chat_inbox(biz_id):
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
 
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
     return render_template('dashboard/chat.html',
                            biz_id=biz_id,
@@ -951,7 +956,7 @@ def business_clients(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
     return render_template('dashboard/clients.html',
                            biz_id=biz_id,
@@ -969,9 +974,9 @@ def business_marketing(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
-    if plan not in ('PRO', 'PREMIUM'):
+    if plan not in ('GROWTH', 'SCALE'):
         return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
 
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
@@ -1019,7 +1024,7 @@ def business_employees(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -1066,7 +1071,7 @@ def business_agenda(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
     employees = employee_repo.get_by_business(biz_id)
     
     return render_template('dashboard/agenda.html',
@@ -1112,7 +1117,7 @@ def business_agents(biz_id):
 
     business = business_repo.get_by_id(biz_id)
     plan = business['plan_abonnement']
-    if plan != 'PREMIUM':
+    if plan != 'SCALE':
         return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
 
     if request.method == 'POST':
@@ -1228,7 +1233,7 @@ def send_campaign(biz_id):
     if not message_template.strip():
         return redirect(url_for('dashboard.business_marketing', biz_id=biz_id))
 
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
     from app.repositories import marketing_repo
     today_count = marketing_repo.get_today_campaigns_count(biz_id)
     
@@ -1287,9 +1292,9 @@ def business_payments(biz_id):
         return redirect(url_for('dashboard.login'))
 
     business = business_repo.get_by_id(biz_id)
-    plan = dict(business).get('plan_abonnement', 'BASIC') if business else 'BASIC'
+    plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
-    if plan != 'PREMIUM':
+    if plan != 'SCALE':
         return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
 
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
@@ -1354,7 +1359,7 @@ def vitrine_settings(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant')
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
 
     if request.method == 'POST':
         import os
@@ -1376,7 +1381,7 @@ def vitrine_settings(biz_id):
                 file.save(filepath)
                 logo_url = f'/static/uploads/businesses/{biz_id}/{filename}'
                 
-        if plan == 'PREMIUM':
+        if plan == 'SCALE':
             description = request.form.get('vitrine_description')
             if 'cover' in request.files:
                 file = request.files['cover']
@@ -1466,7 +1471,7 @@ def public_vitrine(biz_id):
     if not business:
         return 'Vitrine introuvable', 404
         
-    plan = dict(business).get('plan_abonnement', 'BASIC')
+    plan = dict(business).get('plan_abonnement', 'FREE')
 
     products = catalog_repo.get_by_business(biz_id, only_available=False)
     # Filtrer uniquement les produits visibles
@@ -1479,7 +1484,7 @@ def public_vitrine(biz_id):
             grouped_products[cat] = []
         grouped_products[cat].append(p)
 
-    template_name = 'vitrine_premium.html' if plan == 'PREMIUM' else 'vitrine.html'
+    template_name = 'vitrine_premium.html' if plan == 'SCALE' else 'vitrine.html'
 
     is_open = False
     horaires_str = dict(business).get('horaires_json')
