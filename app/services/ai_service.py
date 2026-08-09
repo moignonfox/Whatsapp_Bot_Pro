@@ -664,7 +664,7 @@ def improve_marketing_message(message: str) -> str:
     # 1. Tentative Gemini
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-2.5-flash',
             contents=f"{system_prompt}\n\nBrouillon :\n{message}"
         )
         reply = response.text.strip()
@@ -760,3 +760,58 @@ def transcribe_audio(audio_bytes: bytes) -> str:
             time.sleep(2)
             
     return "Je n'ai pas pu décrypter le message vocal, pouvez-vous l'écrire ?"
+
+
+def rewrite_chat_message(business_id: str, message: str) -> str:
+    from app.repositories import business_repo
+    business = business_repo.get_by_id(business_id)
+    biz_name = dict(business).get('name', "l'entreprise") if business else "l'entreprise"
+    biz_type = dict(business).get('business_type', 'service') if business else 'service'
+    
+    system_prompt = (
+        f"Tu es l'assistant de communication pour '{biz_name}' (secteur: {biz_type}).\n"
+        "Ta SEULE mission est de corriger et reformuler légèrement le brouillon ci-dessous pour le rendre plus professionnel, courtois et clair, en y ajoutant 1 ou 2 emojis discrets.\n\n"
+        "RÈGLES ABSOLUES :\n"
+        "1. N'INVENTE AUCUNE INFORMATION (pas d'horaires, pas de procédures, pas de garanties qui ne sont pas dans le brouillon original).\n"
+        "2. GARDE LA MÊME LONGUEUR que le brouillon original. Si le brouillon fait 1 phrase, ta réponse doit faire 1 phrase.\n"
+        "3. Ne change pas le sens du message.\n"
+        "4. Ne renvoie QUE le texte corrigé, sans aucun blabla autour ni guillemets."
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=f"{system_prompt}\n\nBrouillon :\n{message}"
+        )
+        reply = response.text.strip()
+        if reply:
+            return reply
+    except Exception as e:
+        logger.warning(f"Erreur Gemini rewrite_chat_message: {e}")
+        
+    # Fallback Groq
+    try:
+        groq_url = "https://api.groq.com/openai/v1/chat/completions"
+        groq_headers = {
+            "Authorization": f"Bearer {cfg.GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        groq_payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Brouillon :\n{message}"}
+            ],
+            "max_tokens": 1000,
+        }
+        groq_resp = requests.post(groq_url, json=groq_payload, headers=groq_headers, timeout=8)
+        groq_data = groq_resp.json()
+        if "choices" in groq_data:
+            reply = groq_data["choices"][0]["message"]["content"].strip()
+            if reply:
+                return reply
+    except Exception as e:
+        logger.error(f"Erreur Groq rewrite_chat_message: {e}")
+        
+    raise Exception("Les services d'IA (Gemini et Groq) sont actuellement indisponibles. Vérifiez vos quotas API.")
+

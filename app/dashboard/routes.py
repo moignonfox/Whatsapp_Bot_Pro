@@ -211,9 +211,57 @@ def admin_dashboard(biz_id):
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
-
     plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
     employees = employee_repo.get_by_business(biz_id) if plan in ('GROWTH', 'SCALE') else []
+    
+    # --- Custom dashboard stats ---
+    import sqlite3
+    from app.models.schema import get_db_path
+    from app.repositories.order_repo import get_date_condition
+    
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    date_cond = get_date_condition(period)
+    history_date_cond = date_cond.replace('created_at', 'timestamp')
+    client_date_cond = date_cond.replace('created_at', 'date_inscription')
+    
+    # 1. Total conversations (unique wa_id in history)
+    cursor.execute(f"SELECT COUNT(DISTINCT wa_id) FROM history WHERE business_id = ? AND {history_date_cond}", (biz_id,))
+    stats['conversations'] = cursor.fetchone()[0] or 0
+    
+    # 2. Nouveaux clients
+    cursor.execute(f"SELECT COUNT(*) FROM clients WHERE business_id = ? AND {client_date_cond}", (biz_id,))
+    stats['nouveaux_clients'] = cursor.fetchone()[0] or 0
+    
+    # 3. Automation rate (AI vs Human messages sent)
+    cursor.execute(f"SELECT COUNT(*) FROM history WHERE business_id = ? AND role = 'assistant' AND {history_date_cond}", (biz_id,))
+    total_assistant_msgs = cursor.fetchone()[0] or 0
+    
+    cursor.execute(f"SELECT COUNT(*) FROM history WHERE business_id = ? AND role = 'assistant' AND agent_id IS NOT NULL AND {history_date_cond}", (biz_id,))
+    human_msgs = cursor.fetchone()[0] or 0
+    
+    if total_assistant_msgs > 0:
+        stats['ai_rate'] = int(((total_assistant_msgs - human_msgs) / total_assistant_msgs) * 100)
+    else:
+        stats['ai_rate'] = 100
+        
+    stats['commandes'] = stats.get('total', 0)
+    
+    # 4. Recent conversations (last 5)
+    from app.repositories.conversation_repo import get_conversations_for_business
+    all_convs = get_conversations_for_business(biz_id)
+    recent_convs = all_convs[:5] if all_convs else []
+    
+    # 5. Recent orders (last 5)
+    recent_orders = reservations[:5]
+    
+    # 6. Utilisation IA
+    ai_words_used = (total_assistant_msgs - human_msgs) * 45  # Assuming ~45 words per message on average
+    ai_words_limit = 100000
+    ai_usage_percent = min(int((ai_words_used / ai_words_limit) * 100), 100) if ai_words_limit > 0 else 0
+    
+    conn.close()
 
     return render_template('dashboard/admin.html',
                            reservations=reservations,
@@ -226,6 +274,11 @@ def admin_dashboard(biz_id):
                            vocab=vocab,
                            plan=plan,
                            employees=employees,
+                           recent_convs=recent_convs,
+                           recent_orders=recent_orders,
+                           ai_words_used=f"{ai_words_used:,}",
+                           ai_words_limit=f"{ai_words_limit:,}",
+                           ai_usage_percent=ai_usage_percent,
                            current_period=period,
                            active_page='dashboard')
 
@@ -652,8 +705,10 @@ def chat_inbox(biz_id):
     vocab = sector['vocab'] if sector else {}
 
     plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
+    business_tags = tag_repo.get_business_tags(biz_id)
 
     return render_template('dashboard/chat.html',
+                           business_tags=business_tags,
                            biz_id=biz_id,
                            business=business,
                            conversations=conversations,
@@ -679,16 +734,55 @@ def get_chat_history(biz_id, wa_id):
     c_disp = client['display_name'] if client and client['display_name'] else ''
     c_main = c_disp or c_nom or wa_id
 
+    tags_rows = tag_repo.get_tags_for_client(wa_id, biz_id)
+    tags = [{"name": t['name'], "color": t['color']} for t in tags_rows]
+    
+    last_order_row = order_repo.get_last_for_user(wa_id, biz_id)
+    last_order = None
+    if last_order_row:
+        last_order = {
+            "id": last_order_row['id'],
+            "statut": last_order_row['statut'],
+            "details": last_order_row['details'],
+            "montant": last_order_row['montant'],
+            "created_at": last_order_row['created_at']
+        }
+
+    crm_data = {
+        "name": c_nom,
+        "display_name": c_disp,
+        "date_inscription": client.get('date_inscription') if client else None,
+        "tags": tags,
+        "last_order": last_order
+    }
+
     return jsonify({
         'messages': messages,
         'is_human_mode': is_human,
         'client_name': c_main,
         'client_real_name': c_nom,
         'client_display_name': c_disp,
-        'wa_id': wa_id
+        'wa_id': wa_id,
+        'crm': crm_data
     })
 
 
+
+@dashboard_bp.route('/admin/<biz_id>/chat/<wa_id>/tags', methods=['POST'])
+def add_chat_client_tag(biz_id, wa_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Non autorise'}), 403
+
+    data = request.get_json() or {}
+    tag_id = data.get('tag_id')
+    if not tag_id:
+        return jsonify({'error': 'Missing tag_id'}), 400
+
+    try:
+        tag_repo.add_tag_to_client(wa_id, biz_id, tag_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @dashboard_bp.route('/admin/<biz_id>/chat/<wa_id>/profile', methods=['PUT'])
 def update_chat_client_profile(biz_id, wa_id):
@@ -904,6 +998,23 @@ def manual_order(biz_id):
     
     return jsonify({"status": "success", "message": "Commande enregistrÃ©e avec succÃ¨s."})
 
+
+@dashboard_bp.route('/admin/<biz_id>/chat/rewrite', methods=['POST'])
+def rewrite_message(biz_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Non autorise'}), 403
+    
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    if not text:
+        return jsonify({'error': 'Texte vide'}), 400
+        
+    try:
+        from app.services.ai_service import rewrite_chat_message
+        improved_text = rewrite_chat_message(biz_id, text)
+        return jsonify({'success': True, 'text': improved_text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @dashboard_bp.route('/admin/<biz_id>/chat/toggle-mode', methods=['POST'])
 def toggle_human_mode(biz_id):

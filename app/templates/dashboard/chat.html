@@ -744,10 +744,10 @@
                     </div>
                 </div>
                 <div class="chat-header-actions">
-                    <button class="header-icon-btn"><i class="far fa-star"></i></button>
-                    <button class="header-icon-btn"><i class="fas fa-paperclip"></i></button>
-                    <button class="header-icon-btn"><i class="fas fa-ellipsis-h"></i></button>
-                    <button class="transfer-btn"><i class="far fa-user"></i> Transférer à un humain</button>
+                    <button class="header-icon-btn" onclick="alert('Fonctionnalité Favoris à venir')"><i class="far fa-star"></i></button>
+                    <button class="header-icon-btn" onclick="document.getElementById('media-input').click()"><i class="fas fa-paperclip"></i></button>
+                    <button class="header-icon-btn" onclick="alert('Options supplémentaires à venir')"><i class="fas fa-ellipsis-h"></i></button>
+                    <button class="transfer-btn" onclick="toggleMode()"><i class="far fa-user"></i> Transférer à un humain</button>
                 </div>
             </div>
 
@@ -766,8 +766,8 @@
                 <div class="chat-input-wrapper">
                     <button class="chat-input-btn"><i class="far fa-smile"></i></button>
                     <button class="chat-input-btn" onclick="document.getElementById('media-input').click()"><i class="fas fa-paperclip"></i></button>
-                    <button class="chat-input-btn"><i class="fas fa-magic"></i></button>
-                    <textarea id="chat-input" rows="1" placeholder="Écrire un message..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                    <button class="chat-input-btn" onclick="rewriteMessage()"><i class="fas fa-magic"></i></button>
+                    <textarea id="chat-input" rows="1" placeholder="Écrire un message..." disabled oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'; toggleSendBtn()"></textarea>
                     <button id="record-btn" class="send-btn-new" onclick="toggleRecording()">
                         <i class="fas fa-microphone"></i>
                     </button>
@@ -783,11 +783,12 @@
     <!-- FAR RIGHT PANEL: CRM DETAILS -->
     <div class="details-panel" id="details-panel" style="display:none;">
         <div class="details-tabs">
-            <div class="details-tab active">Détails</div>
-            <div class="details-tab">CRM</div>
-            <div class="details-tab">Historique</div>
+            <div class="details-tab active" onclick="switchDetailsTab('details')">Détails</div>
+            <div class="details-tab" onclick="switchDetailsTab('crm')">CRM</div>
+            <div class="details-tab" onclick="switchDetailsTab('historique')">Historique</div>
         </div>
         
+        <div id="tab-details" class="tab-pane-details" style="display:block;">
         <div class="details-section">
             <div class="details-section-title">
                 Détails client <button class="header-icon-btn" onclick="openEditClientModal()"><i class="far fa-edit"></i></button>
@@ -806,46 +807,36 @@
             </div>
             
             <div class="client-info-list">
-                <div class="client-info-item"><i class="fas fa-phone-alt"></i> <span id="crm-client-phone">+228 90 12 34 56</span></div>
-                <div class="client-info-item"><i class="far fa-envelope"></i> <span style="color:var(--muted);">client@email.com</span></div>
-                <div class="client-info-item"><i class="fas fa-map-marker-alt"></i> <span style="color:var(--muted);">Lomé, Togo</span></div>
-                <div class="client-info-item"><i class="far fa-calendar-alt"></i> <span style="color:var(--muted); flex:1;">Client depuis</span> <span style="font-size:11px; color:var(--text);">12 Mai 2025</span></div>
+                <div class="client-info-item"><i class="fas fa-phone-alt"></i> <span id="crm-client-phone">...</span></div>
+                <div class="client-info-item"><i class="far fa-envelope"></i> <span id="crm-client-email" style="color:var(--muted);">Non renseigné</span></div>
+                <div class="client-info-item"><i class="fas fa-map-marker-alt"></i> <span id="crm-client-address" style="color:var(--muted);">Adresse (Non renseignée)</span></div>
+                <div class="client-info-item"><i class="far fa-calendar-alt"></i> <span style="color:var(--muted); flex:1;">Client depuis</span> <span id="crm-client-since" style="font-size:11px; color:var(--text);">...</span></div>
                 <div class="client-info-item" style="align-items:flex-start;"><i class="fas fa-tags" style="margin-top:2px;"></i> 
                     <div style="color:var(--muted); flex:1;">Tags
-                        <div class="client-tags">
-                            <span class="tag-pill brand">Fidèle</span>
-                            <span class="tag-pill brand">VIP</span>
-                            <span class="tag-pill brand">Pizza Lover</span>
-                            <button class="tag-add"><i class="fas fa-plus"></i></button>
+                        <div class="client-tags" id="crm-client-tags">
+                            <!-- Tags injected via JS -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
+        </div> <!-- end tab-details -->
+        <div id="tab-crm" class="tab-pane-details" style="display:none;">
         <div class="details-section">
             <div class="details-section-title">
-                Commande en cours <a href="#" style="font-size:12px; font-weight:500; color:var(--brand); text-decoration:none;">Voir tout</a>
+                Dernière commande <a href="#" style="font-size:12px; font-weight:500; color:var(--brand); text-decoration:none;">Voir tout</a>
             </div>
-            <div class="order-card">
-                <span class="order-status-badge">En préparation</span>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0;">
-                    <span style="font-weight:600; color:var(--text);">#CMD-5821</span>
-                    <span style="font-size:11px; color:var(--muted);">10:31</span>
-                </div>
-                <ul style="list-style:none; padding:0; margin:0; font-size:13px; color:var(--muted); line-height:1.8;">
-                    <li>• Pizza 4 fromages</li>
-                    <li>• 1 Coca Cola</li>
-                </ul>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05);">
-                    <span style="font-size:13px; color:var(--muted);">Total</span>
-                    <span style="font-weight:600; color:var(--text);">8 500 FCFA</span>
-                </div>
+            <div class="order-card" id="crm-last-order-card">
+                <!-- Injected via JS -->
+                <div style="text-align:center; padding:10px 0; color:var(--muted); font-size:13px;">Aucune commande récente.</div>
             </div>
         </div>
+        </div> <!-- end tab-crm -->
+        <div id="tab-historique" class="tab-pane-details" style="display:none;">
         
-        <div class="details-section" style="border-bottom:none;">
-            <div class="details-section-title">Informations IA</div>
+        <div class="details-section" style="border-bottom:none; opacity: 0.5; filter: grayscale(100%); pointer-events: none;" title="Fonctionnalité IA à venir">
+            <div class="details-section-title">Informations IA <span style="font-size:10px; background:var(--bg); padding:2px 6px; border-radius:4px; margin-left:8px;">À venir</span></div>
             <div class="ai-info-card">
                 <div class="ai-chart-circle">
                     <div class="ai-chart-inner">
@@ -1041,6 +1032,8 @@
                 document.getElementById('chat-client-waid').textContent = waId;
 
                 isHumanMode = data.is_human_mode;
+                const activeConv = document.querySelector(`.conv-item[data-waid="${waId}"]`);
+                if (activeConv) activeConv.dataset.ishuman = isHumanMode ? 'true' : 'false';
                 updateModeUI();
 
                 const chatArea = document.getElementById('chat-messages');
@@ -1059,6 +1052,64 @@
                 
                 window.currentMessages = data.messages;
                 check24hWindow(data.messages);
+
+                // Populate CRM Details
+                if (data.crm) {
+                    document.getElementById('crm-client-name').textContent = data.crm.display_name || data.crm.name || data.wa_id;
+                    document.getElementById('crm-client-phone').textContent = "+" + data.wa_id;
+                    
+                    if (data.crm.date_inscription) {
+                        try {
+                            const d = new Date(data.crm.date_inscription);
+                            document.getElementById('crm-client-since').textContent = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                        } catch(e) {
+                            document.getElementById('crm-client-since').textContent = data.crm.date_inscription;
+                        }
+                    }
+
+                    // Tags
+                    const tagsContainer = document.getElementById('crm-client-tags');
+                    tagsContainer.innerHTML = '';
+                    if (data.crm.tags && data.crm.tags.length > 0) {
+                        data.crm.tags.forEach(t => {
+                            const color = t.color || 'var(--brand)';
+                            tagsContainer.innerHTML += `<span class="tag-pill" style="background-color: ${color}20; color: ${color}; border-color: ${color}50;">${escapeHtml(t.name)}</span>`;
+                        });
+                    } else {
+                        tagsContainer.innerHTML = '<span style="font-size:11px; color:var(--muted);">Aucun tag</span>';
+                    }
+                    tagsContainer.innerHTML += `<button class="tag-add" onclick="openAddTagModal()"><i class="fas fa-plus"></i></button>`;
+
+                    // Last order
+                    const orderCard = document.getElementById('crm-last-order-card');
+                    if (data.crm.last_order) {
+                        const o = data.crm.last_order;
+                        const d = new Date(o.created_at);
+                        const timeStr = d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                        
+                        let statusColor = 'var(--text)';
+                        let statusBg = 'rgba(255,255,255,0.1)';
+                        const s = (o.statut || '').toLowerCase();
+                        if (s.includes('attente')) { statusColor = '#f59e0b'; statusBg = 'rgba(245,158,11,0.15)'; }
+                        else if (s.includes('annul')) { statusColor = '#ef4444'; statusBg = 'rgba(239,68,68,0.15)'; }
+                        else if (s.includes('prêt') || s.includes('livr')) { statusColor = '#10b981'; statusBg = 'rgba(16,185,129,0.15)'; }
+
+                        orderCard.innerHTML = `
+                            <span class="order-status-badge" style="color:${statusColor}; background:${statusBg}">${escapeHtml(o.statut)}</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0;">
+                                <span style="font-weight:600; color:var(--text);">#CMD-${o.id}</span>
+                                <span style="font-size:11px; color:var(--muted);">${timeStr}</span>
+                            </div>
+                            <div style="font-size:13px; color:var(--muted); line-height:1.8; white-space: pre-wrap;">${escapeHtml(o.details)}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05);">
+                                <span style="font-size:13px; color:var(--muted);">Total</span>
+                                <span style="font-weight:600; color:var(--text);">${o.montant} FCFA</span>
+                            </div>
+                        `;
+                    } else {
+                        orderCard.innerHTML = `<div style="text-align:center; padding:10px 0; color:var(--muted); font-size:13px;">Aucune commande récente.</div>`;
+                    }
+                }
             });
     }
 
@@ -1212,21 +1263,24 @@
         .then(r => r.json())
         .then(data => {
             isHumanMode = data.is_human_mode;
+            const activeConv = document.querySelector(`.conv-item[data-waid="${currentWaId}"]`);
+            if (activeConv) activeConv.dataset.ishuman = isHumanMode ? 'true' : 'false';
             updateModeUI();
         });
     }
 
     function updateModeUI() {
-        const toggle = document.getElementById('mode-toggle');
+        const transferBtn = document.querySelector('.transfer-btn');
         const input = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         const attachBtn = document.getElementById('attach-btn');
         const recordBtn = document.getElementById('record-btn');
         
         if (isHumanMode) {
-            if (toggle) {
-                toggle.innerHTML = '<i class="fas fa-user-tie"></i> Mode Humain (Actif)';
-                toggle.className = 'mode-toggle human';
+            if (transferBtn) {
+                transferBtn.innerHTML = '<i class="fas fa-robot"></i> Transférer à l\'IA';
+                transferBtn.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+                transferBtn.style.color = '#ef4444';
             }
             if (input) {
                 input.disabled = false;
@@ -1235,14 +1289,14 @@
             if (sendBtn) sendBtn.disabled = false;
             if (attachBtn) attachBtn.disabled = false;
             if (recordBtn) recordBtn.disabled = false;
-            // Also need to check 24h window without reloading the whole history
             if (window.currentMessages) {
                 check24hWindow(window.currentMessages);
             }
         } else {
-            if (toggle) {
-                toggle.innerHTML = '<i class="fas fa-robot"></i> Mode IA';
-                toggle.className = 'mode-toggle ai';
+            if (transferBtn) {
+                transferBtn.innerHTML = '<i class="far fa-user"></i> Transférer à un humain';
+                transferBtn.style.backgroundColor = '';
+                transferBtn.style.color = '';
             }
             if (input) {
                 input.disabled = true;
@@ -1439,6 +1493,129 @@
     }
 
     // ── UTILITAIRES ──
+    
+    // --- NOUVEAU JS POUR FILTRES, TABS ET TAGS ---
+    function switchDetailsTab(tabName) {
+        document.querySelectorAll('.details-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane-details').forEach(p => p.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tabName).style.display = 'block';
+    }
+
+    function openAddTagModal() {
+        document.getElementById('addTagModal').style.display = 'flex';
+    }
+    function closeAddTagModal() {
+        document.getElementById('addTagModal').style.display = 'none';
+    }
+    function submitAddTag() {
+        if (!currentWaId) return;
+        const select = document.getElementById('tag-select');
+        const tagId = select.value;
+        if (!tagId) return;
+
+        fetch(`/admin/${bizId}/chat/${currentWaId}/tags`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({tag_id: tagId})
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                closeAddTagModal();
+                loadConversation(currentWaId); // reload to see the new tag
+            } else {
+                alert("Erreur lors de l'ajout du tag : " + res.error);
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Conversation Filters
+        document.querySelectorAll('.conv-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.conv-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                const filter = e.target.textContent.trim().toLowerCase();
+                
+                document.querySelectorAll('.conv-item').forEach(item => {
+                    const waId = item.dataset.waid;
+                    const unread = (unreadCounts[waId] || 0) > 0;
+                    // Note: on relies on data-ishuman which might be populated dynamically
+                    const isHuman = item.dataset.ishuman === 'true';
+                    
+                    if (filter === 'tous') {
+                        item.style.display = 'flex';
+                    } else if (filter === 'non lus') {
+                        item.style.display = unread ? 'flex' : 'none';
+                    } else if (filter === 'en attente') {
+                        item.style.display = isHuman ? 'flex' : 'none';
+                    }
+                });
+            });
+        });
+    });
+    // ---------------------------------------------
+
+    
+    function rewriteMessage() {
+        const input = document.getElementById('chat-input');
+        const originalText = input.value.trim();
+        if (!originalText) {
+            alert("Écrivez un brouillon de message avant d'utiliser la baguette magique !");
+            return;
+        }
+
+        const btn = document.querySelector('.fa-magic').parentElement;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        fetch(`/admin/${bizId}/chat/rewrite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({text: originalText})
+        })
+        .then(r => r.json())
+        .then(res => {
+            btn.innerHTML = '<i class="fas fa-magic"></i>';
+            if (res.success) {
+                input.value = res.text;
+                input.style.height = '';
+                input.style.height = input.scrollHeight + 'px';
+                toggleSendBtn();
+            } else {
+                alert("Erreur: " + res.error);
+            }
+        })
+        .catch(err => {
+            btn.innerHTML = '<i class="fas fa-magic"></i>';
+            alert("Erreur réseau");
+        });
+    }
+
+    
+    function toggleSendBtn() {
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const recordBtn = document.getElementById('record-btn');
+        
+        if (input && sendBtn && recordBtn) {
+            if (input.value.trim().length > 0) {
+                sendBtn.style.display = 'inline-block';
+                recordBtn.style.display = 'none';
+            } else {
+                sendBtn.style.display = 'none';
+                recordBtn.style.display = 'inline-block';
+            }
+        }
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -1568,5 +1745,22 @@
     </div>
 </div>
 
+
+    <!-- Modal Add Tag -->
+    <div id="addTagModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:var(--bg); border-radius:12px; padding:24px; width:400px; max-width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0; color:var(--text);">Ajouter un tag</h3>
+            <select id="tag-select" style="width:100%; padding:10px; margin:16px 0; background:var(--input-bg); border:1px solid var(--border); color:var(--text); border-radius:8px;">
+                <option value="">-- Choisir un tag --</option>
+                {% for tag in business_tags %}
+                <option value="{{ tag.id }}">{{ tag.name }}</option>
+                {% endfor %}
+            </select>
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+                <button onclick="closeAddTagModal()" style="padding:8px 16px; border-radius:6px; border:none; background:rgba(255,255,255,0.1); color:var(--text); cursor:pointer;">Annuler</button>
+                <button onclick="submitAddTag()" style="padding:8px 16px; border-radius:6px; border:none; background:var(--brand); color:#fff; cursor:pointer; font-weight:600;">Ajouter</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

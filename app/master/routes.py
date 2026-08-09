@@ -152,7 +152,7 @@ def save_new_business():
     msg_cancel = request.form.get('msg_cancel')
     msg_ready = request.form.get('msg_ready')
     business_type = request.form.get('business_type', 'restaurant')
-    plan_abonnement = request.form.get('plan_abonnement', 'BASIC')
+    plan_abonnement = request.form.get('plan_abonnement', 'FREE')
 
     if not biz_id or not phone_id:
         return "Erreur : L'ID et le Phone ID sont obligatoires.", 400

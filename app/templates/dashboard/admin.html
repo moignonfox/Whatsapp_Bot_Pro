@@ -353,17 +353,24 @@
     <div class="content">
 
         <!-- ── Filters ── -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-            <form method="GET" action="{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}">
-                <select name="period" onchange="this.form.submit()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; outline: none;">
-                    <option value="today" {% if current_period == 'today' %}selected{% endif %}>Aujourd'hui</option>
-                    <option value="week" {% if current_period == 'week' %}selected{% endif %}>7 derniers jours</option>
-                    <option value="month" {% if current_period == 'month' %}selected{% endif %}>Ce mois-ci</option>
-                    <option value="semester" {% if current_period == 'semester' %}selected{% endif %}>Ce semestre</option>
-                    <option value="year" {% if current_period == 'year' %}selected{% endif %}>Cette année</option>
-                    <option value="all" {% if current_period == 'all' %}selected{% endif %}>Toutes les dates</option>
-                </select>
-            </form>
+        <style>
+            .period-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; justify-content: flex-end; }
+            .period-filter-btn {
+                background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+                padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
+                transition: all 0.2s; text-decoration: none;
+            }
+            .period-filter-btn:hover { background: var(--card-hover); color: var(--text); }
+            .period-filter-btn.active {
+                background: var(--brand); color: #fff; border-color: var(--brand);
+            }
+        </style>
+        <div class="period-filters">
+            <a href="?period=today" class="period-filter-btn {% if current_period == 'today' %}active{% endif %}">Aujourd'hui</a>
+            <a href="?period=week" class="period-filter-btn {% if current_period == 'week' %}active{% endif %}">7 jours</a>
+            <a href="?period=month" class="period-filter-btn {% if current_period == 'month' %}active{% endif %}">Ce mois-ci</a>
+            <a href="?period=year" class="period-filter-btn {% if current_period == 'year' %}active{% endif %}">Cette année</a>
+            <a href="?period=all" class="period-filter-btn {% if current_period == 'all' %}active{% endif %}">Toutes les dates</a>
         </div>
 
         {% set p_labels = {'today': "Aujourd'hui", 'week': '7 derniers jours', 'month': 'Ce mois-ci', 'semester': 'Ce semestre', 'year': 'Cette année', 'all': 'Toutes les dates'} %}
@@ -377,18 +384,16 @@
                     <span class="stat-label">Conversations</span>
                 </div>
                 <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">128</div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+20%</div>
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.conversations | default(0) }}</div>
                 </div>
             </div>
 
             <div class="stat-card" style="padding: 24px;">
                 <div class="stat-header">
-                    <span class="stat-label">IA Taux de réussite</span>
+                    <span class="stat-label">Taux d'automatisation</span>
                 </div>
                 <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">96%</div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+8%</div>
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.ai_rate | default(0) }}%</div>
                 </div>
             </div>
 
@@ -397,8 +402,7 @@
                     <span class="stat-label">Nouveaux clients</span>
                 </div>
                 <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">47</div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+15%</div>
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.nouveaux_clients | default(0) }}</div>
                 </div>
             </div>
 
@@ -407,8 +411,7 @@
                     <span class="stat-label">Commandes</span>
                 </div>
                 <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">84</div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--green); background: var(--green-bg); padding: 2px 8px; border-radius: 6px;">+12%</div>
+                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.commandes | default(0) }}</div>
                 </div>
             </div>
         </div>
@@ -431,88 +434,49 @@
                     <span class="section-title">Conversations récentes</span>
                 </div>
                 <div class="section-body" style="padding: 0;">
-                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <img src="https://ui-avatars.com/api/?name=Emma+L.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
-                            <div>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Emma L.</div>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Où en est ma commande ?</div>
+                    {% if recent_convs %}
+                        {% for conv in recent_convs %}
+                        <div onclick="window.location.href='{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ conv.wa_id }}'" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="https://ui-avatars.com/api/?name={{ conv.nom | urlencode }}&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: var(--text);">{{ conv.nom }}</div>
+                                    <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">{{ conv.wa_id }}</div>
+                                </div>
                             </div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-                            <span style="font-size: 11px; color: var(--muted);">10:42</span>
-                            <span style="font-size: 10px; font-weight: 700; background: var(--brand); color: white; padding: 2px 6px; border-radius: 10px;">2</span>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state" style="padding: 30px;">
+                            <i class="far fa-comments"></i>
+                            <p>Aucune conversation récente.</p>
                         </div>
-                    </div>
-                    
-                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <img src="https://ui-avatars.com/api/?name=Thomas+B.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
-                            <div>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Thomas B.</div>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Merci beaucoup !</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-                            <span style="font-size: 11px; color: var(--muted);">Hier</span>
-                        </div>
-                    </div>
-
-                    <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <img src="https://ui-avatars.com/api/?name=Sophie+M.&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
-                            <div>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Sophie M.</div>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Je voudrais modifier...</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-                            <span style="font-size: 11px; color: var(--muted);">Lun</span>
-                        </div>
-                    </div>
-                    
-                    <div style="padding: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--brand); font-size: 13px; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--brand)'">
-                        Voir toutes les conversations
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Column 2: Commande récente -->
+            <!-- Column 2: Dernières commandes -->
             <div class="section-card" style="margin-bottom: 0;">
                 <div class="section-header" style="border-bottom: none; padding-bottom: 12px;">
-                    <span class="section-title">Commande récente</span>
+                    <span class="section-title">Dernières commandes</span>
                 </div>
                 <div class="section-body" style="padding: 0;">
-                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4829</span>
-                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--purple-bg); color: var(--purple);">En préparation</span>
+                    {% if recent_orders %}
+                        {% for order in recent_orders %}
+                        <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light);">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">{{ order.client_name }}</div>
+                                <div style="font-size: 12px; color: var(--muted);">{{ order.details[:25] }}{% if order.details|length > 25 %}...{% endif %}</div>
+                            </div>
+                            <div style="font-size: 13px; font-weight: 700; color: var(--green);">{{ order.montant }} FCFA</div>
                         </div>
-                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">2x T-shirt Basic, 1x Hoodie</div>
-                        <div style="font-size: 12px; color: var(--muted2);">Il y a 15 min</div>
-                    </div>
-                    
-                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4828</span>
-                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green);">Livrée</span>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state" style="padding: 30px;">
+                            <i class="fas fa-shopping-bag"></i>
+                            <p>Aucune commande récente.</p>
                         </div>
-                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">1x Casquette Logo</div>
-                        <div style="font-size: 12px; color: var(--muted2);">Il y a 2h</div>
-                    </div>
-
-                    <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-light);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-size: 14px; font-weight: 600; color: var(--text);">#CMD-4827</span>
-                            <span style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green);">Livrée</span>
-                        </div>
-                        <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">3x Chaussettes Sport</div>
-                        <div style="font-size: 12px; color: var(--muted2);">Il y a 5h</div>
-                    </div>
-                    
-                    <div style="padding: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--brand); font-size: 13px; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--brand)'">
-                        Voir toutes les commandes
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -526,21 +490,20 @@
                         <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
                             <path stroke="var(--border-light)" stroke-width="3" fill="none"
                                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path stroke="var(--brand)" stroke-width="3" stroke-dasharray="80, 100" fill="none" stroke-linecap="round"
+                            <path stroke="var(--brand)" stroke-width="3" stroke-dasharray="{{ ai_usage_percent | default(0) }}, 100" fill="none" stroke-linecap="round"
                                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <span style="font-size: 32px; font-weight: 700; color: var(--text);">80%</span>
+                            <span style="font-size: 32px; font-weight: 700; color: var(--text);">{{ ai_usage_percent | default(0) }}%</span>
                             <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Utilisé</span>
                         </div>
                     </div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px;">80,000 / 100,000 mots</div>
-                    <div style="font-size: 13px; color: var(--muted);">Quota se renouvelle dans 8 jours</div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px;">{{ ai_words_used | default(0) }} / {{ ai_words_limit | default(100000) }} mots</div>
+                    <div style="font-size: 13px; color: var(--muted);">Quota se renouvelle à la fin de la période</div>
                 </div>
             </div>
         </div>
         </div>
-
     </div><!-- /content -->
 </div><!-- /main -->
 

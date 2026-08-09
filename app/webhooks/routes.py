@@ -35,6 +35,9 @@ def _verify_meta_signature(req) -> bool:
 
     signature_header = req.headers.get('X-Hub-Signature-256', '')
     if not signature_header.startswith('sha256='):
+        if current_app.debug:
+            logger.warning("Signature Meta absente ou invalide ignorée (mode dev).")
+            return True
         return False
 
     expected = hmac.new(
@@ -43,7 +46,15 @@ def _verify_meta_signature(req) -> bool:
         hashlib.sha256
     ).hexdigest()
 
-    return hmac.compare_digest(f"sha256={expected}", signature_header)
+    is_valid = hmac.compare_digest(f"sha256={expected}", signature_header)
+    if not is_valid:
+        if current_app.debug:
+            logger.warning("Signature Meta incorrecte ignorée (mode dev).")
+            return True
+        logger.error("Signature Meta incorrecte en production — requête webhook rejetée.")
+        return False
+        
+    return True
 
 
 def _is_already_seen(wam_id: str) -> bool:

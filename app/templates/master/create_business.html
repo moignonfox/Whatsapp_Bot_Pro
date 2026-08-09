@@ -498,53 +498,67 @@
                 <!-- Offre / Plan d'Abonnement -->
                 <div class="section-label">💎 Offre Commerciale</div>
 
-                <div class="plan-grid">
-                    <!-- BASIC -->
-                    <label class="plan-card" style="--plan-color:#58A6FF; --plan-bg:rgba(88,166,255,0.08); --plan-glow:rgba(88,166,255,0.18);">
-                        <input type="radio" name="plan_abonnement" value="BASIC"
-                            {% if not business or business.plan_abonnement == 'BASIC' %}checked{% endif %}>
+                <div class="plan-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <!-- FREE -->
+                    <label class="plan-card" style="--plan-color:#8b949e; --plan-bg:rgba(139,148,158,0.08); --plan-glow:rgba(139,148,158,0.18);">
+                        <input type="radio" name="plan_abonnement" value="FREE"
+                            {% if not business or business.plan_abonnement == 'FREE' %}checked{% endif %}>
                         <span class="plan-label">
-                            <span class="plan-badge" style="background:#58A6FF;">BASIC</span>
-                            <div class="plan-name">Starter</div>
+                            <span class="plan-badge" style="background:#8b949e;">FREE</span>
+                            <div class="plan-name">Test</div>
                             <ul class="plan-features">
-                                <li>Prise de RDV WhatsApp</li>
-                                <li>Confirmation automatique</li>
-                                <li>Dashboard simple</li>
+                                <li>Chat Manuel</li>
+                                <li>Catalogue Web Illimité</li>
+                                <li>1 Utilisateur</li>
+                                <li>30-50 messages IA</li>
                             </ul>
                         </span>
                     </label>
-                    <!-- PRO -->
-                    <label class="plan-card" style="--plan-color:#25D366; --plan-bg:rgba(37,211,102,0.08); --plan-glow:rgba(37,211,102,0.18);">
-                        <input type="radio" name="plan_abonnement" value="PRO"
-                            {% if business and business.plan_abonnement == 'PRO' %}checked{% endif %}>
+                    <!-- DISCOVERY -->
+                    <label class="plan-card" style="--plan-color:#58A6FF; --plan-bg:rgba(88,166,255,0.08); --plan-glow:rgba(88,166,255,0.18);">
+                        <input type="radio" name="plan_abonnement" value="DISCOVERY"
+                            {% if business and business.plan_abonnement == 'DISCOVERY' %}checked{% endif %}>
                         <span class="plan-label">
-                            <span class="plan-badge" style="background:#25D366;">PRO</span>
+                            <span class="plan-badge" style="background:#58A6FF;">DISCOVERY</span>
+                            <div class="plan-name">Starter</div>
+                            <ul class="plan-features">
+                                <li>Bot IA 24/7</li>
+                                <li>RDV Automatiques</li>
+                                <li>Stats basiques</li>
+                                <li>500 messages IA</li>
+                            </ul>
+                        </span>
+                    </label>
+                    <!-- GROWTH -->
+                    <label class="plan-card" style="--plan-color:#25D366; --plan-bg:rgba(37,211,102,0.08); --plan-glow:rgba(37,211,102,0.18);">
+                        <input type="radio" name="plan_abonnement" value="GROWTH"
+                            {% if business and business.plan_abonnement == 'GROWTH' %}checked{% endif %}>
+                        <span class="plan-label">
+                            <span class="plan-badge" style="background:#25D366;">GROWTH</span>
                             <div class="plan-name">Business</div>
                             <ul class="plan-features">
                                 <li>Rappels automatiques</li>
-                                <li>Statistiques avancées</li>
-                                <li>Gestion clients</li>
-                                <li>Campagnes simples</li>
+                                <li>Campagnes (actifs)</li>
+                                <li>Jusqu'à 5 employés</li>
+                                <li>2000 messages IA</li>
                             </ul>
                         </span>
                     </label>
-                    <!-- PREMIUM -->
+                    <!-- SCALE -->
                     <label class="plan-card" style="--plan-color:#F0B429; --plan-bg:rgba(240,180,41,0.08); --plan-glow:rgba(240,180,41,0.18);">
-                        <input type="radio" name="plan_abonnement" value="PREMIUM"
-                            {% if business and business.plan_abonnement == 'PREMIUM' %}checked{% endif %}>
+                        <input type="radio" name="plan_abonnement" value="SCALE"
+                            {% if business and business.plan_abonnement == 'SCALE' %}checked{% endif %}>
                         <span class="plan-label">
-                            <span class="plan-badge" style="background:#F0B429; color:#1a1a1a;">PREMIUM</span>
+                            <span class="plan-badge" style="background:#F0B429; color:#1a1a1a;">SCALE</span>
                             <div class="plan-name">Automation + Cash</div>
                             <ul class="plan-features">
+                                <li>Campagnes (inactifs)</li>
                                 <li>Paiement intégré</li>
-                                <li>Marketing avancé</li>
-                                <li>Multi-employés</li>
-                                <li>CRM complet</li>
+                                <li>Employés illimités</li>
+                                <li>10000+ messages IA</li>
                             </ul>
                         </span>
                     </label>
-                </div>
-
                 <div class="field">
                     <label>ID du Business</label>
                     <input type="text" name="biz_id" placeholder="ex: fufu_express" value="{{ business.id if business else '' }}" {% if business %}readonly style="opacity:0.6; cursor:not-allowed;"{% endif %} required>

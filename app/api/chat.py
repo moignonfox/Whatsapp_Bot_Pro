@@ -2,7 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.api import api_bp
-from app.repositories import conversation_repo, business_repo, client_repo
+from app.repositories import conversation_repo, business_repo, client_repo, order_repo, tag_repo
 from app.services import whatsapp_service
 
 @api_bp.route('/conversations', methods=['GET'])
@@ -83,11 +83,36 @@ def get_messages(wa_id):
             "message_status": m.get('message_status')
         })
 
+    # CRM Data Injection
+    client = client_repo.get_or_create(company_id, wa_id)
+    tags_rows = tag_repo.get_tags_for_client(wa_id, company_id)
+    tags = [{"name": t['name'], "color": t['color']} for t in tags_rows]
+    
+    last_order_row = order_repo.get_last_for_user(wa_id, company_id)
+    last_order = None
+    if last_order_row:
+        last_order = {
+            "id": last_order_row['id'],
+            "statut": last_order_row['statut'],
+            "details": last_order_row['details'],
+            "montant": last_order_row['montant'],
+            "created_at": last_order_row['created_at']
+        }
+
+    crm_data = {
+        "name": client.get('nom'),
+        "display_name": client.get('display_name'),
+        "date_inscription": client.get('date_inscription'),
+        "tags": tags,
+        "last_order": last_order
+    }
+
     return jsonify({
         "success": True,
         "wa_id": wa_id,
         "is_human_mode": is_human,
-        "messages": msg_list
+        "messages": msg_list,
+        "crm": crm_data
     }), 200
 
 

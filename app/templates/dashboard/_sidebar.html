@@ -97,7 +97,7 @@
     <nav class="sidebar-nav">
         <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}"
            href="{{ url_for('dashboard.admin_dashboard', biz_id=biz_id) }}">
-            <i class="fas fa-home"></i> Dashboard
+            <i class="fas fa-home"></i> Tableau de bord
         </a>
 
         <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}" id="nav-chat-link">
@@ -150,18 +150,22 @@
         </a>
     </nav>
 
-    {# ── Footer (Plan Pro & Aide) ── #}
+    {# ── Footer (Plan Abonnement & Aide) ── #}
     <div class="sidebar-footer" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; border-top: none;">
-        <!-- Plan Pro Card -->
+        <!-- Plan Card -->
         <div style="background: linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0.03) 100%); border: 1px solid rgba(124,58,237,0.15); border-radius: 12px; padding: 16px; position: relative; overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <i class="fas fa-crown" style="color: #9D6BF8;"></i>
-                <span style="font-size: 14px; font-weight: 700; color: var(--text);">Plan Pro</span>
+                <span style="font-size: 14px; font-weight: 700; color: var(--text);">Plan {{ plan|capitalize }}</span>
             </div>
             <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">
-                Renouvellement le<br>23 Juin 2025
+                {% if business and business.date_fin_abonnement %}
+                    Renouvellement le<br>{{ business.date_fin_abonnement.split(' ')[0] }}
+                {% else %}
+                    Renouvellement<br>Automatique
+                {% endif %}
             </div>
-            <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}" style="display: block; text-align: center; background: rgba(124,58,237,0.15); color: #c4a1ff; font-size: 12px; font-weight: 600; padding: 6px 0; border-radius: 6px; text-decoration: none; border: 1px solid rgba(124,58,237,0.25); transition: background 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
+            <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}" onclick="sessionStorage.setItem('activeSettingsTab', 'tab-abonnement');" style="display: block; text-align: center; background: rgba(124,58,237,0.15); color: #c4a1ff; font-size: 12px; font-weight: 600; padding: 6px 0; border-radius: 6px; text-decoration: none; border: 1px solid rgba(124,58,237,0.25); transition: background 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
                 Gérer mon abonnement
             </a>
         </div>
