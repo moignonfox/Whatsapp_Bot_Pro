@@ -378,41 +378,179 @@
 
         <!-- ── Stats ── -->
         <style>.stat-card::before { display: none !important; }</style>
-        <div class="stat-grid">
-            <div class="stat-card" style="padding: 24px;">
-                <div class="stat-header">
-                    <span class="stat-label">Conversations</span>
-                </div>
-                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.conversations | default(0) }}</div>
-                </div>
-            </div>
+        
+        {% set plan_map = {'FREE': 0, 'DISCOVERY': 1, 'GROWTH': 2, 'SCALE': 3} %}
+        {% set plan_level = plan_map.get(plan|upper, 0) %}
+        
+        <style>
+            .stat-grid-advanced {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 24px;
+                margin-bottom: 24px;
+            }
+            .stat-card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 24px;
+                position: relative;
+                overflow: hidden;
+            }
+            .stat-card.locked::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(4px);
+                z-index: 10;
+            }
+            [data-theme='dark'] .stat-card.locked::after {
+                background: rgba(0, 0, 0, 0.6);
+            }
+            .locked-content {
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                text-align: center;
+                width: 100%;
+            }
+            .locked-btn {
+                background: var(--brand);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-block;
+                margin-top: 8px;
+            }
+            .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+            .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+            .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+            
+            .order-action-form { display: inline; }
+            .btn-act { padding: 4px 8px; border-radius: 6px; border: 1px solid; font-size: 11px; font-weight: 600; cursor: pointer; background: transparent; transition: all 0.2s; }
+            .btn-act-accept { color: var(--green); border-color: var(--green); }
+            .btn-act-accept:hover { background: var(--green); color: white; }
+            .btn-act-reject { color: var(--red); border-color: var(--red); }
+            .btn-act-reject:hover { background: var(--red); color: white; }
+        </style>
 
-            <div class="stat-card" style="padding: 24px;">
-                <div class="stat-header">
-                    <span class="stat-label">Taux d'automatisation</span>
-                </div>
-                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.ai_rate | default(0) }}%</div>
-                </div>
+        <!-- Ligne 1: Base (Free+) -->
+        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Trafic & Base</h3>
+        <div class="stat-grid-advanced">
+            <div class="stat-card">
+                <div class="stat-header"><span class="stat-label">Conversations</span></div>
+                <div class="stat-value">{{ stats.conversations | default(0) }}</div>
             </div>
-
-            <div class="stat-card" style="padding: 24px;">
-                <div class="stat-header">
-                    <span class="stat-label">Nouveaux clients</span>
-                </div>
-                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.nouveaux_clients | default(0) }}</div>
-                </div>
+            <div class="stat-card">
+                <div class="stat-header"><span class="stat-label">Taux d'automatisation</span></div>
+                <div class="stat-value">{{ stats.ai_rate | default(0) }}%</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-header"><span class="stat-label">Nouveaux clients</span></div>
+                <div class="stat-value">{{ stats.nouveaux_clients | default(0) }}</div>
+            </div>
+        </div>
 
-            <div class="stat-card" style="padding: 24px;">
-                <div class="stat-header">
-                    <span class="stat-label">Commandes</span>
+        <!-- Ligne 2: Ventes (Discovery+) -->
+        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Ventes (Discovery+)</h3>
+        <div class="stat-grid-advanced">
+            <div class="stat-card {% if plan_level < 1 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Commandes</span></div>
+                <div class="stat-value">{{ stats.commandes | default(0) }}</div>
+                {% if plan_level < 1 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn">Passer à Discovery</a>
                 </div>
-                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;">
-                    <div class="stat-value" style="font-size: 32px; font-weight: 700;">{{ stats.commandes | default(0) }}</div>
+                {% endif %}
+            </div>
+            <div class="stat-card {% if plan_level < 1 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Chiffre d'Affaires</span></div>
+                <div class="stat-value">{{ "{:,}".format(stats.ca | default(0)) }} <span style="font-size: 14px;">FCFA</span></div>
+                {% if plan_level < 1 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn">Passer à Discovery</a>
                 </div>
+                {% endif %}
+            </div>
+            <div class="stat-card {% if plan_level < 1 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Taux d'Acceptation</span></div>
+                <div class="stat-value">
+                    {% set total_trait = (stats.commandes_acceptees|default(0) + stats.commandes_refusees|default(0)) %}
+                    {% if total_trait > 0 %}
+                        {{ ((stats.commandes_acceptees|default(0) / total_trait) * 100) | round(1) }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                    <span style="color: var(--green);">{{ stats.commandes_acceptees|default(0) }} acceptées</span> / 
+                    <span style="color: var(--red);">{{ stats.commandes_refusees|default(0) }} refusées</span>
+                </div>
+                {% if plan_level < 1 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn">Passer à Discovery</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Ligne 3: Avancé (Growth+ & Scale+) -->
+        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performances (Growth+ & Scale+)</h3>
+        <div class="stat-grid-advanced">
+            <!-- Panier Moyen (Growth) -->
+            <div class="stat-card {% if plan_level < 2 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Panier Moyen</span></div>
+                <div class="stat-value">{{ "{:,}".format(stats.panier_moyen | default(0)) }} <span style="font-size: 14px;">FCFA</span></div>
+                {% if plan_level < 2 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn">Passer à Growth</a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Taux de Conversion (Growth) -->
+            <div class="stat-card {% if plan_level < 2 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Conversion Clients</span></div>
+                <div class="stat-value">{{ stats.taux_conversion | default(0) }}%</div>
+                {% if plan_level < 2 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn">Passer à Growth</a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Temps de Réponse (Scale) -->
+            <div class="stat-card {% if plan_level < 3 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Temps de Rép. Médian</span></div>
+                <div class="stat-value">{{ stats.temps_reponse | default('-') }}</div>
+                {% if plan_level < 3 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn" style="background: #000;">Passer à Scale</a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Rétention (Scale) -->
+            <div class="stat-card {% if plan_level < 3 %}locked{% endif %}">
+                <div class="stat-header"><span class="stat-label">Clients Récurrents</span></div>
+                <div class="stat-value">{{ stats.taux_retention | default(0) }}%</div>
+                {% if plan_level < 3 %}
+                <div class="locked-content">
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <a href="#" class="locked-btn" style="background: #000;">Passer à Scale</a>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -465,10 +603,27 @@
                         {% for order in recent_orders %}
                         <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light);">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">{{ order.client_name }}</div>
+                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">
+                                    {{ order.client_name|default('Client') }}
+                                    {% if order.statut == 'En attente' %}
+                                        <span style="font-size: 10px; background: var(--orange-bg); color: var(--orange); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Nouveau</span>
+                                    {% endif %}
+                                </div>
                                 <div style="font-size: 12px; color: var(--muted);">{{ order.details[:25] }}{% if order.details|length > 25 %}...{% endif %}</div>
                             </div>
-                            <div style="font-size: 13px; font-weight: 700; color: var(--green);">{{ order.montant }} FCFA</div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                                <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ order.montant }} FCFA</div>
+                                {% if order.statut == 'En attente' %}
+                                <form action="{{ url_for('dashboard.order_action', biz_id=biz_id, order_id=order.id) }}" method="POST" class="order-action-form">
+                                    <button type="submit" name="action" value="accept" class="btn-act btn-act-accept">Accepter</button>
+                                    <button type="submit" name="action" value="reject" class="btn-act btn-act-reject">Refuser</button>
+                                </form>
+                                {% elif order.statut == 'Refusée' or order.statut == 'Annulée' %}
+                                    <span style="font-size: 11px; color: var(--red);">Refusée</span>
+                                {% else %}
+                                    <span style="font-size: 11px; color: var(--green);">Confirmée</span>
+                                {% endif %}
+                            </div>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -503,6 +658,36 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Top Produits (Growth+) -->
+        <h3 style="font-size: 14px; color: var(--muted); margin-top: 24px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Produits (Growth+)</h3>
+        <div class="section-card" style="position: relative; overflow: hidden; margin-bottom: 30px;">
+            <div class="section-header" style="border-bottom: none; padding-bottom: 12px;">
+                <span class="section-title">Top 5 Produits Vendus</span>
+            </div>
+            <div class="section-body" style="padding: 0 24px 24px 24px;">
+                {% if plan_level < 2 %}
+                <div class="locked-content" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+                    <i class="fas fa-lock" style="font-size: 24px; color: var(--muted); margin-bottom: 8px;"></i>
+                    <a href="#" class="locked-btn">Passer à Growth</a>
+                </div>
+                {% endif %}
+                
+                {% if top_produits %}
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for prod, count in top_produits %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-light);">
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">{{ prod }}</div>
+                            <div style="font-size: 13px; font-weight: 700; color: var(--brand); background: var(--purple-bg); padding: 4px 10px; border-radius: 12px;">{{ count }} ventes</div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); font-size: 13px;">Aucune donnée produit disponible.</p>
+                {% endif %}
+            </div>
+        </div>
+        
         </div>
     </div><!-- /content -->
 </div><!-- /main -->

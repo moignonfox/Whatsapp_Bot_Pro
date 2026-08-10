@@ -216,6 +216,9 @@ def admin_dashboard(biz_id):
     
     # --- Custom dashboard stats ---
     import sqlite3
+    import statistics
+    import re
+    from datetime import datetime
     from app.models.schema import get_db_path
     from app.repositories.order_repo import get_date_condition
     
@@ -246,18 +249,94 @@ def admin_dashboard(biz_id):
     else:
         stats['ai_rate'] = 100
         
-    stats['commandes'] = stats.get('total', 0)
+    # 4. Commandes & CA (Discovery+)
+    cursor.execute(f"SELECT COUNT(*), SUM(montant) FROM reservations WHERE business_id = ? AND {date_cond} AND statut NOT LIKE 'Annul%' AND statut != 'Refusée'", (biz_id,))
+    row = cursor.fetchone()
+    stats['commandes'] = row[0] or 0
+    stats['ca'] = row[1] or 0
     
-    # 4. Recent conversations (last 5)
+    cursor.execute(f"SELECT COUNT(*) FROM reservations WHERE business_id = ? AND {date_cond} AND statut IN ('Confirmée', 'Livrée', 'En préparation')", (biz_id,))
+    stats['commandes_acceptees'] = cursor.fetchone()[0] or 0
+    
+    cursor.execute(f"SELECT COUNT(*) FROM reservations WHERE business_id = ? AND {date_cond} AND statut IN ('Refusée', 'Annulée')", (biz_id,))
+    stats['commandes_refusees'] = cursor.fetchone()[0] or 0
+
+    # 5. Advanced Stats (Growth+)
+    # Panier Moyen
+    stats['panier_moyen'] = int(stats['ca'] / stats['commandes']) if stats['commandes'] > 0 else 0
+    
+    # Taux de Conversion (Commandes / Conversations uniques)
+    stats['taux_conversion'] = round((stats['commandes'] / stats['conversations']) * 100, 1) if stats['conversations'] > 0 else 0
+    
+    # Top Produits (Normalisation basique)
+    cursor.execute(f"SELECT details FROM reservations WHERE business_id = ? AND {date_cond} AND statut NOT LIKE 'Annul%' AND statut != 'Refusée'", (biz_id,))
+    product_rows = cursor.fetchall()
+    product_counts = {}
+    for r in product_rows:
+        text = r[0]
+        if not text or "IA INDISPONIBLE" in text:
+            continue
+        # Split by comma or newline if multiple items
+        items = re.split(r',|\n', text)
+        for item in items:
+            # Normalize: lower, remove qty (e.g. "2x", "1 "), remove size (e.g. "taille 45")
+            item = item.lower().strip()
+            item = re.sub(r'^[0-9]+[xX]?\s*', '', item)  # remove "2x " or "3 "
+            item = re.sub(r'taille\s*[0-9A-Za-z]+', '', item)  # remove "taille 45"
+            item = re.sub(r'\s+', ' ', item).strip()
+            if len(item) > 2:
+                product_counts[item] = product_counts.get(item, 0) + 1
+    
+    top_produits = sorted(product_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    # 6. Advanced Stats (Scale+)
+    # Temps de réponse (Médiane, hors > 60 min)
+    cursor.execute(f"SELECT timestamp, role, wa_id FROM history WHERE business_id = ? AND {history_date_cond} ORDER BY wa_id, timestamp", (biz_id,))
+    hist_rows = cursor.fetchall()
+    
+    response_times = []
+    last_user_time = {}
+    
+    for r in hist_rows:
+        try:
+            ts = datetime.strptime(r['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+        except:
+            continue
+        wa_id = r['wa_id']
+        role = r['role']
+        
+        if role == 'user':
+            last_user_time[wa_id] = ts
+        elif role == 'assistant' and wa_id in last_user_time:
+            delta = (ts - last_user_time[wa_id]).total_seconds()
+            if delta < 3600:  # Exclure > 60 minutes
+                response_times.append(delta)
+            del last_user_time[wa_id]
+            
+    if response_times:
+        median_rt = statistics.median(response_times)
+        if median_rt < 60:
+            stats['temps_reponse'] = f"{int(median_rt)} sec"
+        else:
+            stats['temps_reponse'] = f"{int(median_rt//60)} min"
+    else:
+        stats['temps_reponse'] = "-"
+        
+    # Taux de rétention (Clients ayant > 1 commande)
+    cursor.execute(f"SELECT wa_id, COUNT(*) as c FROM reservations WHERE business_id = ? AND {date_cond} GROUP BY wa_id", (biz_id,))
+    retention_rows = cursor.fetchall()
+    clients_total = len(retention_rows)
+    clients_recurrents = sum(1 for r in retention_rows if r['c'] > 1)
+    stats['taux_retention'] = int((clients_recurrents / clients_total) * 100) if clients_total > 0 else 0
+    
+    # 7. Lists for dashboard
     from app.repositories.conversation_repo import get_conversations_for_business
     all_convs = get_conversations_for_business(biz_id)
     recent_convs = all_convs[:5] if all_convs else []
     
-    # 5. Recent orders (last 5)
     recent_orders = reservations[:5]
     
-    # 6. Utilisation IA
-    ai_words_used = (total_assistant_msgs - human_msgs) * 45  # Assuming ~45 words per message on average
+    ai_words_used = (total_assistant_msgs - human_msgs) * 45
     ai_words_limit = 100000
     ai_usage_percent = min(int((ai_words_used / ai_words_limit) * 100), 100) if ai_words_limit > 0 else 0
     
@@ -279,6 +358,7 @@ def admin_dashboard(biz_id):
                            ai_words_used=f"{ai_words_used:,}",
                            ai_words_limit=f"{ai_words_limit:,}",
                            ai_usage_percent=ai_usage_percent,
+                           top_produits=top_produits,
                            current_period=period,
                            active_page='dashboard')
 
@@ -1732,3 +1812,49 @@ def forgot_password():
         return render_template('auth/forgot_password.html', success="Si cet email existe dans notre système, notre équipe vous contactera pour réinitialiser votre mot de passe.")
         
     return render_template('auth/forgot_password.html')
+
+
+@dashboard_bp.route('/<biz_id>/orders/<int:order_id>/action', methods=['POST'])
+def order_action(biz_id, order_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    action = request.form.get('action')
+    if action not in ['accept', 'reject']:
+        return jsonify({'error': 'Invalid action'}), 400
+        
+    import sqlite3
+    from app.models.schema import get_db_path
+    
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM reservations WHERE id = ? AND business_id = ?", (order_id, biz_id))
+    order = cursor.fetchone()
+    
+    if not order:
+        conn.close()
+        return jsonify({'error': 'Order not found'}), 404
+        
+    new_status = 'En préparation' if action == 'accept' else 'Refusée'
+    cursor.execute("UPDATE reservations SET statut = ? WHERE id = ?", (new_status, order_id))
+    conn.commit()
+    conn.close()
+    
+    if action == 'reject':
+        # Send WhatsApp message
+        try:
+            from app.services import whatsapp_service
+            from app.repositories.business_repo import get_by_id
+            biz = get_by_id(biz_id)
+            phone_id = dict(biz).get('whatsapp_phone_id')
+            token = dict(biz).get('whatsapp_token')
+            if phone_id and token:
+                msg = f"Bonjour, nous sommes désolés mais votre commande (Réf: #{order_id}) n'a pas pu être acceptée."
+                whatsapp_service.send_text_message(phone_id, token, order['wa_id'], msg)
+        except Exception as e:
+            print(f"Failed to send rejection WhatsApp msg: {e}")
+            
+    flash(f"Commande {new_status.lower()} avec succès.", "success")
+    return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
