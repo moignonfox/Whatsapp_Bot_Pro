@@ -436,18 +436,7 @@
             </div>
             <button class="btn-cancel" onclick="window.location.reload()">Annuler</button>
             <button class="btn-save" onclick="document.getElementById('settings-form').submit()">Enregistrer les modifications</button>
-            {% include 'dashboard/_notif_bell.html' %}
-            <div class="profile-btn" onclick="document.getElementById('profile-dropdown').classList.toggle('show')">
-                <img src="https://ui-avatars.com/api/?name={{ business.nom | urlencode }}&background=random" alt="Profile">
-                <div class="profile-info">
-                    <span class="name">{{ business.nom[:15] }}</span>
-                    <span class="plan">{{ (business.plan_abonnement|capitalize) if business.plan_abonnement else 'Pro Plan' }}</span>
-                </div>
-                <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--muted);"></i>
-                <div id="profile-dropdown" class="profile-dropdown">
-                    <a href="{{ url_for('dashboard.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-                </div>
-            </div>
+            {% include 'dashboard/_topbar_right.html' %}
         </div>
     </header>
 

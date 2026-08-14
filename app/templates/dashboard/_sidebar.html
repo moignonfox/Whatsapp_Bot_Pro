@@ -702,14 +702,12 @@
     }
 
     const socket = io();
-    console.log("SocketIO initialized");
 
     // ── Tracking des derniers IDs reçus (base du rattrapage P3) ──
     let lastMsgId = parseInt(localStorage.getItem('lastMsgId_' + bizId) || '0');
     let lastOrdId = parseInt(localStorage.getItem('lastOrdId_' + bizId) || '0');
 
     socket.on('connect', function() {
-        console.log("SocketIO connected! Emitting rejoindre_room for bizId:", bizId);
         // Rejoindre la room en envoyant les derniers IDs connus → le serveur
         // retournera via sync_missed_events tout ce qui a été manqué.
         socket.emit('rejoindre_room', {

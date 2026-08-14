@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="30">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — {{ biz_id }} · MyBot SaaS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -310,43 +309,7 @@
             </div>
         </div>
         <div class="topbar-right">
-            <!-- Search -->
-            <button class="topbar-btn" style="border-radius: 50%; width: 40px; height: 40px; border: 1px solid var(--border); background: transparent;">
-                <i class="fas fa-search"></i>
-            </button>
-            
-            {% include 'dashboard/_notif_bell.html' %}
-
-            <!-- Divider -->
-            <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px;"></div>
-
-            <!-- Profile -->
-            <div style="position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="document.getElementById('admin-profile-dropdown').classList.toggle('show')">
-                <img src="https://ui-avatars.com/api/?name={{ business.nom | urlencode }}&background=random" alt="User" style="width: 36px; height: 36px; border-radius: 50%;">
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 13px; font-weight: 600; color: var(--text);">{{ business.nom[:15] }}</span>
-                    <span style="font-size: 11px; color: #7C3AED; font-weight: 500;">{{ (business.plan_abonnement|capitalize) if business.plan_abonnement else 'Pro Plan' }}</span>
-                </div>
-                <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--muted); margin-left: 4px;"></i>
-                
-                <div id="admin-profile-dropdown" class="profile-dropdown">
-                    <a href="{{ url_for('dashboard.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-                </div>
-                <style>
-                    .profile-dropdown {
-                        position: absolute; top: 100%; right: 0; margin-top: 10px;
-                        background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-                        padding: 8px; display: none; flex-direction: column; min-width: 150px; z-index: 100;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-align: left;
-                    }
-                    .profile-dropdown.show { display: flex; }
-                    .profile-dropdown a {
-                        color: var(--text); text-decoration: none; font-size: 13px; padding: 10px 12px;
-                        border-radius: 8px; transition: background 0.2s; display: flex; align-items: center; gap: 10px;
-                    }
-                    .profile-dropdown a:hover { background: rgba(255,255,255,0.05); }
-                </style>
-            </div>
+            {% include 'dashboard/_topbar_right.html' %}
         </div>
     </header>
 

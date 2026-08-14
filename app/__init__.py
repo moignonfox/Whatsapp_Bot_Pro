@@ -265,19 +265,15 @@ def create_app(config_name=None):
         from flask import session
         from flask_socketio import join_room, emit
         user_id = session.get('user_id') or session.get('is_master')
-        print(f"[SOCKETIO] rejoindre_room called with data: {data}. Session user_id: {session.get('user_id')}, is_master: {session.get('is_master')}")
         if not user_id:
-            print("[SOCKETIO] rejoindre_room rejected: no user_id in session")
             return
         room = data.get('room')
         if room and (str(room) == str(session.get('user_id')) or session.get('is_master')):
-            # Ensure the room we join is the string version since emits often use strings
             join_room(str(room))
-            print(f"[SOCKETIO] Successfully joined room {str(room)}")
             # Also join integer room because database IDs often return as integers
             try:
                 join_room(int(room))
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
             # ── Rattrapage des événements manqués (reconnexion) ──
             try:
