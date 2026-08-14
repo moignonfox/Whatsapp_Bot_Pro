@@ -23,6 +23,31 @@ def get_by_business(business_id: str) -> List[sqlite3.Row]:
     return rows
 
 
+
+def get_all_by_business(business_id: str) -> List[sqlite3.Row]:
+    """Retourne la liste complète des agents IA (actifs et inactifs) d'un business."""
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM ai_agents WHERE business_id = ?",
+        (business_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def toggle_active(agent_id: int, business_id: str, is_active: int) -> None:
+    """Active ou désactive un agent IA."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE ai_agents SET is_active = ? WHERE id = ? AND business_id = ?",
+        (is_active, agent_id, business_id),
+    )
+    conn.commit()
+    conn.close()
+
 def get_by_id(agent_id: int) -> Optional[sqlite3.Row]:
     """Retourne un agent par son identifiant."""
     conn = sqlite3.connect(get_db_path())

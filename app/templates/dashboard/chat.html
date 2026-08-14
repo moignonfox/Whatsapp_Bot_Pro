@@ -884,7 +884,6 @@
     Commande enregistrée avec succès !
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
     // Variables globales
     const bizId = "{{ biz_id }}";
@@ -899,20 +898,6 @@
     document.querySelectorAll('.conv-time-format').forEach(el => {
         el.textContent = formatTime(el.textContent);
     });
-
-    // ── Auto-ouverture depuis une notification push ──
-    // Si l'URL contient ?wa_id=XXX (injecté par la notification Firebase),
-    // ouvrir directement cette conversation au chargement.
-    (function openFromNotification() {
-        const params = new URLSearchParams(window.location.search);
-        const targetWaId = params.get('wa_id');
-        if (targetWaId) {
-            // Nettoyer l'URL sans recharger la page
-            history.replaceState(null, '', window.location.pathname);
-            // Attendre que le DOM soit prêt (les items de conv sont déjà rendus par Jinja)
-            loadConversation(targetWaId);
-        }
-    })();
 
     // ── SOCKET.IO CONNECTION ──
     const socket = io();
@@ -1664,7 +1649,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const autoSelectWaId = urlParams.get('wa_id');
         if (autoSelectWaId) {
-            selectConversation(autoSelectWaId);
+            history.replaceState(null, '', window.location.pathname);
+            loadConversation(autoSelectWaId);
         }
     });
 

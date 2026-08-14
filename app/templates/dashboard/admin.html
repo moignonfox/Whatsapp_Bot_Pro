@@ -576,10 +576,13 @@
                         {% for conv in recent_convs %}
                         <div onclick="window.location.href='{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ conv.wa_id }}'" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <img src="https://ui-avatars.com/api/?name={{ conv.nom | urlencode }}&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
-                                <div>
-                                    <div style="font-size: 14px; font-weight: 600; color: var(--text);">{{ conv.nom }}</div>
-                                    <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">{{ conv.wa_id }}</div>
+                                <img src="https://ui-avatars.com/api/?name={{ (conv.client_name or conv.wa_id) | urlencode }}&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <div style="font-size: 14px; font-weight: 600; color: var(--text);">{{ conv.client_name or conv.wa_id }}</div>
+                                    <div style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
+                                        {% if conv.last_role == 'assistant' %}<i class="fas fa-robot" style="font-size: 10px; margin-right: 4px;"></i>{% endif %}
+                                        {{ conv.last_message or "Aucun message" }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -615,6 +618,7 @@
                                 <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ order.montant }} FCFA</div>
                                 {% if order.statut == 'En attente' %}
                                 <form action="{{ url_for('dashboard.order_action', biz_id=biz_id, order_id=order.id) }}" method="POST" class="order-action-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" name="action" value="accept" class="btn-act btn-act-accept">Accepter</button>
                                     <button type="submit" name="action" value="reject" class="btn-act btn-act-reject">Refuser</button>
                                 </form>

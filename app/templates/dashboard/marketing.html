@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketing — {{ biz_id }} · MyBot SaaS</title>
+    <title>Marketing & Campagnes — {{ biz_id }} · MyBot SaaS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
@@ -22,8 +22,8 @@
             padding: 0 28px; height: 60px; display: flex; align-items: center;
             justify-content: space-between; position: sticky; top: 0; z-index: 100;
         }
-        .topbar-left h1 { font-size: 16px; font-weight: 600; color: var(--text); }
-        .topbar-left p { font-size: 12px; color: var(--muted); }
+        .topbar-left h1 { font-size: 16px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;}
+        .topbar-left p { font-size: 12px; color: var(--muted); margin-top: 2px;}
         .topbar-right { display: flex; align-items: center; gap: 12px; }
         .topbar-btn {
             width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border);
@@ -35,148 +35,321 @@
         .content { padding: 28px; flex: 1; }
 
         .plan-hero {
-            background: linear-gradient(135deg, rgba(37,211,102,0.08) 0%, rgba(88,166,255,0.08) 100%);
+            background: #0f1015;
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 32px 36px;
-            margin-bottom: 28px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+        .plan-hero-left {
             display: flex;
             align-items: center;
             gap: 24px;
         }
         .plan-hero-icon {
-            width: 60px; height: 60px;
-            border-radius: 16px;
+            width: 70px; height: 70px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px;
+            font-size: 36px;
             flex-shrink: 0;
+            background: radial-gradient(circle, rgba(123, 97, 255, 0.2) 0%, transparent 70%);
         }
-        .plan-hero h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-        .plan-hero p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+        .plan-hero h2 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .plan-hero p { font-size: 13px; color: #8b949e; line-height: 1.5; max-width: 600px;}
+        .btn-outline-light {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn-outline-light:hover { background: rgba(255,255,255,0.05); }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
         .feature-card {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 24px;
+            padding: 20px;
             position: relative;
-            overflow: hidden;
         }
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: var(--accent, var(--green));
+        .feature-icon-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
         .feature-icon {
-            width: 40px; height: 40px;
+            width: 38px; height: 38px;
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            margin-bottom: 14px;
+            font-size: 16px;
         }
-        .feature-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-        .feature-desc { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+        .feature-arrow {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .feature-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; min-height: 54px; }
         .feature-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            font-size: 10px; font-weight: 700;
-            padding: 2px 8px; border-radius: 4px;
-            margin-top: 10px;
+            font-size: 11px; font-weight: 500;
+            color: #25D366;
+            background: rgba(37,211,102,0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
         }
-        .badge-pro { background: rgba(37,211,102,0.12); color: #25D366; border: 1px solid rgba(37,211,102,0.25); }
-        .badge-scale { background: rgba(240,180,41,0.12); color: #F0B429; border: 1px solid rgba(240,180,41,0.25); }
+        
+        .dashboard-columns {
+            display: flex;
+            gap: 20px;
+        }
+        .col-left {
+            flex: 2;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+        }
+        .col-right {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+        }
 
-        .coming-soon-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(13,17,23,0.6);
-            backdrop-filter: blur(2px);
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
             display: flex;
             align-items: center;
+            gap: 10px;
+        }
+        .section-title i { color: #7b61ff; }
+        .btn-new-campaign {
+            background: rgba(123, 97, 255, 0.15);
+            color: #b19cff;
+            border: 1px solid rgba(123, 97, 255, 0.3);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-new-campaign:hover {
+            background: rgba(123, 97, 255, 0.25);
+        }
+
+        .campaign-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .campaign-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .campaign-item:last-child {
+            border-bottom: none;
+        }
+        .ci-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+        }
+        .ci-icon {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .ci-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .ci-date { font-size: 12px; color: var(--muted); }
+        .ci-status {
+            font-size: 11px; font-weight: 500;
+            padding: 3px 8px; border-radius: 4px;
+            display: inline-block;
+        }
+        .status-terminee { background: rgba(37,211,102,0.1); color: #25D366; border: 1px solid rgba(37,211,102,0.2); }
+        .status-planifiee { background: rgba(88,166,255,0.1); color: #58A6FF; border: 1px solid rgba(88,166,255,0.2); }
+
+        .ci-stats {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .stat-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .stat-value { font-size: 14px; font-weight: 600; color: var(--text); }
+        .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px;}
+        .ci-more { color: var(--muted); cursor: pointer; padding: 0 10px; }
+
+        .link-bottom {
+            display: inline-block;
+            margin-top: 16px;
+            color: #b19cff;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Gauge */
+        .gauge-container {
+            display: flex;
             justify-content: center;
-            border-radius: 14px;
-            opacity: 0;
-            transition: opacity 0.2s;
+            align-items: center;
+            margin: 30px 0;
+            position: relative;
         }
-        .feature-card:hover .coming-soon-overlay { opacity: 1; }
-        .coming-soon-text {
-            font-size: 13px; font-weight: 700; color: #fff;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 8px 16px; border-radius: 8px;
+        .gauge-circle {
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: conic-gradient(#7b61ff 96%, var(--border) 0);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
         }
+        .gauge-circle::before {
+            content: '';
+            position: absolute;
+            width: 120px; height: 120px;
+            background: var(--card);
+            border-radius: 50%;
+        }
+        .gauge-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        .gauge-val { font-size: 24px; font-weight: 700; color: var(--text); }
+        .gauge-label { font-size: 11px; color: var(--muted); margin-top: 2px;}
+        .gauge-trend { font-size: 11px; color: #25D366; margin-top: 4px; font-weight: 600;}
 
-        .client-campaign-section {
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .stat-card-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .stat-card-title { font-size: 15px; font-weight: 600; color: var(--text); }
+        .stat-card-label { font-size: 11px; color: var(--muted); margin-top: 2px;}
+        .stat-card-trend { font-size: 11px; font-weight: 600; color: #25D366; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-content {
             background: var(--card); border: 1px solid var(--border);
-            border-radius: 14px; overflow: hidden; margin-bottom: 20px;
+            border-radius: 16px; width: 100%; max-width: 500px;
+            padding: 30px; transform: translateY(20px); transition: transform 0.2s;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
-        .section-header {
-            padding: 18px 24px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .section-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
-        .section-title i { color: var(--green); }
-        .section-body { padding: 24px; }
-
-        .client-count-badge {
-            font-size: 12px; font-weight: 600;
-            background: var(--green-bg); color: var(--green);
-            padding: 4px 10px; border-radius: 6px;
-        }
-
-        .campaign-form { display: grid; gap: 14px; }
-        .form-field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; display: block; margin-bottom: 7px; }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header h3 { font-size: 18px; font-weight: 600; color: var(--text); }
+        .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+        
+        .campaign-form { display: grid; gap: 16px; }
+        .form-field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
         .form-field input, .form-field textarea, .form-field select {
             width: 100%; padding: 12px 16px;
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
-            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none; transition: border-color 0.2s;
         }
         .form-field textarea { resize: vertical; min-height: 100px; }
-        .form-field input:focus, .form-field textarea:focus, .form-field select:focus {
-            border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow);
-        }
+        .form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color: #7b61ff; }
         .delay-notice {
             display: flex; align-items: flex-start; gap: 10px;
             background: rgba(37,211,102,0.06); border: 1px solid rgba(37,211,102,0.2);
-            border-radius: 10px; padding: 14px 16px; font-size: 12.5px; color: var(--muted);
-            line-height: 1.6;
+            border-radius: 10px; padding: 12px; font-size: 12px; color: var(--muted);
+            line-height: 1.5;
         }
-        .delay-notice i { color: var(--green); margin-top: 2px; flex-shrink: 0; }
+        .delay-notice i { color: var(--green); margin-top: 2px; }
         .btn-campaign {
             width: 100%; padding: 14px;
-            background: var(--green); color: #fff;
-            border: none; border-radius: 10px; font-family: inherit;
-            font-size: 14.5px; font-weight: 700; cursor: pointer;
-            transition: filter 0.2s, transform 0.12s;
+            background: #7b61ff; color: #fff;
+            border: none; border-radius: 10px; font-weight: 600; cursor: pointer;
+            transition: background 0.2s; margin-top: 10px;
         }
-        .btn-campaign:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-campaign:hover { background: #6a4ff0; }
 
+        @media (max-width: 1024px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .dashboard-columns { flex-direction: column; }
+        }
         @media (max-width: 768px) { 
             .main { margin-left: 0; } 
             .content { padding: 16px; } 
             .features-grid { grid-template-columns: 1fr; } 
-            .delay-notice { flex-direction: column; text-align: left; }
+            .plan-hero { flex-direction: column; text-align: center; }
+            .plan-hero-left { flex-direction: column; }
+            .ci-stats { display: none; }
         }
     </style>
 </head>
 <body>
 {% include 'dashboard/_sidebar.html' %}
 
-<!-- ══════════ MAIN ══════════ -->
 <div class="main">
     <header class="topbar">
-        <div class="topbar-left" style="display:flex; align-items:center; gap:14px;">
-            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;" id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+        <div class="topbar-left">
+            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer; margin-right: 10px;" id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
             <div>
-                <h1>📣 Marketing & Campagnes</h1>
+                <h1><i class="fas fa-bullhorn" style="color: #7b61ff; margin-right:5px;"></i> Marketing & Campagnes</h1>
                 <p>Envoyez des messages ciblés à vos clients</p>
             </div>
         </div>
@@ -191,202 +364,255 @@
 
         <!-- Hero plan -->
         <div class="plan-hero">
-            {% if plan == 'SCALE' %}
-            <div class="plan-hero-icon" style="background:rgba(240,180,41,0.1); border:1px solid rgba(240,180,41,0.25);">🚀</div>
-            <div>
-                <h2>Marketing Avancé — Plan SCALE</h2>
-                <p>Accès complet à toutes les fonctionnalités marketing : campagnes ciblées, messages séquentiels avec délais anti-spam, et automatisation avancée.</p>
+            <div class="plan-hero-left">
+                <div class="plan-hero-icon">🚀</div>
+                <div>
+                    <h2>Marketing Avancé — Plan SCALE 👑</h2>
+                    <p>Accès complet à toutes les fonctionnalités marketing : campagnes ciblées, messages séquentiels avec délais anti-spam, et automatisation avancée.</p>
+                </div>
             </div>
-            {% else %}
-            <div class="plan-hero-icon" style="background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.25);">📣</div>
             <div>
-                <h2>Marketing Campagnes — Plan GROWTH</h2>
-                <p>Envoyez des campagnes ciblées à tous vos clients. Passez au plan PREMIUM pour débloquer les messages séquentiels, les délais anti-spam et l'automatisation avancée.</p>
+                <a href="#" class="btn-outline-light">Voir les limites de mon plan <i class="fas fa-arrow-right"></i></a>
             </div>
-            {% endif %}
         </div>
 
         <!-- Fonctionnalités disponibles -->
         <div class="features-grid">
-            <div class="feature-card" style="--accent: var(--green);">
-                <div class="feature-icon" style="background:var(--green-bg); color:var(--green);">📨</div>
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon" style="background:rgba(37,211,102,0.1); color:#25D366;"><i class="fas fa-users"></i></div>
+                    <i class="fas fa-arrow-right feature-arrow"></i>
+                </div>
                 <div class="feature-title">Campagne de masse</div>
                 <div class="feature-desc">Envoyez un message personnalisé à l'ensemble de votre base clients en quelques clics.</div>
-                <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
+                <span class="feature-badge">Disponible sur votre plan</span>
             </div>
-            <div class="feature-card" style="--accent: var(--green);">
-                <div class="feature-icon" style="background:var(--green-bg); color:var(--green);">🎯</div>
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon" style="background:rgba(219,74,166,0.1); color:#DB4AA6;"><i class="fas fa-bullseye"></i></div>
+                    <i class="fas fa-arrow-right feature-arrow"></i>
+                </div>
                 <div class="feature-title">Ciblage par activité</div>
                 <div class="feature-desc">Filtrez vos destinataires selon leur dernière interaction avec le bot (actifs / inactifs).</div>
-                {% if plan == 'SCALE' %}
-                <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
-                {% else %}
-                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
-                {% endif %}
+                <span class="feature-badge">Disponible sur votre plan</span>
             </div>
-            <div class="feature-card" style="--accent: #F0B429;">
-                <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;">⏱️</div>
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;"><i class="fas fa-shield-alt"></i></div>
+                    <i class="fas fa-arrow-right feature-arrow"></i>
+                </div>
                 <div class="feature-title">Délais anti-spam</div>
-                <div class="feature-desc">Messages envoyés avec des intervalles aléatoires pour simuler un comportement humain naturel et éviter les blocages WhatsApp.</div>
-                {% if plan == 'SCALE' %}
-                <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
-                {% else %}
-                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
-                {% endif %}
+                <div class="feature-desc">Messages envoyés avec des intervalles aléatoires pour simuler un comportement humain.</div>
+                <span class="feature-badge">Disponible sur votre plan</span>
             </div>
-            <div class="feature-card" style="--accent: #F0B429;">
-                <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;">🔁</div>
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon" style="background:rgba(88,166,255,0.1); color:#58A6FF;"><i class="fas fa-stream"></i></div>
+                    <i class="fas fa-arrow-right feature-arrow"></i>
+                </div>
                 <div class="feature-title">Séquences automatisées</div>
-                <div class="feature-desc">Créez des séries de messages espacés dans le temps : rappels J+1, J+3, J+7 pour maximiser la conversion.</div>
-                {% if plan == 'SCALE' %}
-                <span class="feature-badge badge-pro"><i class="fas fa-check"></i> Disponible sur votre plan</span>
-                {% else %}
-                <span class="feature-badge badge-scale">🔒 SCALE requis</span>
-                <div class="coming-soon-overlay"><span class="coming-soon-text">🔒 Plan SCALE</span></div>
-                {% endif %}
+                <div class="feature-desc">Créez des séries de messages espacés dans le temps : rappels J+1, J+3, J+7 pour plus d'impact.</div>
+                <span class="feature-badge">Disponible sur votre plan</span>
             </div>
         </div>
 
-        <!-- Formulaire de campagne -->
-        <div class="client-campaign-section">
-            <div class="section-header">
-                <span class="section-title"><i class="fas fa-paper-plane"></i> Nouvelle Campagne</span>
-                <span class="client-count-badge">{{ clients|length }} client(s) disponibles</span>
-            </div>
-            <div class="section-body">
-                {% if clients %}
-                <form class="campaign-form" method="POST" action="{{ url_for('dashboard.send_campaign', biz_id=biz_id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-field">
-                        <label>Destinataires</label>
-                        <select name="target" id="campaign-target">
-                            <option value="all">Tous les clients ({{ clients|length }})</option>
-                            <option value="active" {% if plan != 'SCALE' %}disabled{% endif %}>
-                                Clients actifs (7 derniers jours) {% if plan != 'SCALE' %}🔒 (SCALE){% endif %}
-                            </option>
-                            <option value="inactive" {% if plan != 'SCALE' %}disabled{% endif %}>
-                                Clients inactifs (+ de 30 jours) {% if plan != 'SCALE' %}🔒 (SCALE){% endif %}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                            <label style="margin-bottom:0;">Message de la campagne</label>
-                            <button type="button" id="btn-ai-copy" style="background: linear-gradient(135deg, #FFD700, #FDB931); color: #000; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(255, 215, 0, 0.3);">
-                                ✨ Rédiger avec l'IA
-                            </button>
-                        </div>
-                        <textarea name="message" id="campaign-message" placeholder="Bonjour {prenom} 👋, nous avons une offre spéciale pour vous cette semaine…" required style="margin-top:8px;"></textarea>
-                    </div>
-                    <div class="delay-notice">
-                        <i class="fas fa-info-circle"></i>
-                        <span>
-                            {% if plan == 'SCALE' %}
-                                <strong>Mode anti-spam activé :</strong> Les messages seront envoyés avec un délai aléatoire entre 8 et 25 secondes pour chaque destinataire, simulant un comportement humain naturel.
-                            {% else %}
-                                Les messages seront envoyés les uns après les autres. Passez au plan <strong>PREMIUM</strong> pour activer les délais anti-spam et éviter les blocages WhatsApp.
-                            {% endif %}
-                        </span>
-                    </div>
-                    <button type="submit" class="btn-campaign">
-                        <i class="fas fa-paper-plane"></i> Lancer la campagne
+        <div class="dashboard-columns">
+            <div class="col-left">
+                <div class="section-header">
+                    <div class="section-title"><i class="fas fa-paper-plane"></i> Campagnes récentes</div>
+                    <button class="btn-new-campaign" onclick="document.getElementById('campaignModal').classList.add('open')">
+                        <i class="fas fa-plus"></i> Nouvelle campagne
                     </button>
-                </form>
-                {% else %}
-                <div style="text-align:center; padding:48px 24px; color:var(--muted);">
-                    <i class="fas fa-users" style="font-size:36px; margin-bottom:12px; display:block; color:var(--muted);"></i>
-                    <p style="font-size:14px; line-height:1.6;">Aucun client enregistré pour le moment.<br>Le bot créera automatiquement des profils lors des premières interactions.</p>
                 </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Séquences Automatisées (Relance J+3) -->
-        <div class="client-campaign-section" style="margin-top: 24px;">
-            <div class="section-header">
-                <span class="section-title"><i class="fas fa-sync-alt"></i> Séquences Automatisées (Relance J+3)</span>
-                {% if plan != 'SCALE' %}
-                <span class="badge badge-scale" style="font-size:11px;">🔒 SCALE</span>
-                {% endif %}
-            </div>
-            <div class="section-body" style="position:relative;">
-                {% if plan != 'SCALE' %}
-                <div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:10; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); border-radius:12px;">
-                    <div style="background:var(--card); padding:16px 24px; border-radius:12px; box-shadow:var(--shadow); text-align:center; border:1px solid var(--border);">
-                        <i class="fas fa-lock" style="font-size:24px; color:var(--text-light); margin-bottom:12px; display:block;"></i>
-                        <h4 style="margin:0 0 8px 0; font-size:16px;">Fonctionnalité Premium</h4>
-                        <p style="margin:0; font-size:13px; color:var(--muted);">Passez au plan PREMIUM pour activer les relances automatiques.</p>
-                    </div>
-                </div>
-                {% endif %}
                 
-                <form class="campaign-form" method="POST" action="{{ url_for('dashboard.marketing_settings', biz_id=biz_id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-field" style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-direction:row;">
-                        <input type="checkbox" name="drip_j3_enabled" id="drip_j3_enabled" value="1" {% if business.drip_j3_enabled %}checked{% endif %} style="width:auto; margin:0; cursor:pointer;" {% if plan != 'SCALE' %}disabled{% endif %}>
-                        <label for="drip_j3_enabled" style="margin:0; cursor:pointer; font-weight:600;">
-                            Activer la relance automatique à J+3
-                        </label>
-                    </div>
+                <div class="campaign-list">
+                    {% if campaigns %}
+                        {% for campaign in campaigns %}
+                        <div class="campaign-item">
+                            <div class="ci-left">
+                                <div class="ci-icon" style="background:rgba(37,211,102,0.1); color:#25D366;"><i class="fas fa-gift"></i></div>
+                                <div>
+                                    <div class="ci-title">{{ campaign.title }}</div>
+                                    <div class="ci-date">
+                                        Envoyée le {{ campaign.created_at[:10] }} à {{ campaign.created_at[11:16] }}
+                                        <span class="ci-status {% if campaign.status == 'Planifiée' %}status-planifiee{% else %}status-terminee{% endif %}" style="margin-left: 8px;">
+                                            {{ campaign.status }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ci-stats">
+                                <div class="stat-group">
+                                    <div class="stat-value">{{ campaign.recipients_count }}</div>
+                                    <div class="stat-label">Destinataires</div>
+                                </div>
+                                <div class="stat-group">
+                                    <div class="stat-value">{% if campaign.sent_count > 0 %}{{ campaign.sent_count }}{% else %}-{% endif %}</div>
+                                    <div class="stat-label">Envoyés</div>
+                                </div>
+                                <div class="stat-group">
+                                    <div class="stat-value">
+                                        {% if campaign.sent_count > 0 %}
+                                            {% set read_pct = ((campaign.read_count|default(0) / campaign.sent_count) * 100)|int %}
+                                            {{ read_pct }}%
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+                                    <div class="stat-label">Taux de lecture</div>
+                                </div>
+                                <div class="stat-group">
+                                    <div class="stat-value">{% if campaign.reply_count > 0 %}{{ campaign.reply_count }}{% else %}-{% endif %}</div>
+                                    <div class="stat-label">Réponses</div>
+                                </div>
+                                <i class="fas fa-ellipsis-h ci-more"></i>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align:center; padding:30px 20px; color:var(--muted);">
+                            <p>Aucune campagne récente.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <a href="#" class="link-bottom">Voir toutes les campagnes <i class="fas fa-arrow-right"></i></a>
+            </div>
 
-                    <div class="form-field">
-                        <label>Message de Relance automatique (Utilisez {prenom})</label>
-                        <p style="font-size:12px; color:var(--muted); margin-bottom:8px; line-height:1.4;">Ce message sera envoyé automatiquement aux clients n'ayant pas interagi avec le bot depuis exactement 3 jours.</p>
-                        <textarea name="drip_j3_msg" placeholder="ex: Bonjour {prenom}, ça fait 3 jours ! Avez-vous aimé notre service ? Laissez un avis !" {% if plan != 'SCALE' %}disabled{% endif %}>{{ business.drip_j3_msg or 'Bonjour {prenom}, ça fait 3 jours que vous avez goûté nos plats ! Laissez-nous un avis svp 😊' }}</textarea>
+            <div class="col-right">
+                <div class="section-header">
+                    <div class="section-title">Aperçu des performances</div>
+                    <select style="background:var(--surface); border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:6px; font-size:12px;">
+                        <option>30 derniers jours</option>
+                    </select>
+                </div>
+                
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <div class="gauge-container">
+                        <div class="gauge-circle">
+                            <div class="gauge-content">
+                                <div class="gauge-val">0%</div>
+                                <div class="gauge-label">Taux de lecture</div>
+                                <div class="gauge-trend" style="color:var(--muted);"><i class="fas fa-minus"></i> 0%</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <button type="submit" class="btn-campaign" style="background:var(--card); color:var(--text); border:1px solid var(--border); box-shadow:0 2px 4px rgba(0,0,0,0.05);" {% if plan != 'SCALE' %}disabled{% endif %}>
-                        <i class="fas fa-save"></i> Enregistrer les paramètres
-                    </button>
-                </form>
+                    <div class="stats-list" style="flex:1;">
+                        <div class="stat-card">
+                            <div class="stat-card-left">
+                                <div class="stat-card-icon" style="background:rgba(123,97,255,0.1); color:#7b61ff;"><i class="fas fa-paper-plane"></i></div>
+                                <div>
+                                    <div class="stat-card-title">
+                                        {% set total_sent = 0 %}
+                                        {% if campaigns %}
+                                            {% for c in campaigns %}
+                                                {% set total_sent = total_sent + c.sent_count|default(0) %}
+                                            {% endfor %}
+                                        {% endif %}
+                                        {{ total_sent }}
+                                    </div>
+                                    <div class="stat-card-label">Messages envoyés</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-left">
+                                <div class="stat-card-icon" style="background:rgba(88,166,255,0.1); color:#58A6FF;"><i class="fas fa-eye"></i></div>
+                                <div>
+                                    <div class="stat-card-title">0</div>
+                                    <div class="stat-card-label">Messages lus</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-left">
+                                <div class="stat-card-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;"><i class="fas fa-comment-dots"></i></div>
+                                <div>
+                                    <div class="stat-card-title">0</div>
+                                    <div class="stat-card-label">Réponses</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a href="#" class="link-bottom">Voir les statistiques détaillées <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
+    </div>
+</div>
 
-    </div><!-- /content -->
-</div><!-- /main -->
+<!-- Modal Nouvelle Campagne -->
+<div class="modal-overlay" id="campaignModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Créer une campagne</h3>
+            <button class="modal-close" onclick="document.getElementById('campaignModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <form class="campaign-form" method="POST" action="{{ url_for('dashboard.send_campaign', biz_id=biz_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-field">
+                <label>Nom de la campagne</label>
+                <input type="text" name="title" placeholder="Ex: Promo Saint-Valentin" required>
+            </div>
+            <div class="form-field">
+                <label>Destinataires</label>
+                <select name="target" id="campaign-target">
+                    <option value="all">Tous les clients ({{ clients|length }})</option>
+                    <option value="active" {% if plan != 'SCALE' and plan != 'PRO' and plan != 'GROWTH' %}disabled{% endif %}>Clients actifs (7 derniers jours)</option>
+                    <option value="inactive" {% if plan != 'SCALE' and plan != 'PRO' and plan != 'GROWTH' %}disabled{% endif %}>Clients inactifs (+ de 30 jours)</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <label style="margin-bottom:0;">Message</label>
+                    <button type="button" id="btn-ai-copy" style="background: linear-gradient(135deg, #FFD700, #FDB931); color: #000; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;" onclick="improveMessage()">
+                        ✨ Améliorer avec l'IA
+                    </button>
+                </div>
+                <textarea name="message" id="campaign-message" placeholder="Bonjour {prenom} 👋, nous avons une offre spéciale pour vous cette semaine…" required style="margin-top:8px;"></textarea>
+            </div>
+            <div class="delay-notice">
+                <i class="fas fa-info-circle"></i>
+                <span>
+                    {% if plan == 'SCALE' or plan == 'GROWTH' %}
+                        <strong>Mode anti-spam activé :</strong> Délai aléatoire entre 8 et 25 secondes.
+                    {% else %}
+                        Les messages seront envoyés les uns après les autres sans délai.
+                    {% endif %}
+                </span>
+            </div>
+            <button type="submit" class="btn-campaign">Lancer la campagne</button>
+        </form>
+    </div>
+</div>
 
-<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnAi = document.getElementById('btn-ai-copy');
-    const msgTextarea = document.getElementById('campaign-message');
-
-    if (btnAi) {
-        btnAi.addEventListener('click', async function() {
-            const instruction = prompt("Que voulez-vous annoncer ? (ex: Promo 20% sur les burgers, menu spécial Saint-Valentin...)");
-            if (!instruction || !instruction.trim()) return;
-
-            const originalText = btnAi.innerHTML;
-            btnAi.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rédaction...';
-            btnAi.disabled = true;
-
-            try {
-                const response = await fetch("{{ url_for('dashboard.generate_campaign_copy', biz_id=biz_id) }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ instruction: instruction })
-                });
-
-                const data = await response.json();
-                if (data.copy) {
-                    msgTextarea.value = data.copy;
-                } else if (data.error) {
-                    alert("Erreur: " + data.error);
-                }
-            } catch (err) {
-                alert("Erreur de connexion avec l'IA.");
-            } finally {
-                btnAi.innerHTML = originalText;
-                btnAi.disabled = false;
-            }
+async function improveMessage() {
+    const textarea = document.getElementById('campaign-message');
+    const msg = textarea.value;
+    if(!msg) return;
+    const btn = document.getElementById('btn-ai-copy');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
+    try {
+        const formData = new FormData();
+        formData.append('text', msg);
+        // Assuming there is an AI rewrite endpoint
+        const resp = await fetch('{{ url_for("dashboard.generate_campaign_copy", biz_id=biz_id) }}', {
+            method: 'POST',
+            body: formData,
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
         });
+        const data = await resp.json();
+        if(data.success && data.improved_text) {
+            textarea.value = data.improved_text;
+        }
+    } catch(e) {
+        console.error(e);
     }
-});
+    btn.innerHTML = '✨ Améliorer avec l\'IA';
+}
 </script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

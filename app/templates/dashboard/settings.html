@@ -16,6 +16,177 @@
       })();
     </script>
 
+<script>
+    // Tabs Logic
+    document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item[data-tab]').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById(item.getAttribute('data-tab')).classList.add('active');
+            
+            // Update URL parameters without reloading
+            const url = new URL(window.location);
+            url.searchParams.set('tab', item.getAttribute('data-tab'));
+            window.history.pushState({}, '', url);
+        });
+    });
+
+    // Auto-open tab from URL parameter or Hash
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.substring(1); // sans le #
+    const targetTab = urlParams.get('tab') || hash;
+    
+    if (targetTab) {
+        const tabEl = document.querySelector(`.nav-item[data-tab="${targetTab}"]`);
+        if (tabEl) {
+            tabEl.click();
+        }
+    }
+
+    // Employee Schedule handling
+    function parseScheduleToUI(horaires_json) {
+        let schedule = {};
+        try {
+            schedule = JSON.parse(horaires_json || '{}');
+        } catch(e) {}
+        
+        document.querySelectorAll('.schedule-day').forEach(row => {
+            const day = row.getAttribute('data-day');
+            const checkbox = row.querySelector('.day-active');
+            const tStart = row.querySelector('.time-start');
+            const tEnd = row.querySelector('.time-end');
+            
+            if (schedule[day] && schedule[day].length > 0) {
+                checkbox.checked = true;
+                const times = schedule[day][0].split('-');
+                if(times.length === 2) {
+                    tStart.value = times[0];
+                    tEnd.value = times[1];
+                }
+            } else {
+                checkbox.checked = false;
+                tStart.value = '09:00';
+                tEnd.value = '18:00';
+            }
+        });
+    }
+
+    function buildScheduleFromUI() {
+        let schedule = {};
+        document.querySelectorAll('.schedule-day').forEach(row => {
+            const day = row.getAttribute('data-day');
+            const checkbox = row.querySelector('.day-active');
+            const tStart = row.querySelector('.time-start');
+            const tEnd = row.querySelector('.time-end');
+            
+            if (checkbox.checked) {
+                schedule[day] = [`${tStart.value}-${tEnd.value}`];
+            } else {
+                schedule[day] = [];
+            }
+        });
+        document.getElementById('emp-horaires-hidden').value = JSON.stringify(schedule);
+    }
+
+    // Hook into employee form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const empForm = document.getElementById('employee-form');
+        if(empForm) {
+            empForm.addEventListener('submit', function(e) {
+                buildScheduleFromUI();
+            });
+        }
+        
+        // Toggle row inputs based on checkbox
+        document.querySelectorAll('.day-active').forEach(cb => {
+            cb.addEventListener('change', function(e) {
+                const row = e.target.closest('.schedule-day');
+                const inputs = row.querySelectorAll('input[type="time"]');
+                inputs.forEach(input => input.disabled = !e.target.checked);
+                row.style.opacity = e.target.checked ? '1' : '0.5';
+            });
+        });
+    });
+
+    // Modal Employé
+    function openEmployeeModal(empData = null) {
+        if (empData) {
+            document.getElementById('emp-id').value = empData.id;
+            document.getElementById('emp-nom').value = empData.nom;
+            document.getElementById('emp-poste').value = empData.poste;
+            parseScheduleToUI(empData.horaires_json);
+            
+            document.getElementById('emp-action').value = 'edit';
+            document.getElementById('emp-modal-title').textContent = 'Modifier l\'employé';
+        } else {
+            document.getElementById('emp-id').value = '';
+            document.getElementById('emp-nom').value = '';
+            document.getElementById('emp-poste').value = '';
+            parseScheduleToUI('{}');
+            
+            document.getElementById('emp-action').value = 'add';
+            document.getElementById('emp-modal-title').textContent = 'Ajouter un employé';
+        }
+        
+        document.getElementById('employee-modal').style.display = 'flex';
+    }
+    
+    function closeEmployeeModal() {
+        document.getElementById('employee-modal').style.display = 'none';
+    }
+
+    // Modal Agent
+    function openAgentModal(agentData = null) {
+        if (agentData) {
+            document.getElementById('agent-id').value = agentData.id;
+            document.getElementById('agent-action').value = 'edit';
+            document.getElementById('agent-modal-title').textContent = 'Modifier l\'Agent IA';
+            
+            document.getElementById('agent-name').value = agentData.name;
+            document.getElementById('agent-role').value = agentData.role;
+            document.getElementById('agent-keywords').value = agentData.intent_keywords || '';
+            document.getElementById('agent-prompt').value = agentData.system_prompt || '';
+            
+            const perms = agentData.permissions || {};
+            document.getElementById('agent-promo').checked = !!perms.can_propose_promo;
+            document.getElementById('agent-escalate').checked = !!perms.can_escalate;
+            if(perms.response_tone) document.getElementById('agent-tone').value = perms.response_tone;
+            if(perms.max_tokens) document.getElementById('agent-tokens').value = perms.max_tokens;
+            
+        } else {
+            document.getElementById('agent-id').value = '';
+            document.getElementById('agent-action').value = 'add';
+            document.getElementById('agent-modal-title').textContent = 'Nouvel Agent IA';
+            
+            document.getElementById('agent-name').value = '';
+            document.getElementById('agent-role').value = '';
+            document.getElementById('agent-keywords').value = '';
+            document.getElementById('agent-prompt').value = '';
+            document.getElementById('agent-promo').checked = false;
+            document.getElementById('agent-escalate').checked = false;
+            document.getElementById('agent-tone').value = 'standard';
+            document.getElementById('agent-tokens').value = '200';
+        }
+        document.getElementById('agent-modal').style.display = 'flex';
+    }
+    
+    function closeAgentModal() {
+        document.getElementById('agent-modal').style.display = 'none';
+    }
+    
+    // Close modals on background click
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('employee-modal')) {
+            closeEmployeeModal();
+        }
+        if (event.target == document.getElementById('agent-modal')) {
+            closeAgentModal();
+        }
+    }
+</script>
+
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     
@@ -290,6 +461,22 @@
                 <div class="nav-text">
                     <span class="nav-title">Entreprise</span>
                     <span class="nav-sub">Informations sur votre entreprise</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-employes">
+                <div class="nav-icon"><i class="fas fa-users-cog"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Employés</span>
+                    <span class="nav-sub">Gérez votre équipe</span>
+                </div>
+            </div>
+            
+            <div class="nav-item" data-tab="tab-agents">
+                <div class="nav-icon"><i class="fas fa-headset"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title">Agents IA</span>
+                    <span class="nav-sub">Équipe intelligente</span>
                 </div>
             </div>
             
@@ -796,6 +983,180 @@
 
             </form>
 
+            <!-- TAB 7: EMPLOYÉS -->
+            <div id="tab-employes" class="tab-content">
+                <div class="section-header">
+                    <div class="icon-box" style="background: var(--brand);"><i class="fas fa-users-cog"></i></div>
+                    <div style="flex:1;">
+                        <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Équipe et Horaires</h2>
+                        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos employés et leurs disponibilités.</p>
+                    </div>
+                    <button class="btn-save" onclick="openEmployeeModal()" style="display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-plus"></i> Ajouter un employé
+                    </button>
+                </div>
+
+                <div class="settings-card" style="padding: 0; overflow: hidden; background: transparent; border: none;">
+                    {% if not employees %}
+                        <div style="padding: 40px; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;">
+                            <i class="fas fa-users" style="font-size: 40px; color: var(--muted); margin-bottom: 16px;"></i>
+                            <h3 style="margin: 0 0 8px 0; color: var(--text);">Aucun employé</h3>
+                            <p style="color: var(--muted); font-size: 14px; margin: 0 0 16px 0;">Ajoutez des employés pour gérer leurs horaires et réservations.</p>
+                        </div>
+                    {% else %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                            {% for emp in employees %}
+                            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(124, 58, 237, 0.1); color: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                            {{ emp.nom[:1] }}
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 15px; font-weight: 600; color: var(--text);">{{ emp.nom }}</h3>
+                                            <span style="font-size: 12px; color: var(--green); font-weight: 500;">{{ emp.poste }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button type="button" class="btn-cancel" style="padding: 6px; border:none;" title="Modifier" onclick='openEmployeeModal({{ emp|tojson }})'>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}" style="margin:0;" onsubmit="return confirm('Supprimer cet employé ?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="employee_id" value="{{ emp.id }}">
+                                            <button type="submit" class="btn-cancel" style="padding: 6px; border:none; color: #ff4d4f;" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Horaires (JSON)</span>
+                                    <pre style="margin: 8px 0 0 0; font-size: 11px; color: var(--text); overflow-x: auto;">{{ emp.horaires_json or '{}' }}</pre>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 8: AGENTS IA -->
+            <div id="tab-agents" class="tab-content">
+                <div class="section-header">
+                    <div class="icon-box" style="background: #25D366;"><i class="fas fa-headset"></i></div>
+                    <div style="flex:1;">
+                        <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Équipe IA</h2>
+                        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos agents virtuels, leurs rôles et leurs permissions.</p>
+                    </div>
+                    {% if business.plan_abonnement == 'SCALE' %}
+                        <button class="btn-save" onclick="openAgentModal()" style="display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-plus"></i> Nouvel Agent
+                        </button>
+                    {% else %}
+                        <button class="btn-save" disabled style="background: var(--surface-hover); color: var(--muted); cursor: not-allowed; display:flex; align-items:center; gap:8px;" title="Réservé au plan Scale">
+                            <i class="fas fa-lock"></i> Nouvel Agent
+                        </button>
+                    {% endif %}
+                </div>
+
+                {% if business.plan_abonnement != 'SCALE' %}
+                    <div style="background: rgba(255, 176, 32, 0.1); border: 1px solid rgba(255, 176, 32, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <i class="fas fa-lock" style="font-size: 24px; color: #FFB020;"></i>
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: var(--text); font-size: 15px;">Fonctionnalité Premium</h4>
+                                <p style="margin: 0; color: var(--muted); font-size: 13px;">Le routage intelligent (multi-agents) est réservé au plan SCALE.</p>
+                            </div>
+                        </div>
+                        <button onclick="document.querySelector('[data-tab=tab-abonnement]').click()" class="btn-save" style="background: #FFB020; color: #000;">Mettre à niveau</button>
+                    </div>
+                {% endif %}
+
+                <div class="settings-card" style="padding: 0; overflow: hidden; background: transparent; border: none;">
+                    {% if not agents %}
+                        <div style="padding: 40px; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;">
+                            <i class="fas fa-robot" style="font-size: 40px; color: var(--muted); margin-bottom: 16px;"></i>
+                            <h3 style="margin: 0 0 8px 0; color: var(--text);">Aucun Agent IA secondaire</h3>
+                            <p style="color: var(--muted); font-size: 14px; margin: 0 0 16px 0;">Créez des agents spécialisés (SAV, Vente, Support) pour router les conversations.</p>
+                        </div>
+                    {% else %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;">
+                            {% for agent in agents %}
+                            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(37, 211, 102, 0.1); color: #25D366; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                            <i class="fas fa-robot"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text);">{{ agent.name }}</h3>
+                                            <span style="font-size: 12px; background: var(--bg); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted);">{{ agent.role }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button type="button" class="btn-cancel" style="padding: 6px; border:none;" onclick='openAgentModal({{ agent|tojson }})'>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}" style="display:flex; align-items: center;" onsubmit="return confirm('Supprimer cet agent ?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="agent_id" value="{{ agent.id }}">
+                                            <button type="submit" class="btn-cancel" style="padding: 6px; border:none;" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}" style="display:flex; align-items: center;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="toggle_agent">
+                            <input type="hidden" name="agent_id" value="{{ agent.id }}">
+                            <input type="hidden" name="is_active" value="{{ 0 if agent.is_active else 1 }}">
+                            <button type="submit" class="btn-{{ 'cancel' if agent.is_active else 'primary' }}" style="padding: 6px 12px; font-size: 12px; border-radius: 12px;">
+                                {{ 'Désactiver' if agent.is_active else 'Activer' }}
+                            </button>
+                        </form>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 16px;">
+                                    <p style="margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                        {{ agent.system_prompt }}
+                                    </p>
+                                </div>
+                                
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 16px;">
+                                    <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600;">Mots-clés de Routage</span>
+                                    <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
+                                        {% if agent.intent_keywords %}
+                                            {% for kw in agent.intent_keywords.split(',') %}
+                                                <span style="background: rgba(124, 58, 237, 0.1); color: var(--brand); border: 1px solid rgba(124, 58, 237, 0.2); font-size: 11px; padding: 2px 8px; border-radius: 12px;">{{ kw.strip() }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span style="font-size: 12px; color: var(--muted);">Aucun mot-clé</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+                                    <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}" style="display:flex; align-items: center;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="toggle_agent">
+                            <input type="hidden" name="agent_id" value="{{ agent.id }}">
+                            <input type="hidden" name="is_active" value="{{ 0 if agent.is_active else 1 }}">
+                            <button type="submit" class="btn-{{ 'cancel' if agent.is_active else 'primary' }}" style="padding: 6px 12px; font-size: 12px; border-radius: 12px;">
+                                {{ 'Désactiver' if agent.is_active else 'Activer' }}
+                            </button>
+                        </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+
             <!-- Support Banner (toujours visible en bas) -->
             <div class="support-box">
                 <div style="display: flex; align-items: center; gap: 16px;">
@@ -1109,5 +1470,116 @@ function upgradePlan(plan) {
     }
 }
 </script>
+
+<!-- Modal Employé -->
+<div id="employee-modal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h2 id="emp-modal-title" style="margin: 0 0 24px 0; font-size: 20px; font-weight: 600;">Ajouter un employé</h2>
+        <form id="employee-form" method="POST" action="{{ url_for('dashboard.business_employees', biz_id=biz_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" id="emp-action" value="add">
+            <input type="hidden" name="employee_id" id="emp-id" value="">
+            
+            <div class="field">
+                <label>Nom complet</label>
+                <input type="text" name="nom" id="emp-nom" required placeholder="Jean Dupont">
+            </div>
+            
+            <div class="field">
+                <label>Poste / Rôle</label>
+                <input type="text" name="poste" id="emp-poste" placeholder="ex: Coiffeur, Livreur, Conseiller">
+            </div>
+            
+            <div class="field">
+                <label>Horaires de travail</label>
+                <input type="hidden" name="horaires_json" id="emp-horaires-hidden" value="{}">
+                <div class="schedule-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    {% for day in ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+                    <div class="schedule-day" data-day="{{ day|lower }}" style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label style="width: 80px; display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;">
+                            <input type="checkbox" class="day-active" checked>
+                            <span style="font-size: 13px; color: var(--text);">{{ day }}</span>
+                        </label>
+                        <input type="time" class="time-start" value="09:00" style="padding: 4px 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); font-size: 13px;">
+                        <span style="color: var(--muted);">à</span>
+                        <input type="time" class="time-end" value="18:00" style="padding: 4px 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); font-size: 13px;">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px;">
+                <button type="button" class="btn-cancel" onclick="closeEmployeeModal()">Annuler</button>
+                <button type="submit" class="btn-save">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Agent -->
+<div id="agent-modal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h2 id="agent-modal-title" style="margin: 0 0 24px 0; font-size: 20px; font-weight: 600;">Nouvel Agent IA</h2>
+        <form method="POST" action="{{ url_for('dashboard.business_agents', biz_id=biz_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" id="agent-action" value="add">
+            <input type="hidden" name="agent_id" id="agent-id" value="">
+            
+            <div class="grid-2">
+                <div class="field">
+                    <label>Nom de l'Agent</label>
+                    <input type="text" name="name" id="agent-name" required placeholder="ex: SupportTech">
+                </div>
+                <div class="field">
+                    <label>Rôle</label>
+                    <input type="text" name="role" id="agent-role" required placeholder="ex: technicien SAV">
+                </div>
+            </div>
+            
+            <div class="field">
+                <label>Mots-clés de déclenchement (Intent Keywords)</label>
+                <input type="text" name="intent_keywords" id="agent-keywords" placeholder="ex: panne, casse, problème technique, erreur">
+                <small style="color: var(--muted); font-size: 11px;">Séparés par des virgules. Le routeur utilisera ces mots pour rediriger la conversation vers cet agent.</small>
+            </div>
+            
+            <div class="field">
+                <label>Prompt Système (Instructions)</label>
+                <textarea name="system_prompt" id="agent-prompt" required placeholder="Tu es l'agent SAV de l'entreprise. Tu dois..." style="min-height: 150px;"></textarea>
+            </div>
+            
+            <h3 style="font-size: 14px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Permissions & Options</h3>
+            <div class="grid-2">
+                <div class="field" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="can_propose_promo" id="agent-promo" style="width: auto;">
+                    <label style="margin: 0;">Autoriser les réductions/promos</label>
+                </div>
+                <div class="field" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="can_escalate" id="agent-escalate" style="width: auto;">
+                    <label style="margin: 0;">Peut escalader vers un humain</label>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="field">
+                    <label>Ton de réponse</label>
+                    <select name="response_tone" id="agent-tone">
+                        <option value="standard">Standard / Professionnel</option>
+                        <option value="friendly">Amical / Décontracté</option>
+                        <option value="strict">Strict / Direct</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Max Tokens (Longueur réponse)</label>
+                    <input type="number" name="max_tokens" id="agent-tokens" value="200" min="50" max="1000">
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
+                <button type="button" class="btn-cancel" onclick="closeAgentModal()">Annuler</button>
+                <button type="submit" class="btn-save">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>

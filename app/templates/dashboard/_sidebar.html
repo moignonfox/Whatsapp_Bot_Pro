@@ -100,6 +100,10 @@
             <i class="fas fa-home"></i> Tableau de bord
         </a>
 
+        <a class="nav-item {% if active_page == 'analytics' %}active{% endif %}" href="{{ url_for('dashboard.business_analytics', biz_id=biz_id) }}" id="nav-analytics-link">
+            <i class="fas fa-chart-line"></i> Analyse
+        </a>
+
         <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}" id="nav-chat-link">
             <i class="fas fa-comment-dots"></i> Conversations
             {% if global_unread_count and global_unread_count > 0 %}
@@ -698,12 +702,14 @@
     }
 
     const socket = io();
+    console.log("SocketIO initialized");
 
     // ── Tracking des derniers IDs reçus (base du rattrapage P3) ──
     let lastMsgId = parseInt(localStorage.getItem('lastMsgId_' + bizId) || '0');
     let lastOrdId = parseInt(localStorage.getItem('lastOrdId_' + bizId) || '0');
 
     socket.on('connect', function() {
+        console.log("SocketIO connected! Emitting rejoindre_room for bizId:", bizId);
         // Rejoindre la room en envoyant les derniers IDs connus → le serveur
         // retournera via sync_missed_events tout ce qui a été manqué.
         socket.emit('rejoindre_room', {

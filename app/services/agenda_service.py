@@ -87,9 +87,10 @@ def get_availability_context(business_id: str, days: int = 7) -> str:
     cursor = conn.cursor()
 
     # 1. Récupérer le type d'entreprise et les employés actifs (ou tables)
-    cursor.execute("SELECT business_type FROM businesses WHERE id = ?", (business_id,))
+    cursor.execute("SELECT business_type, horaires_json FROM businesses WHERE id = ?", (business_id,))
     biz_row = cursor.fetchone()
     biz_type = biz_row['business_type'] if biz_row else 'service'
+    raw_biz_horaires = biz_row['horaires_json'] if biz_row else None
     
     is_restaurant = (biz_type == 'restaurant')
 
@@ -147,7 +148,6 @@ def get_availability_context(business_id: str, days: int = 7) -> str:
     context_lines.append("3. Si le client te demande tes disponibilités pour une date, donne-lui les créneaux libres en te basant sur ces horaires et les réservations déjà planifiées.")
     
     # Injection stricte des horaires globaux de l'entreprise au cas où
-    raw_biz_horaires = business_info.get('horaires_json')
     if raw_biz_horaires and raw_biz_horaires != '{}':
         try:
             h_data = json.loads(raw_biz_horaires)

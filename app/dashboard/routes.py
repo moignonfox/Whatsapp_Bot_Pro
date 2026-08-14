@@ -442,7 +442,19 @@ def business_settings(biz_id):
     vocab = sector['vocab'] if sector else {}
     plan = dict(business).get('plan_abonnement', 'FREE') if business else 'BASIC'
 
-    return render_template('dashboard/settings.html', business=business, vocab=vocab, biz_id=biz_id, plan=plan, active_page='settings')
+    from app.repositories import employee_repo
+    employees_rows = employee_repo.get_by_business(biz_id)
+    employees_list = [dict(e) for e in employees_rows]
+    
+    agents_list = []
+    try:
+        from app.repositories import agent_repo
+        agents = agent_repo.get_all_by_business(biz_id)
+        agents_list = [dict(a) for a in agents]
+    except Exception:
+        pass
+        
+    return render_template('dashboard/settings.html', business=business, vocab=vocab, biz_id=biz_id, plan=plan, employees=employees_list, agents=agents_list, active_page='settings')
 
 
 @dashboard_bp.route('/admin/<biz_id>/marketing-settings', methods=['POST'])
@@ -1175,12 +1187,15 @@ def business_marketing(biz_id):
     vocab = sector['vocab'] if sector else {}
     clients = conversation_repo.get_conversations_for_business(biz_id)
 
+    from app.repositories import marketing_repo
+    campaigns = marketing_repo.get_campaigns_for_business(biz_id)
     return render_template('dashboard/marketing.html',
                            biz_id=biz_id,
                            business=business,
                            vocab=vocab,
                            plan=plan,
                            clients=clients,
+                           campaigns=campaigns,
                            active_page='marketing')
 
 
@@ -1193,17 +1208,22 @@ def generate_campaign_copy(biz_id):
     if not business:
         return jsonify({"error": "Business introuvable"}), 404
 
-    message = request.json.get('message', '').strip()
+    message = ''
+    if request.is_json:
+        message = request.json.get('text', request.json.get('message', '')).strip()
+    else:
+        message = request.form.get('text', '').strip()
+
     if not message:
-        return jsonify({"error": "Message vide"}), 400
+        return jsonify({"success": False, "error": "Message vide"}), 400
 
     from app.services.ai_service import improve_marketing_message
     
     try:
         improved = improve_marketing_message(message)
-        return jsonify({"copy": improved})
+        return jsonify({"success": True, "improved_text": improved, "copy": improved})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ==========================================
 # GESTION DES EMPLOYÃ‰S (Ã‰QUIPE)
@@ -1244,13 +1264,7 @@ def business_employees(biz_id):
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
 
-    return render_template('dashboard/employees.html',
-                           biz_id=biz_id,
-                           business=business,
-                           employees=employees,
-                           vocab=vocab,
-                           plan=plan,
-                           active_page='employees')
+    return redirect(url_for('dashboard.business_settings', biz_id=biz_id) + '?tab=tab-employes')
 
 # ==========================================
 # AGENDA (FULLCALENDAR)
@@ -1348,15 +1362,22 @@ def business_agents(biz_id):
             
         elif action == 'delete':
             agent_id = request.form.get('agent_id')
-            agent_repo.deactivate(agent_id, biz_id)
-            flash("Agent IA dÃ©sactivÃ©.", "success")
+            agent_repo.delete(agent_id)
+            flash("Agent IA supprimé.", "success")
+            
+        elif action == 'toggle_agent':
+            agent_id = request.form.get('agent_id')
+            is_active = int(request.form.get('is_active', 1))
+            agent_repo.toggle_active(agent_id, biz_id, is_active)
+            status = "activé" if is_active else "désactivé"
+            flash(f"Agent IA {status}.", "success")
             
         elif action == 'set_routing':
             routing_mode = request.form.get('routing_mode')
             allowed_modes = {'visible', 'invisible'}
             if routing_mode in allowed_modes:
                 business_repo.update_routing_mode(biz_id, routing_mode)
-                flash("Mode de routage mis Ã  jour.", "success")
+                flash("Mode de routage mis à jour.", "success")
             else:
                 flash("Mode de routage invalide.", "error")
             
@@ -1402,15 +1423,7 @@ def business_agents(biz_id):
         }
     ]
 
-    return render_template(
-        'dashboard/agents.html',
-        biz_id=biz_id,
-        business=business,
-        plan=plan,
-        agents=agents_list,
-        default_templates=default_templates,
-        active_page='agents'
-    )
+    return redirect(url_for('dashboard.business_settings', biz_id=biz_id) + '?tab=tab-agents')
 
 @dashboard_bp.route('/admin/<biz_id>/send-campaign', methods=['POST'])
 def send_campaign(biz_id):
@@ -1419,6 +1432,7 @@ def send_campaign(biz_id):
 
     business = business_repo.get_by_id(biz_id)
     target = request.form.get('target', 'all')
+    title = request.form.get('title', 'Nouvelle Campagne')
     message_template = request.form.get('message', '')
 
     if not message_template.strip():
@@ -1469,7 +1483,7 @@ def send_campaign(biz_id):
     clients_to_send = clients_to_send[:max_clients]
 
     if clients_to_send:
-        marketing_repo.enqueue_campaign(biz_id, clients_to_send, message_template)
+        marketing_repo.enqueue_campaign(biz_id, clients_to_send, message_template, title, target)
         flash(f"La campagne a ete mise en file d'attente pour {len(clients_to_send)} clients !", "success")
 
     return redirect(url_for('dashboard.business_marketing', biz_id=biz_id))
@@ -1858,3 +1872,23 @@ def order_action(biz_id, order_id):
             
     flash(f"Commande {new_status.lower()} avec succès.", "success")
     return redirect(url_for('dashboard.admin_dashboard', biz_id=biz_id))
+
+@dashboard_bp.route('/<biz_id>/analytics')
+def business_analytics(biz_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('auth.login'))
+        
+    from app.repositories import business_repo
+    from app.repositories import sector_repo
+    
+    biz = business_repo.get_by_id(biz_id)
+    if not biz:
+        return redirect(url_for('auth.login'))
+        
+    biz_type = dict(biz).get('type', 'retail')
+    sector = sector_repo.get_by_id(biz_type)
+    vocab = sector['vocab'] if sector else {}
+    
+    plan = dict(biz).get('plan_abonnement', 'FREE')
+    
+    return render_template('dashboard/analytics.html', biz_id=biz_id, business=biz, vocab=vocab, plan=plan, active_page='analytics')

@@ -50,7 +50,7 @@ def create_app(config_name=None):
 
     # Protection CSRF (flask-wtf)
     app.config['WTF_CSRF_CHECK_DEFAULT'] = True
-    app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24h au lieu de 1h
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # Désactive l'expiration pour éviter les erreurs "CSRF Expired"
     csrf.init_app(app)
 
     # Injection de csrf_token dans tous les templates
@@ -265,11 +265,20 @@ def create_app(config_name=None):
         from flask import session
         from flask_socketio import join_room, emit
         user_id = session.get('user_id') or session.get('is_master')
+        print(f"[SOCKETIO] rejoindre_room called with data: {data}. Session user_id: {session.get('user_id')}, is_master: {session.get('is_master')}")
         if not user_id:
+            print("[SOCKETIO] rejoindre_room rejected: no user_id in session")
             return
         room = data.get('room')
-        if room and (room == session.get('user_id') or session.get('is_master')):
-            join_room(room)
+        if room and (str(room) == str(session.get('user_id')) or session.get('is_master')):
+            # Ensure the room we join is the string version since emits often use strings
+            join_room(str(room))
+            print(f"[SOCKETIO] Successfully joined room {str(room)}")
+            # Also join integer room because database IDs often return as integers
+            try:
+                join_room(int(room))
+            except ValueError:
+                pass
             # ── Rattrapage des événements manqués (reconnexion) ──
             try:
                 last_message_id = int(data.get('last_message_id', 0))

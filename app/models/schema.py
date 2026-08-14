@@ -232,6 +232,25 @@ def init_db() -> None:
         )
     ''')
 
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id TEXT NOT NULL,
+            title TEXT,
+            message TEXT,
+            target TEXT,
+            status TEXT DEFAULT 'Planifiée',
+            scheduled_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            recipients_count INTEGER DEFAULT 0,
+            sent_count INTEGER DEFAULT 0,
+            read_count INTEGER DEFAULT 0,
+            reply_count INTEGER DEFAULT 0,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
+        )
+    ''')
+
     # --- Table channels (Multi-Canal / Workspace Pattern) ---
     # SECURITE : Le champ `config` est un JSON qui peut contenir des tokens
     # sensibles (ex: token_wa Meta). Il NE DOIT PAS être renvoyé tel quel
@@ -640,6 +659,25 @@ def update_schema() -> None:
             FOREIGN KEY (wa_id, business_id) REFERENCES clients (wa_id, business_id) ON DELETE CASCADE,
             FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
             PRIMARY KEY (wa_id, business_id, tag_id)
+        )
+    ''')
+
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id TEXT NOT NULL,
+            title TEXT,
+            message TEXT,
+            target TEXT,
+            status TEXT DEFAULT 'Planifiée',
+            scheduled_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            recipients_count INTEGER DEFAULT 0,
+            sent_count INTEGER DEFAULT 0,
+            read_count INTEGER DEFAULT 0,
+            reply_count INTEGER DEFAULT 0,
+            FOREIGN KEY (business_id) REFERENCES businesses (id)
         )
     ''')
 
