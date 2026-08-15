@@ -1692,6 +1692,7 @@ def public_vitrine(biz_id):
     template_name = 'vitrine_premium.html' if plan == 'SCALE' else 'vitrine.html'
 
     is_open = False
+    today_schedule_str = None
     horaires_str = dict(business).get('horaires_json')
     if horaires_str:
         import json
@@ -1713,6 +1714,7 @@ def public_vitrine(biz_id):
                     close_str = today_horaire.get('close')
                 
                 if open_str and close_str:
+                    today_schedule_str = f"{open_str} - {close_str}"
                     open_time = datetime.strptime(open_str, '%H:%M').time()
                     close_time = datetime.strptime(close_str, '%H:%M').time()
                     if open_time <= now.time() <= close_time:
@@ -1724,6 +1726,7 @@ def public_vitrine(biz_id):
                            business=business,
                            plan=plan,
                            is_open=is_open,
+                           today_schedule_str=today_schedule_str,
                            grouped_products=grouped_products)
 
 @dashboard_bp.route('/admin/<biz_id>/catalog/edit/<int:product_id>', methods=['POST'])

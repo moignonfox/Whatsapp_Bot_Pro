@@ -590,10 +590,28 @@
                     </div>
 
                     <div class="settings-card">
-                        <h3>Préférences régionales</h3>
+                        <h3>Préférences générales</h3>
                         <p style="font-size: 13px; color: var(--muted); margin: -16px 0 20px 0;">Définissez les paramètres par défaut pour votre entreprise.</p>
                         
                         <div class="grid-2">
+                            <div class="field">
+                                <label>Thème de l'interface</label>
+                                <select id="theme-selector" onchange="MybotTheme.apply(this.value); localStorage.setItem('mybot-theme', this.value);">
+                                    <option value="dark">Sombre (Recommandé)</option>
+                                    <option value="light">Clair</option>
+                                </select>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        var t = localStorage.getItem('mybot-theme') || 'dark';
+                                        var sel = document.getElementById('theme-selector');
+                                        if (sel) {
+                                            sel.value = t;
+                                            // Handle case where saved theme might not match options perfectly
+                                            if(!sel.value) sel.value = 'dark';
+                                        }
+                                    });
+                                </script>
+                            </div>
                             <div class="field">
                                 <label>Fuseau horaire</label>
                                 <select><option>(GMT+00:00) Lomé</option></select>
@@ -605,10 +623,6 @@
                             <div class="field">
                                 <label>Devise</label>
                                 <select><option>XOF - Franc CFA</option></select>
-                            </div>
-                            <div class="field">
-                                <label>Format de date</label>
-                                <select><option>31/12/2025</option></select>
                             </div>
                         </div>
                     </div>

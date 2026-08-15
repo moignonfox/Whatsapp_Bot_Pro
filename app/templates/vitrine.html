@@ -677,7 +677,17 @@ footer {
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-chip">✦ Nouveautés disponibles</div>
+  <div class="hero-chip">
+    {% if today_schedule_str %}
+      {% if is_open %}
+        <span style="color:#25D366; margin-right:4px;">●</span> OUVERT ({{ today_schedule_str }})
+      {% else %}
+        <span style="color:#ff3b30; margin-right:4px;">●</span> FERMÉ ({{ today_schedule_str }})
+      {% endif %}
+    {% else %}
+      ✦ Bienvenue
+    {% endif %}
+  </div>
   <h1>Tout ce dont vous avez besoin,<br/>livré chez vous</h1>
   <p>Parcourez notre catalogue, choisissez vos produits et commandez en quelques secondes.</p>
 </section>
