@@ -124,6 +124,7 @@ def init_db() -> None:
             business_id      TEXT,
             wa_id            TEXT,
             nom              TEXT,
+            platform         TEXT DEFAULT 'whatsapp',
             date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (business_id, wa_id)
         )

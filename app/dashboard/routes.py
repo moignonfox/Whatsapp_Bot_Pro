@@ -1909,7 +1909,7 @@ def get_session_or_403(session_id: str, business_id: str):
     from werkzeug.exceptions import Forbidden, NotFound
     session_data = vira_chat_repo.get_session(session_id)
     if not session_data or session_data.get('business_id') != business_id:
-        raise NotFound()  # Use 404 to not confirm existence
+        raise NotFound()
     return session_data
 
 @dashboard_bp.route('/admin/<biz_id>/vira-chat', defaults={'session_id': None})
@@ -1921,7 +1921,6 @@ def vira_chat(biz_id, session_id):
     business = business_repo.get_by_id(biz_id)
     from app.repositories import vira_chat_repo
     
-    # Check session ownership if provided
     current_session = None
     if session_id:
         from werkzeug.exceptions import NotFound
@@ -1930,21 +1929,17 @@ def vira_chat(biz_id, session_id):
         except NotFound:
             return redirect(url_for('dashboard.vira_chat', biz_id=biz_id))
     
-    # Retrieve sessions list
     sessions = vira_chat_repo.get_sessions(biz_id, session['user_id'])
     
-    # Retrieve chat history for the active session (if any)
     history = []
     if session_id:
         history = vira_chat_repo.get_vira_history(business_id=biz_id, user_id=session['user_id'], session_id=session_id, limit=50)
     
-    # Vocabulary (to know if we say Rendez-vous or Commandes)
     from app.repositories import sector_repo
     biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
     sector = sector_repo.get_by_id(biz_type)
     vocab = sector['vocab'] if sector else {}
     
-    # Compute today's stats for the widgets
     import sqlite3
     from app.models.schema import get_db_path
     from datetime import datetime
@@ -1964,9 +1959,49 @@ def vira_chat(biz_id, session_id):
     row = cursor.fetchone()
     stats['commandes'] = row[0] or 0
     stats['ca'] = row[1] or 0
+    
+    # Activités récentes
+    cursor.execute('''
+        SELECT h.content, h.timestamp, c.nom, c.platform 
+        FROM history h 
+        LEFT JOIN clients c ON h.wa_id = c.wa_id AND h.business_id = c.business_id
+        WHERE h.business_id = ? AND h.role = 'user' 
+        ORDER BY h.timestamp DESC 
+        LIMIT 4
+    ''', (biz_id,))
+    rows = cursor.fetchall()
+    
+    recent_activities = []
+    for r in rows:
+        content = r[0]
+        ts_str = r[1]
+        name = r[2] or "Client Inconnu"
+        platform = r[3] or "whatsapp"
+        
+        try:
+            ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+            diff = datetime.now() - ts
+            if diff.total_seconds() < 60:
+                time_ago = "À l'instant"
+            elif diff.total_seconds() < 3600:
+                time_ago = f"Il y a {int(diff.total_seconds() / 60)} min"
+            elif diff.total_seconds() < 86400:
+                time_ago = f"Il y a {int(diff.total_seconds() / 3600)} h"
+            else:
+                time_ago = f"Il y a {int(diff.total_seconds() / 86400)} j"
+        except:
+            time_ago = ts_str
+            
+        recent_activities.append({
+            'name': name,
+            'content': content[:40] + '...' if len(content) > 40 else content,
+            'time_ago': time_ago,
+            'platform': platform
+        })
+        
     conn.close()
     
-    return render_template('dashboard/vira_chat.html', biz_id=biz_id, business=business, active_page='vira-chat', chat_history=history, stats=stats, vocab=vocab, sessions=sessions, current_session=current_session)
+    return render_template('dashboard/vira_chat.html', biz_id=biz_id, business=business, active_page='vira-chat', chat_history=history, stats=stats, vocab=vocab, sessions=sessions, current_session=current_session, recent_activities=recent_activities)
 
 @dashboard_bp.route('/api/vira-chat/message/<biz_id>', methods=['POST'])
 def api_vira_chat_message(biz_id):
@@ -2009,5 +2044,3 @@ def api_delete_vira_session(session_id):
     from app.repositories import vira_chat_repo
     success = vira_chat_repo.soft_delete_session(session_id, biz_id)
     return jsonify({'success': success})
-
-
