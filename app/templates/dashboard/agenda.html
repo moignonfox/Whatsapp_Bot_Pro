@@ -280,8 +280,8 @@
                 <div class="page-subtitle">Gérez vos rendez-vous et laissez VIRA s'occuper des rappels.</div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" style="background: var(--surface-elevated);"><i class="far fa-calendar"></i> Aujourd'hui</button>
-                <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau rendez-vous</button>
+                <button id="btn-today" class="btn btn-secondary" style="background: var(--surface-elevated);"><i class="far fa-calendar"></i> Aujourd'hui</button>
+                <button class="btn btn-primary" onclick="document.getElementById('modal-new-appointment').classList.add('open')"><i class="fas fa-plus"></i> Nouveau rendez-vous</button>
             </div>
         </div>
 
@@ -474,19 +474,102 @@
         </div>
     </div>
 
+
+    <!-- Modal Nouveau Rendez-vous -->
+    <div id="modal-new-appointment" class="modal-overlay">
+        <div class="modal-vira">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px;">
+                <div style="display:flex; align-items:center; gap: 12px;">
+                    <div style="width:40px; height:40px; border-radius:12px; background:rgba(124, 58, 237, 0.1); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:18px;">
+                        <i class="far fa-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:16px; font-weight:600;">Nouveau rendez-vous</h3>
+                        <p style="margin:4px 0 0; font-size:12px; color:var(--text-secondary);">VIRA se chargera d'envoyer les rappels automatiques.</p>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('modal-new-appointment').classList.remove('open')" style="align-self: flex-start; margin-top: 4px;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="field" style="margin-bottom: 20px;">
+                    <label>Nom du client</label>
+                    <div style="position:relative;">
+                        <i class="far fa-user" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                        <input type="text" class="input-vira" placeholder="Ex: Jean Dupont" style="padding-left: 40px;">
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:16px; margin-bottom: 20px;">
+                    <div class="field" style="flex:1;">
+                        <label>Date du rendez-vous</label>
+                        <div style="position:relative;">
+                            <i class="far fa-calendar-alt" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <input type="date" class="input-vira" style="padding-left: 40px;">
+                        </div>
+                    </div>
+                    <div class="field" style="flex:1;">
+                        <label>Heure</label>
+                        <div style="position:relative;">
+                            <i class="far fa-clock" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <input type="time" class="input-vira" style="padding-left: 40px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:16px; margin-bottom: 24px;">
+                    <div class="field" style="flex:1;">
+                        <label>Type de rendez-vous</label>
+                        <div style="position:relative;">
+                            <i class="fas fa-tag" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <select class="input-vira" style="padding-left: 40px; cursor:pointer;">
+                                <option value="Consultation">Consultation</option>
+                                <option value="Réservation">Réservation</option>
+                                <option value="RDV commercial">RDV commercial</option>
+                                <option value="Suivi projet">Suivi projet</option>
+                                <option value="Présentation offre">Présentation offre</option>
+                            </select>
+                            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none; font-size:12px;"></i>
+                        </div>
+                    </div>
+                    <div class="field" style="flex:1;">
+                        <label>Agent IA en charge</label>
+                        <div style="position:relative;">
+                            <i class="fas fa-robot" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <select class="input-vira" style="padding-left: 40px; cursor:pointer;">
+                                <option value="">Sélectionner un agent...</option>
+                                {% for agent in agents %}
+                                <option value="{{ agent.id }}">{{ agent.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none; font-size:12px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-new-appointment').classList.remove('open')">Annuler</button>
+                <button class="btn btn-primary" onclick="document.getElementById('modal-new-appointment').classList.remove('open')">Créer le rendez-vous</button>
+            </div>
+        </div>
+    </div>
+
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
         
+        var firstAgentName = "{% if agents|length > 0 %}{{ agents[0].name }}{% else %}Agent IA 1{% endif %}";
+        var secondAgentName = "{% if agents|length > 1 %}{{ agents[1].name }}{% else %}Agent IA 2{% endif %}";
+
         // Mock data to match mockup visual
         var mockEvents = [
-            { title: 'Consultation', start: '2026-05-28T09:30:00', end: '2026-05-28T10:30:00', extendedProps: { client: 'Jean Dupont', channel: 'whatsapp', color: 'purple' } },
-            { title: 'Consultation', start: '2026-05-28T10:30:00', end: '2026-05-28T11:30:00', extendedProps: { client: 'Sophie L.', channel: 'instagram', color: 'purple' } },
-            { title: 'Réservation', start: '2026-05-27T11:00:00', end: '2026-05-27T12:00:00', extendedProps: { client: 'Marie K.', channel: 'whatsapp', color: 'green' } },
-            { title: 'Suivi projet', start: '2026-05-29T09:00:00', end: '2026-05-29T10:00:00', extendedProps: { client: 'David T.', channel: 'telegram', color: 'orange' } },
-            { title: 'RDV commercial', start: '2026-05-28T14:30:00', end: '2026-05-28T15:30:00', extendedProps: { client: 'Pierre A.', channel: 'messenger', color: 'blue' } },
-            { title: 'Présentation offre', start: '2026-05-29T15:30:00', end: '2026-05-29T16:30:00', extendedProps: { client: 'Sarah B.', channel: 'whatsapp', color: 'green' } }
+            { title: 'Consultation', start: '2026-05-28T09:30:00', end: '2026-05-28T10:30:00', extendedProps: { client: 'Jean Dupont', channel: 'whatsapp', color: 'purple', agent: firstAgentName } },
+            { title: 'Consultation', start: '2026-05-28T10:30:00', end: '2026-05-28T11:30:00', extendedProps: { client: 'Sophie L.', channel: 'instagram', color: 'purple', agent: secondAgentName } },
+            { title: 'Réservation', start: '2026-05-27T11:00:00', end: '2026-05-27T12:00:00', extendedProps: { client: 'Marie K.', channel: 'whatsapp', color: 'green', agent: firstAgentName } },
+            { title: 'Suivi projet', start: '2026-05-29T09:00:00', end: '2026-05-29T10:00:00', extendedProps: { client: 'David T.', channel: 'telegram', color: 'orange', agent: secondAgentName } },
+            { title: 'RDV commercial', start: '2026-05-28T14:30:00', end: '2026-05-28T15:30:00', extendedProps: { client: 'Pierre A.', channel: 'messenger', color: 'blue', agent: firstAgentName } },
+            { title: 'Présentation offre', start: '2026-05-29T15:30:00', end: '2026-05-29T16:30:00', extendedProps: { client: 'Sarah B.', channel: 'whatsapp', color: 'green', agent: secondAgentName } }
         ];
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -535,6 +618,11 @@
         });
         calendar.render();
         
+        // Link Aujourd'hui button
+        document.getElementById('btn-today').addEventListener('click', function() {
+            calendar.today();
+        });
+        
         // Add legend dynamically
         var legendHtml = `
             <div class="agenda-legend">
@@ -560,11 +648,46 @@
         if(rightToolbar) {
             rightToolbar.innerHTML = `
                 <div style="display:flex; gap:12px; align-items:center;">
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">Tous les agents <i class="fas fa-chevron-down"></i></button>
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">Tous les types <i class="fas fa-chevron-down"></i></button>
+                    <div style="position:relative;">
+                        <select id="filter-agent" class="btn btn-secondary" style="padding:6px 28px 6px 12px; font-size:12px; appearance:none; outline:none; cursor:pointer;">
+                            <option value="all">Tous les agents</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.name }}">{{ agent.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <i class="fas fa-chevron-down" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; pointer-events:none; color:var(--text-secondary);"></i>
+                    </div>
+                    <div style="position:relative;">
+                        <select id="filter-type" class="btn btn-secondary" style="padding:6px 28px 6px 12px; font-size:12px; appearance:none; outline:none; cursor:pointer;">
+                            <option value="all">Tous les types</option>
+                            <option value="Consultation">Consultation</option>
+                            <option value="Réservation">Réservation</option>
+                            <option value="RDV commercial">RDV commercial</option>
+                            <option value="Suivi projet">Suivi projet</option>
+                            <option value="Présentation offre">Présentation offre</option>
+                        </select>
+                        <i class="fas fa-chevron-down" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; pointer-events:none; color:var(--text-secondary);"></i>
+                    </div>
                     <button class="btn btn-secondary" style="padding:6px 10px;"><i class="fas fa-filter"></i></button>
                 </div>
             `;
+            
+            function applyFilters() {
+                var agentVal = document.getElementById('filter-agent').value;
+                var typeVal = document.getElementById('filter-type').value;
+                
+                var filtered = mockEvents.filter(function(ev) {
+                    var matchAgent = (agentVal === 'all') || (ev.extendedProps.agent === agentVal);
+                    var matchType = (typeVal === 'all') || (ev.title === typeVal);
+                    return matchAgent && matchType;
+                });
+                
+                calendar.removeAllEventSources();
+                calendar.addEventSource(filtered);
+            }
+            
+            document.getElementById('filter-agent').addEventListener('change', applyFilters);
+            document.getElementById('filter-type').addEventListener('change', applyFilters);
         }
     });
 </script>

@@ -1278,12 +1278,14 @@ def business_agenda(biz_id):
     business = business_repo.get_by_id(biz_id)
     plan = dict(business).get('plan_abonnement', 'FREE')
     employees = employee_repo.get_by_business(biz_id)
+    agents = agent_repo.get_all_by_business(biz_id)
     
     return render_template('dashboard/agenda.html',
                            biz_id=biz_id,
                            business=business,
                            plan=plan,
                            employees=employees,
+                           agents=agents,
                            active_page='agenda')
 
 @dashboard_bp.route('/api/agenda/events/<biz_id>')
