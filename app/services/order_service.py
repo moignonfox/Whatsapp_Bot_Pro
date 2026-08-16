@@ -26,7 +26,8 @@ def extract_and_save_reservation(reply, wa_id, business_id):
             logger.warning(f"[ORDER] Le tag [RESERVATION] a été détecté mais la syntaxe est invalide. Fallback humain activé. Reply content: {reply}")
             # Fallback humain : créer une commande "Erreur IA" pour alerter le restaurateur
             details_secours = "⚠️ ÉCHEC PARSING IA - Vérifiez manuellement la demande du client."
-            order_repo.save_reservation(business_id, wa_id, details_secours, priorite="Haute")
+            from app.services.reservation_service import create_reservation
+            create_reservation(business_id=business_id, wa_id=wa_id, details=details_secours, date_heure_debut=None, priorite="Haute", source="ia")
             import uuid
             try:
                 from app import socketio
@@ -70,8 +71,15 @@ def extract_and_save_reservation(reply, wa_id, business_id):
             # On supprime les anciens tags de cette commande pour les remplacer par les nouveaux ? 
             # Simplification : on laisse les tags actuels, la DB gérera.
         else:
-            new_res_id = order_repo.save_reservation(business_id, wa_id, details_extract, prio_extract, montant_extract, date_extract, emp_id_extract)
-            logger.info("[ORDER] Nouvelle réservation créée pour %s — %s", wa_id, details_extract[:60])
+            from app.services.reservation_service import create_reservation, ReservationConflictError
+            try:
+                new_res_id = create_reservation(business_id, wa_id, details_extract, date_extract, emp_id_extract, prio_extract, montant_extract, source="ia")
+                logger.info("[ORDER] Nouvelle réservation créée pour %s — %s", wa_id, details_extract[:60])
+            except ReservationConflictError as e:
+                # Si conflit, on insère quand même mais en mode "erreur"
+                details_secours = f"⚠️ CONFLIT AGENDA: {e} - Demande: {details_extract}"
+                new_res_id = create_reservation(business_id, wa_id, details_secours, None, None, priorite="Haute", source="ia")
+                logger.warning(f"[ORDER] Conflit géré: {e}")
             
         # Gérer les tags (pour les nouvelles comme pour les mises à jour)
         if tags_extract:

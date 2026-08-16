@@ -131,6 +131,11 @@
             <i class="fas fa-calendar-alt"></i> Agenda
         </a>
 
+        <a class="nav-item {% if active_page == 'vira-chat' %}active{% endif %}"
+           href="{{ url_for('dashboard.vira_chat', biz_id=biz_id) }}">
+            <i class="fas fa-robot"></i> Vira Chat
+        </a>
+
         <a class="nav-item {% if active_page == 'payments' %}active{% endif %}"
            href="{{ url_for('dashboard.business_payments', biz_id=biz_id) }}">
             <i class="fas fa-file-invoice"></i> Facturation

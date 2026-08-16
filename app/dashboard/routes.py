@@ -1897,3 +1897,117 @@ def business_analytics(biz_id):
     plan = dict(biz).get('plan_abonnement', 'FREE')
     
     return render_template('dashboard/analytics.html', biz_id=biz_id, business=biz, vocab=vocab, plan=plan, active_page='analytics')
+
+
+# ==========================================
+# ==========================================
+# VIRA CHAT (MANAGER)
+# ==========================================
+
+def get_session_or_403(session_id: str, business_id: str):
+    from app.repositories import vira_chat_repo
+    from werkzeug.exceptions import Forbidden, NotFound
+    session_data = vira_chat_repo.get_session(session_id)
+    if not session_data or session_data.get('business_id') != business_id:
+        raise NotFound()  # Use 404 to not confirm existence
+    return session_data
+
+@dashboard_bp.route('/admin/<biz_id>/vira-chat', defaults={'session_id': None})
+@dashboard_bp.route('/admin/<biz_id>/vira-chat/<session_id>')
+def vira_chat(biz_id, session_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return redirect(url_for('dashboard.login'))
+        
+    business = business_repo.get_by_id(biz_id)
+    from app.repositories import vira_chat_repo
+    
+    # Check session ownership if provided
+    current_session = None
+    if session_id:
+        from werkzeug.exceptions import NotFound
+        try:
+            current_session = get_session_or_403(session_id, biz_id)
+        except NotFound:
+            return redirect(url_for('dashboard.vira_chat', biz_id=biz_id))
+    
+    # Retrieve sessions list
+    sessions = vira_chat_repo.get_sessions(biz_id, session['user_id'])
+    
+    # Retrieve chat history for the active session (if any)
+    history = []
+    if session_id:
+        history = vira_chat_repo.get_vira_history(business_id=biz_id, user_id=session['user_id'], session_id=session_id, limit=50)
+    
+    # Vocabulary (to know if we say Rendez-vous or Commandes)
+    from app.repositories import sector_repo
+    biz_type = dict(business).get('business_type', 'restaurant') if business else 'restaurant'
+    sector = sector_repo.get_by_id(biz_type)
+    vocab = sector['vocab'] if sector else {}
+    
+    # Compute today's stats for the widgets
+    import sqlite3
+    from app.models.schema import get_db_path
+    from datetime import datetime
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    date_cond = f"date(created_at) = '{today}'"
+    history_date_cond = f"date(timestamp) = '{today}'"
+    
+    stats = {}
+    
+    cursor.execute(f"SELECT COUNT(*) FROM history WHERE business_id = ? AND role = 'user' AND {history_date_cond}", (biz_id,))
+    stats['messages_recus'] = cursor.fetchone()[0] or 0
+    
+    cursor.execute(f"SELECT COUNT(*), SUM(montant) FROM reservations WHERE business_id = ? AND statut NOT LIKE 'Annul%' AND statut != 'Refusée' AND {date_cond}", (biz_id,))
+    row = cursor.fetchone()
+    stats['commandes'] = row[0] or 0
+    stats['ca'] = row[1] or 0
+    conn.close()
+    
+    return render_template('dashboard/vira_chat.html', biz_id=biz_id, business=business, active_page='vira-chat', chat_history=history, stats=stats, vocab=vocab, sessions=sessions, current_session=current_session)
+
+@dashboard_bp.route('/api/vira-chat/message/<biz_id>', methods=['POST'])
+def api_vira_chat_message(biz_id):
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
+        
+    data = request.json
+    message = data.get('message', '').strip()
+    session_id = data.get('session_id')
+    
+    if not message:
+        return jsonify({'success': False, 'error': 'Message vide'}), 400
+        
+    if session_id:
+        from werkzeug.exceptions import NotFound
+        try:
+            get_session_or_403(session_id, biz_id)
+        except NotFound:
+            return jsonify({'success': False, 'error': 'Session introuvable'}), 404
+        
+    try:
+        from app.services.vira_chat_service import get_vira_response
+        reply, new_session_id = get_vira_response(business_id=biz_id, user_id=session['user_id'], session_id=session_id, message=message)
+        return jsonify({'success': True, 'reply': reply, 'session_id': new_session_id})
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Erreur interne: {str(e)}"}), 500
+
+@dashboard_bp.route('/api/vira-chat/sessions/<session_id>', methods=['DELETE'])
+def api_delete_vira_session(session_id):
+    biz_id = session.get('user_id')
+    if not biz_id:
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
+    
+    from werkzeug.exceptions import NotFound
+    try:
+        get_session_or_403(session_id, biz_id)
+    except NotFound:
+        return jsonify({'success': False, 'error': 'Session introuvable'}), 404
+        
+    from app.repositories import vira_chat_repo
+    success = vira_chat_repo.soft_delete_session(session_id, biz_id)
+    return jsonify({'success': success})
+
+

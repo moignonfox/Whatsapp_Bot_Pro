@@ -495,7 +495,7 @@
                     <label>Nom du client</label>
                     <div style="position:relative;">
                         <i class="far fa-user" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                        <input type="text" class="input-vira" placeholder="Ex: Jean Dupont" style="padding-left: 40px;">
+                        <input type="text" id="new-client-name" class="input-vira" placeholder="Ex: Jean Dupont" style="padding-left: 40px;">
                     </div>
                 </div>
                 
@@ -504,14 +504,14 @@
                         <label>Date du rendez-vous</label>
                         <div style="position:relative;">
                             <i class="far fa-calendar-alt" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                            <input type="date" class="input-vira" style="padding-left: 40px;">
+                            <input type="date" id="new-date" class="input-vira" style="padding-left: 40px;">
                         </div>
                     </div>
                     <div class="field" style="flex:1;">
                         <label>Heure</label>
                         <div style="position:relative;">
                             <i class="far fa-clock" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                            <input type="time" class="input-vira" style="padding-left: 40px;">
+                            <input type="time" id="new-time" class="input-vira" style="padding-left: 40px;">
                         </div>
                     </div>
                 </div>
@@ -521,7 +521,7 @@
                         <label>Type de rendez-vous</label>
                         <div style="position:relative;">
                             <i class="fas fa-tag" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                            <select class="input-vira" style="padding-left: 40px; cursor:pointer;">
+                            <select id="new-type" class="input-vira" style="padding-left: 40px; cursor:pointer;">
                                 <option value="Consultation">Consultation</option>
                                 <option value="Réservation">Réservation</option>
                                 <option value="RDV commercial">RDV commercial</option>
@@ -535,7 +535,7 @@
                         <label>Agent IA en charge</label>
                         <div style="position:relative;">
                             <i class="fas fa-robot" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                            <select class="input-vira" style="padding-left: 40px; cursor:pointer;">
+                            <select id="new-agent" class="input-vira" style="padding-left: 40px; cursor:pointer;">
                                 <option value="">Sélectionner un agent...</option>
                                 {% for agent in agents %}
                                 <option value="{{ agent.id }}">{{ agent.name }}</option>
@@ -548,12 +548,58 @@
             </div>
             <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px;">
                 <button class="btn btn-secondary" onclick="document.getElementById('modal-new-appointment').classList.remove('open')">Annuler</button>
-                <button class="btn btn-primary" onclick="document.getElementById('modal-new-appointment').classList.remove('open')">Créer le rendez-vous</button>
+                <button class="btn btn-primary" onclick="submitNewAppointment()">Créer le rendez-vous</button>
             </div>
         </div>
     </div>
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+
+<script>
+    function submitNewAppointment() {
+        const clientName = document.getElementById('new-client-name').value;
+        const date = document.getElementById('new-date').value;
+        const time = document.getElementById('new-time').value;
+        const type = document.getElementById('new-type').value;
+        const agentId = document.getElementById('new-agent').value;
+
+        if (!clientName || !date || !time) {
+            alert("Veuillez remplir le nom, la date et l'heure.");
+            return;
+        }
+
+        fetch(`/api/agenda/create/{{ biz_id }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                client_name: clientName,
+                date: date,
+                time: time,
+                details: type,
+                agent_id: agentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('modal-new-appointment').classList.remove('open');
+                // Optionnel : on pourrait recharger l'agenda ici `window.location.reload();`
+                // Mais comme l'agenda utilise mockEvents pour l'instant, on se contente de l'alerte
+                alert("Rendez-vous créé avec succès !");
+                window.location.reload();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Une erreur est survenue lors de la création du rendez-vous.");
+        });
+    }
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
