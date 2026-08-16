@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Visuel — {{ biz_id }} — MyBot SaaS</title>
+    <title>Agenda — {{ biz_id }} — MyBot SaaS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -16,6 +16,7 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
 
     <!-- FullCalendar CDN -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -30,6 +31,7 @@
             min-height: 100vh;
         }
 
+        /* ----- TOPBAR & HEADER ----- */
         .topbar {
             height: 70px;
             background: var(--surface);
@@ -41,207 +43,217 @@
             position: sticky;
             top: 0; z-index: 100;
         }
-        .page-title {
-            font-size: 18px; font-weight: 600; color: var(--text);
-            display: flex; align-items: center; gap: 8px;
+        .header-content {
+            padding: 24px 32px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
         }
-        .page-title i { color: var(--green); }
+        .page-title {
+            font-size: 20px; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .page-title i { color: var(--primary); }
+        .page-subtitle {
+            font-size: 13px; color: var(--text-secondary); margin-top: 4px;
+        }
+        .header-actions {
+            display: flex; align-items: center; gap: 12px;
+        }
 
-        .content {
-            padding: 32px;
-            max-width: 1400px;
-            margin: 0 auto;
+        .content-body {
+            padding: 24px 32px;
             width: 100%;
         }
 
-        /* Classes responsive */
-        .desktop-only { display: block; }
-        .mobile-only { display: none; }
-        
-        @media (max-width: 768px) {
-            .desktop-only { display: none !important; }
-            .mobile-only { display: block !important; }
-            .content { padding: 12px; }
-        }
-
-        /* -------------------------------------
-           Premium FullCalendar CSS (Desktop)
-           ------------------------------------- */
-        #calendar {
-            background: var(--surface);
-            color: var(--text);
-            min-height: 700px;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15); /* Premium shadow */
-            border: 1px solid var(--border);
-        }
-        
-        /* Modern Toolbar */
-        .fc .fc-toolbar.fc-header-toolbar {
+        /* ----- STATS CARDS ----- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
             margin-bottom: 24px;
         }
-        .fc .fc-toolbar-title {
-            font-size: 1.5rem !important;
-            font-weight: 700 !important;
-            color: var(--text);
-        }
-        
-        /* Button styling */
-        .fc-button-primary {
-            background-color: var(--card) !important;
-            border-color: var(--border) !important;
-            color: var(--text) !important;
-            border-radius: 8px !important;
-            text-transform: capitalize !important;
-            font-weight: 500 !important;
-            padding: 8px 16px !important;
-            transition: all 0.2s ease;
-            box-shadow: none !important;
-        }
-        .fc-button-primary:hover {
-            background-color: var(--card-hover) !important;
-            border-color: var(--border-light) !important;
-        }
-        .fc-button-primary:not(:disabled):active,
-        .fc-button-primary:not(:disabled).fc-button-active {
-            background-color: var(--green) !important;
-            border-color: var(--green) !important;
-            color: #fff !important;
-            box-shadow: 0 4px 12px var(--green-glow) !important;
-        }
-        
-        /* Grid and borders */
-        .fc-theme-standard td, .fc-theme-standard th {
-            border-color: var(--border) !important;
-        }
-        .fc-theme-standard .fc-scrollgrid {
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border) !important;
-        }
-        
-        /* Today highlight */
-        .fc .fc-day-today {
-            background: var(--card) !important;
-        }
-        
-        /* Event styling */
-        .fc-v-event {
-            background-color: var(--green-bg) !important;
-            border: none !important;
-            border-left: 4px solid var(--green) !important;
-            border-radius: 6px !important;
-            padding: 2px 4px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
-        }
-        .fc-v-event:hover {
-            transform: scale(1.02);
-            z-index: 10 !important;
-        }
-        .fc-v-event .fc-event-title {
-            color: var(--green);
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-        .fc-v-event .fc-event-time {
-            color: var(--green);
-            opacity: 0.8;
-            font-size: 0.75rem;
-            margin-bottom: 2px;
-        }
-        
-        /* Axis & Header Text */
-        .fc-col-header-cell-cushion {
-            padding: 12px 4px !important;
-            font-weight: 600 !important;
-            color: var(--muted) !important;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-        .fc-timegrid-slot-label-cushion {
-            color: var(--muted) !important;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .fc, .fc a { color: var(--text); text-decoration: none; }
-        
-        /* -------------------------------------
-           Custom Mobile Agenda CSS 
-           ------------------------------------- */
-        #mobile-agenda {
-            background: var(--surface);
+        .stat-card {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            padding: 16px;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        .mobile-agenda-header {
+            padding: 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .mobile-agenda-header button {
-            background: var(--card);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
+        .stat-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
         }
-        .mobile-agenda-header button:active {
-            background: var(--border);
-        }
-        .mobile-hour-row {
+        .stat-icon.purple { background: rgba(124, 58, 237, 0.1); color: var(--primary); }
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .stat-icon.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        
+        .stat-info .stat-label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; }
+        .stat-info .stat-desc { font-size: 12px; color: var(--text-secondary); }
+
+        /* ----- LAYOUT ----- */
+        .agenda-layout {
             display: flex;
-            min-height: 64px;
-            border-bottom: 1px dashed var(--border-light);
-            position: relative;
+            gap: 24px;
+            align-items: flex-start;
         }
-        .mobile-hour-row:last-child {
-            border-bottom: none;
-        }
-        .mobile-hour-label {
-            width: 55px;
-            font-size: 13px;
-            color: var(--muted);
-            text-align: right;
-            padding-right: 12px;
-            padding-top: 10px;
-            border-right: 2px solid var(--border);
-            font-weight: 500;
-        }
-        .mobile-hour-content {
+        .agenda-main {
             flex: 1;
-            padding: 5px 10px;
-            position: relative;
+            min-width: 0; /* eviter debordement flex */
         }
-        .mobile-event-card {
-            background: var(--green-bg);
-            border-left: 4px solid var(--green);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .agenda-sidebar {
+            width: 340px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
-        .mobile-event-title {
-            font-weight: 600;
-            color: var(--green);
-            margin-bottom: 4px;
-            font-size: 14px;
+
+        /* ----- FULLCALENDAR RE-STYLING (MODERN) ----- */
+        #calendar {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            margin-bottom: 24px;
         }
-        .mobile-event-time {
-            font-size: 12px;
-            color: var(--green);
-            opacity: 0.9;
+        /* Toolbar */
+        .fc .fc-toolbar.fc-header-toolbar { margin-bottom: 24px; }
+        .fc .fc-toolbar-title { font-size: 16px !important; font-weight: 700 !important; color: var(--text); }
+        .fc-button-primary {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            padding: 8px 14px !important;
+            text-transform: capitalize !important;
+            transition: all 0.2s;
+        }
+        .fc-button-primary:hover { background: var(--surface-hover) !important; }
+        .fc-button-active { background: var(--surface-elevated) !important; color: var(--primary) !important; border-color: var(--border) !important; font-weight: 600 !important; }
+        
+        /* Grid styling */
+        .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+        .fc-theme-standard .fc-scrollgrid { border: none !important; }
+        .fc-scrollgrid-sync-table { border: none !important; }
+        .fc-timegrid-col { border-left: 1px dashed var(--border) !important; }
+        .fc-timegrid-slot { border-bottom: 1px dashed var(--border) !important; height: 60px !important; }
+        .fc-timegrid-axis { border: none !important; }
+        .fc-col-header-cell { border: none !important; border-bottom: 1px solid var(--border) !important; }
+        .fc-day-today { background: rgba(124, 58, 237, 0.03) !important; }
+
+        /* Headers */
+        .fc-col-header-cell-cushion {
+            display: inline-block; padding: 12px 8px !important; width: 100%;
+        }
+        .header-day-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: block; }
+        .header-day-date { font-size: 11px; font-weight: 500; color: var(--text-secondary); display: block; }
+        .fc-day-today .header-day-date {
+            background: var(--primary); color: #fff; border-radius: 12px; padding: 2px 8px; display: inline-block;
+        }
+
+        /* Time Axis */
+        .fc-timegrid-slot-label-cushion {
+            font-size: 12px !important; color: var(--text-secondary) !important; font-weight: 600; text-transform: uppercase;
+        }
+        .fc-timegrid-axis-cushion { font-size: 11px; color: var(--text-secondary); }
+        .fc-v-event {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            margin: 2px 4px !important; /* give it breathing room */
+        }
+        .fc-event-main { padding: 0 !important; }
+        
+        /* Legend */
+        .agenda-legend {
+            display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-secondary); font-weight: 500;
+            padding-top: 16px; border-top: 1px solid var(--border); margin-top: 16px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* ----- AUTOMATION BANNER ----- */
+        .automation-banner {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex; align-items: center; gap: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .automation-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+            display: flex; align-items: center; justify-content: center; font-size: 40px; color: var(--primary);
+            flex-shrink: 0;
+        }
+        .automation-content { flex: 1; }
+        .automation-content h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;}
+        .automation-content p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+        .automation-steps { display: flex; gap: 24px; }
+        .auto-step { display: flex; align-items: flex-start; gap: 10px; }
+        .auto-step-icon { color: var(--primary); font-size: 16px; margin-top: 2px; }
+        .auto-step-text h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+        .auto-step-text p { font-size: 11px; color: var(--text-secondary); margin: 0; }
+
+        /* ----- SIDEBAR CARDS ----- */
+        .side-card {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .side-card-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+        }
+        .side-card-header h3 { font-size: 15px; font-weight: 600; color: var(--text); }
+        .side-card-header a { font-size: 12px; font-weight: 500; color: var(--primary); text-decoration: none; }
+        
+        .upcoming-list { display: flex; flex-direction: column; gap: 16px; }
+        .upcoming-date-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-top: 8px; margin-bottom: -4px;}
+        .upcoming-item {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .upcoming-time {
+            font-size: 13px; font-weight: 600; color: var(--primary); width: 40px;
+        }
+        .upcoming-details { flex: 1; }
+        .upcoming-details h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+        .upcoming-details p { font-size: 12px; color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 6px; }
+        .upcoming-actions { display: flex; align-items: center; gap: 8px; }
+        .badge-status { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 12px; }
+        .badge-status.confirmed { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .badge-status.waiting { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+        /* Stats in side card */
+        .side-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;}
+        .side-stat-item { border-left: 2px solid var(--border); padding-left: 12px; }
+        .side-stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .side-stat-val { font-size: 20px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .side-stat-trend { font-size: 11px; font-weight: 600; color: #22c55e; display: flex; align-items: center; gap: 4px; }
+
+        /* Utility */
+        .badge-outline { font-size: 10px; font-weight: 600; color: var(--green); border: 1px solid var(--green); padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.05); }
+
+        @media (max-width: 1024px) {
+            .agenda-layout { flex-direction: column; }
+            .agenda-sidebar { width: 100%; }
+        }
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -251,139 +263,309 @@
 
     <div class="main">
         <div class="topbar">
-            <div class="page-title">
-                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; margin-right:10px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;" class="mobile-only">
                     <i class="fas fa-bars"></i>
                 </button>
-                <i class="fas fa-calendar-alt"></i> Agenda Virtuel
+                <div class="desktop-only" style="width: 20px;"></div>
             </div>
             <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
                 {% include 'dashboard/_topbar_right.html' %}
             </div>
         </div>
 
-        <div class="content">
-            <!-- FullCalendar classique pour grand écran (Design Premium) -->
-            <div id="calendar" class="desktop-only"></div>
+        <div class="header-content">
+            <div>
+                <div class="page-title"><i class="fas fa-calendar-alt"></i> Agenda</div>
+                <div class="page-subtitle">Gérez vos rendez-vous et laissez VIRA s'occuper des rappels.</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" style="background: var(--surface-elevated);"><i class="far fa-calendar"></i> Aujourd'hui</button>
+                <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau rendez-vous</button>
+            </div>
+        </div>
+
+        <div class="content-body">
             
-            <!-- Agenda 100% sur-mesure pour mobile (Uniquement Quotidien) -->
-            <div id="mobile-agenda" class="mobile-only">
-                <div class="mobile-agenda-header">
-                    <button onclick="changeMobileDay(-1)"><i class="fas fa-chevron-left"></i></button>
-                    <div id="mobile-agenda-date" style="font-weight: 600; font-size: 16px; text-transform: capitalize;">Aujourd'hui</div>
-                    <button onclick="changeMobileDay(1)"><i class="fas fa-chevron-right"></i></button>
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="far fa-calendar-check"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Aujourd'hui</div>
+                        <div class="stat-value">8</div>
+                        <div class="stat-desc">rendez-vous</div>
+                    </div>
                 </div>
-                <div id="mobile-timeline-container">
-                    <!-- Les heures et RDVs s'afficheront ici -->
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="far fa-clock"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">À venir</div>
+                        <div class="stat-value">24</div>
+                        <div class="stat-desc">rendez-vous</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="far fa-bell"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Rappels</div>
+                        <div class="stat-value">6</div>
+                        <div class="stat-desc">programmés</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="far fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Terminés</div>
+                        <div class="stat-value">18</div>
+                        <div class="stat-desc">cette semaine</div>
+                    </div>
                 </div>
             </div>
+
+            <div class="agenda-layout">
+                
+                <!-- Main Calendar Area -->
+                <div class="agenda-main">
+                    <div id="calendar"></div>
+
+                    <!-- Automation Banner -->
+                    <div class="automation-banner">
+                        <div class="automation-icon"><i class="fas fa-robot"></i></div>
+                        <div class="automation-content">
+                            <h3>Automatisation VIRA <span class="badge-outline">Actif</span></h3>
+                            <p>Vos rappels sont envoyés automatiquement pour ne manquer aucun rendez-vous.</p>
+                            <div class="automation-steps">
+                                <div class="auto-step">
+                                    <div class="auto-step-icon"><i class="fas fa-check-circle"></i></div>
+                                    <div class="auto-step-text">
+                                        <h4>Confirmation</h4>
+                                        <p>Envoyée dès la création</p>
+                                    </div>
+                                </div>
+                                <div class="auto-step">
+                                    <div class="auto-step-icon"><i class="fas fa-history"></i></div>
+                                    <div class="auto-step-text">
+                                        <h4>Rappel 24h avant</h4>
+                                        <p>Par le canal préféré</p>
+                                    </div>
+                                </div>
+                                <div class="auto-step">
+                                    <div class="auto-step-icon"><i class="fas fa-stopwatch"></i></div>
+                                    <div class="auto-step-text">
+                                        <h4>Rappel 30 min avant</h4>
+                                        <p>Avant chaque rendez-vous</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" style="white-space: nowrap;">Configurer les rappels <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar Area -->
+                <div class="agenda-sidebar">
+                    
+                    <!-- Prochains rendez-vous -->
+                    <div class="side-card">
+                        <div class="side-card-header">
+                            <h3>Prochains rendez-vous</h3>
+                            <a href="#">Voir tout</a>
+                        </div>
+                        <div class="upcoming-list">
+                            <div class="upcoming-date-label">Aujourd'hui • Jeudi 28 Mai</div>
+                            
+                            <div class="upcoming-item">
+                                <div class="upcoming-time">09:30</div>
+                                <div class="upcoming-details">
+                                    <h4>Consultation</h4>
+                                    <p>Jean Dupont</p>
+                                </div>
+                                <div class="upcoming-actions">
+                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
+                                    <span class="badge-status confirmed">Confirmé</span>
+                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
+                                </div>
+                            </div>
+
+                            <div class="upcoming-item">
+                                <div class="upcoming-time">10:30</div>
+                                <div class="upcoming-details">
+                                    <h4>Consultation</h4>
+                                    <p>Sophie L.</p>
+                                </div>
+                                <div class="upcoming-actions">
+                                    <i class="fab fa-instagram" style="color: #E1306C; font-size: 14px;"></i>
+                                    <span class="badge-status confirmed">Confirmé</span>
+                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
+                                </div>
+                            </div>
+
+                            <div class="upcoming-item">
+                                <div class="upcoming-time">11:00</div>
+                                <div class="upcoming-details">
+                                    <h4>Réservation</h4>
+                                    <p>Marie K.</p>
+                                </div>
+                                <div class="upcoming-actions">
+                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
+                                    <span class="badge-status confirmed">Confirmé</span>
+                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
+                                </div>
+                            </div>
+
+                            <div class="upcoming-date-label" style="margin-top:12px;">Demain • Vendredi 29 Mai</div>
+
+                            <div class="upcoming-item">
+                                <div class="upcoming-time">09:00</div>
+                                <div class="upcoming-details">
+                                    <h4>Suivi projet</h4>
+                                    <p>David T.</p>
+                                </div>
+                                <div class="upcoming-actions">
+                                    <i class="fab fa-telegram-plane" style="color: #0088cc; font-size: 14px;"></i>
+                                    <span class="badge-status waiting">En attente</span>
+                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
+                                </div>
+                            </div>
+
+                            <div class="upcoming-item">
+                                <div class="upcoming-time">15:30</div>
+                                <div class="upcoming-details">
+                                    <h4>Présentation offre</h4>
+                                    <p>Sarah B.</p>
+                                </div>
+                                <div class="upcoming-actions">
+                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
+                                    <span class="badge-status confirmed">Confirmé</span>
+                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
+                                </div>
+                            </div>
+
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 24px; justify-content:center;">Voir l'agenda complet <i class="fas fa-arrow-right"></i></button>
+                    </div>
+
+                    <!-- Statistiques -->
+                    <div class="side-card">
+                        <div class="side-card-header">
+                            <h3>Statistiques cette semaine</h3>
+                            <a href="#">Voir détails</a>
+                        </div>
+                        <div class="side-stats-grid">
+                            <div class="side-stat-item">
+                                <div class="side-stat-label">Taux de présence</div>
+                                <div class="side-stat-val">92% <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 8%</span></div>
+                            </div>
+                            <div class="side-stat-item">
+                                <div class="side-stat-label">Rendez-vous créés</div>
+                                <div class="side-stat-val">32 <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 12%</span></div>
+                            </div>
+                        </div>
+                        <div class="side-stat-item" style="border:none; padding-left:0; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
+                            <div class="side-stat-label">Rappels envoyés</div>
+                            <div class="side-stat-val">64 <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 15%</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
         </div>
     </div>
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script>
-    // ---------------------------------------------------------
-    // 1. Logique Agenda Mobile Sur-Mesure (Jour uniquement)
-    // ---------------------------------------------------------
-    var mobileCurrentDate = new Date();
-    var allEvents = [];
-    
-    function formatMobileDate(date) {
-        var options = { weekday: 'long', day: 'numeric', month: 'long' };
-        return date.toLocaleDateString('fr-FR', options);
-    }
-    
-    function renderMobileAgenda() {
-        document.getElementById('mobile-agenda-date').innerText = formatMobileDate(mobileCurrentDate);
-        
-        var container = document.getElementById('mobile-timeline-container');
-        container.innerHTML = '';
-        
-        var startOfDay = new Date(mobileCurrentDate);
-        startOfDay.setHours(0,0,0,0);
-        var endOfDay = new Date(mobileCurrentDate);
-        endOfDay.setHours(23,59,59,999);
-        
-        var dayEvents = allEvents.filter(function(e) {
-            var eDate = new Date(e.start);
-            return eDate >= startOfDay && eDate <= endOfDay;
-        });
-        
-        for(var h = 6; h <= 22; h++) {
-            var row = document.createElement('div');
-            row.className = 'mobile-hour-row';
-            
-            var label = document.createElement('div');
-            label.className = 'mobile-hour-label';
-            label.innerText = (h < 10 ? '0'+h : h) + 'h00';
-            row.appendChild(label);
-            
-            var content = document.createElement('div');
-            content.className = 'mobile-hour-content';
-            
-            var hourEvents = dayEvents.filter(function(e) {
-                return new Date(e.start).getHours() === h;
-            });
-            
-            hourEvents.forEach(function(e) {
-                var dDate = new Date(e.start);
-                var min = dDate.getMinutes();
-                var timeStr = (h < 10 ? '0'+h : h) + ':' + (min < 10 ? '0'+min : min);
-                
-                var card = document.createElement('div');
-                card.className = 'mobile-event-card';
-                card.innerHTML = '<div class="mobile-event-title">' + e.title + '</div>' +
-                                 '<div class="mobile-event-time"><i class="fas fa-clock"></i> ' + timeStr + ' - ' + (e.extendedProps.statut || '') + '</div>';
-                content.appendChild(card);
-            });
-            
-            row.appendChild(content);
-            container.appendChild(row);
-        }
-    }
-    
-    function changeMobileDay(delta) {
-        mobileCurrentDate.setDate(mobileCurrentDate.getDate() + delta);
-        renderMobileAgenda();
-    }
-
-    // ---------------------------------------------------------
-    // 2. Initialisation Globale (FullCalendar Desktop)
-    // ---------------------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
-        
-        // Initialiser FullCalendar (affiché uniquement sur Bureau)
         var calendarEl = document.getElementById('calendar');
-        if (calendarEl && window.innerWidth >= 768) {
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                locale: 'fr',
-                slotMinTime: '06:00:00',
-                slotMaxTime: '22:00:00',
-                expandRows: true, // Force les lignes à prendre toute la hauteur
-                events: '/api/agenda/events/{{ biz_id }}',
-                eventClick: function(info) {
-                    alert('Réservation : ' + info.event.title + '\nStatut : ' + info.event.extendedProps.statut);
-                }
-            });
-            calendar.render();
+        
+        // Mock data to match mockup visual
+        var mockEvents = [
+            { title: 'Consultation', start: '2026-05-28T09:30:00', end: '2026-05-28T10:30:00', extendedProps: { client: 'Jean Dupont', channel: 'whatsapp', color: 'purple' } },
+            { title: 'Consultation', start: '2026-05-28T10:30:00', end: '2026-05-28T11:30:00', extendedProps: { client: 'Sophie L.', channel: 'instagram', color: 'purple' } },
+            { title: 'Réservation', start: '2026-05-27T11:00:00', end: '2026-05-27T12:00:00', extendedProps: { client: 'Marie K.', channel: 'whatsapp', color: 'green' } },
+            { title: 'Suivi projet', start: '2026-05-29T09:00:00', end: '2026-05-29T10:00:00', extendedProps: { client: 'David T.', channel: 'telegram', color: 'orange' } },
+            { title: 'RDV commercial', start: '2026-05-28T14:30:00', end: '2026-05-28T15:30:00', extendedProps: { client: 'Pierre A.', channel: 'messenger', color: 'blue' } },
+            { title: 'Présentation offre', start: '2026-05-29T15:30:00', end: '2026-05-29T16:30:00', extendedProps: { client: 'Sarah B.', channel: 'whatsapp', color: 'green' } }
+        ];
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            initialDate: '2026-05-28', // Fixed to match mockup
+            headerToolbar: {
+                left: 'dayGridMonth,timeGridWeek,timeGridDay',
+                center: 'prev,next title',
+                right: '' // Custom filters will go here if needed
+            },
+            locale: 'fr',
+            slotMinTime: '08:00:00',
+            slotMaxTime: '18:00:00',
+            allDaySlot: true,
+            allDayText: 'Toute la journée',
+            expandRows: true,
+            dayHeaderContent: function(arg) {
+                var dayName = arg.date.toLocaleDateString('fr-FR', { weekday: 'short' });
+                var dayDate = arg.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1) + '.';
+                return { html: '<span class="header-day-name">' + dayName + '</span><span class="header-day-date">' + dayDate + '</span>' };
+            },
+            events: mockEvents,
+            eventContent: function(arg) {
+                var props = arg.event.extendedProps;
+                var colorMap = {
+                    'purple': { bg: 'rgba(124, 58, 237, 0.1)', border: '#7C3AED', text: '#7C3AED' },
+                    'green': { bg: 'rgba(34, 197, 94, 0.1)', border: '#22c55e', text: '#22c55e' },
+                    'orange': { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#d97706' },
+                    'blue': { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#2563eb' }
+                };
+                var style = colorMap[props.color] || colorMap['purple'];
+                
+                var time = arg.timeText;
+                var html = `
+                    <div style="background: ${style.bg}; border-left: 3px solid ${style.border}; color: ${style.text}; height: 100%; border-radius: 6px; padding: 4px 6px; display:flex; flex-direction:column;">
+                        <div style="font-size:10px; font-weight:600; margin-bottom:2px;">${time}</div>
+                        <div style="font-size:11px; font-weight:700; line-height:1.2;">${arg.event.title}</div>
+                        <div style="font-size:10px; opacity:0.9; margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+                            <span>${props.client}</span>
+                        </div>
+                    </div>
+                `;
+                return { html: html };
+            }
+        });
+        calendar.render();
+        
+        // Add legend dynamically
+        var legendHtml = `
+            <div class="agenda-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Confirmé</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#7C3AED;"></div> Planifié</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> En attente</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Annulé</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6b7280;"></div> Terminé</div>
+            </div>
+        `;
+        document.querySelector('.fc-view-harness').insertAdjacentHTML('afterend', legendHtml);
+        
+        // Enhance toolbar styling
+        var titleEl = document.querySelector('.fc-toolbar-title');
+        if(titleEl) {
+            // Replace standard title with dropdown look
+            var text = titleEl.innerText;
+            titleEl.innerHTML = text + ' <i class="fas fa-chevron-down" style="font-size:12px; margin-left:6px; color:var(--text-secondary);"></i>';
         }
         
-        // Charger les données de l'API manuellement pour l'agenda mobile natif
-        fetch('/api/agenda/events/{{ biz_id }}')
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                allEvents = data;
-                renderMobileAgenda();
-            })
-            .catch(function(err) {
-                console.error("Erreur de chargement des réservations", err);
-            });
+        // Add custom filters
+        var rightToolbar = document.querySelector('.fc-toolbar-chunk:last-child');
+        if(rightToolbar) {
+            rightToolbar.innerHTML = `
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">Tous les agents <i class="fas fa-chevron-down"></i></button>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">Tous les types <i class="fas fa-chevron-down"></i></button>
+                    <button class="btn btn-secondary" style="padding:6px 10px;"><i class="fas fa-filter"></i></button>
+                </div>
+            `;
+        }
     });
 </script>
 </body>

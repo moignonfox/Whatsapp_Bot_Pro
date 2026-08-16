@@ -55,13 +55,13 @@
                 <div class="biz-id-label" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                     <span>{{ biz_id }}</span>
                     {% if plan == 'SCALE' %}
-                        <span style="font-size:9px;font-weight:700;background:#F0B429;color:#1a1a1a;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">SCALE</span>
+                        <span style="font-size:9px;font-weight:700;background:var(--accent-soft);color:var(--accent-text);padding:1px 6px;border-radius:4px;letter-spacing:.4px;border:1px solid var(--accent-soft-border);">SCALE</span>
                     {% elif plan == 'GROWTH' %}
-                        <span style="font-size:9px;font-weight:700;background:#25D366;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">GROWTH</span>
+                        <span style="font-size:9px;font-weight:700;background:var(--success-soft);color:var(--success-text);padding:1px 6px;border-radius:4px;letter-spacing:.4px;border:1px solid var(--success-soft-border);">GROWTH</span>
                     {% elif plan == 'DISCOVERY' %}
-                        <span style="font-size:9px;font-weight:700;background:#58A6FF;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">DISCOVERY</span>
+                        <span style="font-size:9px;font-weight:700;background:var(--info-soft);color:var(--info-text);padding:1px 6px;border-radius:4px;letter-spacing:.4px;border:1px solid var(--info-soft-border);">DISCOVERY</span>
                     {% else %}
-                        <span style="font-size:9px;font-weight:700;background:#8b949e;color:#fff;padding:1px 6px;border-radius:3px;letter-spacing:.4px;">FREE</span>
+                        <span style="font-size:9px;font-weight:700;background:var(--surface-active);color:var(--text-secondary);padding:1px 6px;border-radius:4px;letter-spacing:.4px;border:1px solid var(--border-strong);">FREE</span>
                     {% endif %}
                 </div>
             </div>
@@ -107,7 +107,7 @@
         <a class="nav-item {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}" id="nav-chat-link">
             <i class="fas fa-comment-dots"></i> Conversations
             {% if global_unread_count and global_unread_count > 0 %}
-            <span id="global-notif-msg-badge" style="font-size:10.5px;background:var(--brand);color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
+            <span id="global-notif-msg-badge" style="font-size:10.5px;background:var(--primary);color:#fff;padding:2px 7px;border-radius:12px;margin-left:auto;font-weight:700;">{{ global_unread_count }}</span>
             {% endif %}
         </a>
 
@@ -247,49 +247,49 @@
     }
     .notif-tab {
         flex:1; padding:10px 0; background:none; border:none;
-        color:var(--muted,#8892a4); font-size:12px; font-weight:600;
+        color:var(--text-secondary); font-size:12px; font-weight:600;
         cursor:pointer; font-family:'Inter',sans-serif;
         border-bottom:2px solid transparent; transition:all .2s;
     }
-    .notif-tab.active { color:var(--text,#e0e6f0); border-bottom-color:var(--green,#25d366); }
+    .notif-tab.active { color:var(--text); border-bottom-color:var(--primary); }
     .notif-item {
-        padding:14px 16px; border-bottom:1px solid var(--border,#2d3748);
+        padding:14px 16px; border-bottom:1px solid var(--border);
         cursor:pointer; transition:background .15s;
     }
-    .notif-item:hover { background:var(--card,#232c3d); }
-    .notif-item.order { border-left:3px solid #F0B429; }
-    .notif-item.message { border-left:3px solid #25d366; }
+    .notif-item:hover { background:var(--surface-hover); }
+    .notif-item.order { border-left:3px solid var(--accent); }
+    .notif-item.message { border-left:3px solid var(--primary); }
     .notif-item .notif-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
     .notif-item .notif-icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .notif-item .notif-icon.order { background:rgba(240,180,41,.15); color:#F0B429; }
-    .notif-item .notif-icon.message { background:rgba(37,211,102,.12); color:#25d366; }
-    .notif-item .notif-title { font-size:12px; font-weight:700; color:var(--text,#e0e6f0); }
-    .notif-item .notif-time { font-size:11px; color:var(--muted,#8892a4); margin-left:auto; }
-    .notif-item .notif-body { font-size:12px; color:var(--muted,#8892a4); margin-left:40px; line-height:1.4; }
+    .notif-item .notif-icon.order { background:var(--accent-soft); color:var(--accent); }
+    .notif-item .notif-icon.message { background:var(--primary-soft); color:var(--primary); }
+    .notif-item .notif-title { font-size:12px; font-weight:700; color:var(--text); }
+    .notif-item .notif-time { font-size:11px; color:var(--text-secondary); margin-left:auto; }
+    .notif-item .notif-body { font-size:12px; color:var(--text-secondary); margin-left:40px; line-height:1.4; }
     .notif-item .notif-actions { display:flex; gap:8px; margin-left:40px; margin-top:8px; }
     .notif-btn { padding:5px 12px; border-radius:6px; border:none; font-size:11px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
-    .notif-btn-confirm { background:rgba(37,211,102,.15); color:#25d366; }
-    .notif-btn-confirm:hover { background:#25d366; color:#fff; }
-    .notif-btn-cancel  { background:rgba(248,81,73,.12); color:#F85149; }
-    .notif-btn-cancel:hover  { background:#F85149; color:#fff; }
+    .notif-btn-confirm { background:var(--success-soft); color:var(--success); }
+    .notif-btn-confirm:hover { background:var(--success); color:#fff; }
+    .notif-btn-cancel  { background:var(--error-soft); color:var(--error); }
+    .notif-btn-cancel:hover  { background:var(--error); color:#fff; }
     #notif-bell-btn {
-        position:relative; width:36px; height:36px; background:var(--card,#232c3d);
-        border:1px solid var(--border,#2d3748); border-radius:9px;
+        position:relative; width:36px; height:36px; background:var(--surface-elevated);
+        border:1px solid var(--border); border-radius:var(--radius-sm);
         display:flex; align-items:center; justify-content:center;
-        color:var(--muted,#8892a4); cursor:pointer;
-        font-size:15px; transition:color .2s, background .2s; flex-shrink:0;
+        color:var(--text-secondary); cursor:pointer;
+        font-size:15px; transition:color var(--duration-fast) var(--easing), background var(--duration-fast) var(--easing); flex-shrink:0;
     }
-    #notif-bell-btn:hover { color:var(--text,#e0e6f0); background:var(--card-hover,#2a3548); }
+    #notif-bell-btn:hover { color:var(--text); background:var(--surface-hover); }
     #notif-bell-btn.ringing i { animation:bellRing 0.6s ease; }
     #notif-total-badge {
         position:absolute; top:-5px; right:-5px;
-        min-width:18px; height:18px; background:#F85149; color:#fff;
+        min-width:18px; height:18px; background:var(--error); color:#fff;
         border-radius:9px; font-size:10px; font-weight:700;
         display:none; align-items:center; justify-content:center; padding:0 4px;
     }
     #global-notif-msg-badge {
         display:inline-flex; align-items:center; justify-content:center;
-        min-width:20px; height:20px; background:#25d366; color:#fff;
+        min-width:20px; height:20px; background:var(--primary); color:#fff;
         border-radius:10px; font-size:11px; font-weight:700; padding:0 5px; margin-left:auto;
     }
 </style>
@@ -654,7 +654,10 @@
         if (existing) existing.remove();
 
         const isOrder   = type === 'order';
-        const color     = isOrder ? '#F0B429' : '#25d366';
+        // Use CSS variable references — no hardcoded hex
+        const colorVar  = isOrder ? 'var(--accent)' : 'var(--primary)';
+        const softVar   = isOrder ? 'var(--accent-soft)' : 'var(--primary-soft)';
+        const borderVar = isOrder ? 'var(--accent-soft-border)' : 'var(--primary-soft-border)';
         const iconClass = isOrder ? 'fa-shopping-bag' : 'fa-comment-dots';
         const title     = isOrder ? '🛒 Nouvelle commande' : '💬 Nouveau message';
         const body      = isOrder
@@ -666,24 +669,24 @@
         toast.id = 'global-notif-toast';
         toast.style.cssText = [
             'position:fixed','bottom:24px','right:24px','z-index:99999',
-            'background:var(--surface,#1a2233)',`border:1.5px solid ${color}`,
-            'border-radius:14px','padding:14px 16px','max-width:340px','min-width:260px',
-            'box-shadow:0 10px 40px rgba(0,0,0,0.5)',
+            `background:var(--surface-elevated)`,`border:1.5px solid ${colorVar}`,
+            `border-radius:var(--radius-lg)`,'padding:14px 16px','max-width:340px','min-width:260px',
+            'box-shadow:var(--shadow-md)',
             'cursor:pointer','display:flex','align-items:flex-start','gap:12px',
             'animation:slideInGlobalToast 0.35s cubic-bezier(.22,.68,0,1.2)'
         ].join(';');
         toast.innerHTML = `
-            <div style="width:40px;height:40px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid ${color};">
-                <i class="fas ${iconClass}" style="color:${color};font-size:16px;"></i>
+            <div style="width:40px;height:40px;border-radius:50%;background:${softVar};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid ${borderVar};">
+                <i class="fas ${iconClass}" style="color:${colorVar};font-size:16px;"></i>
             </div>
             <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:700;color:var(--text,#e0e6f0);margin-bottom:3px;">${esc(title)}</div>
-                <div style="font-size:12px;color:var(--muted,#8892a4);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(body)}</div>
-                <div style="font-size:11px;color:${color};margin-top:6px;font-weight:600;">
+                <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${esc(title)}</div>
+                <div style="font-size:12px;color:var(--text-secondary);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(body)}</div>
+                <div style="font-size:11px;color:${colorVar};margin-top:6px;font-weight:600;">
                     <i class="fas fa-arrow-right" style="font-size:9px;margin-right:3px;"></i>${isOrder ? 'Voir le tableau de bord' : 'Voir la conversation'}
                 </div>
             </div>
-            <button id="global-notif-toast-close" style="background:none;border:none;color:var(--muted,#8892a4);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;">×</button>
+            <button id="global-notif-toast-close" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;">×</button>
         `;
         toast.addEventListener('click', function(e) {
             if (e.target.id === 'global-notif-toast-close') { toast.remove(); return; }
@@ -821,7 +824,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--surface-secondary, #1a1d2e);
+    background: var(--surface-elevated);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px 12px;
@@ -830,13 +833,14 @@
     user-select: none;
 }
 .channel-selector:hover {
-    border-color: var(--brand);
-    background: var(--surface-hover, #2a2d3d);
+    border-color: var(--primary);
+    background: var(--surface-hover);
 }
 .channel-selector-icon {
     width: 28px; height: 28px;
     border-radius: 8px;
-    background: rgba(255,255,255,.06);
+    background: var(--surface);
+    border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     font-size: 15px;
     flex-shrink: 0;
@@ -895,7 +899,7 @@
     color: var(--text);
     transition: background .15s;
 }
-.channel-dropdown-item:hover { background: var(--surface-hover, #2a2d3d); }
+.channel-dropdown-item:hover { background: var(--surface-hover); }
 .channel-dropdown-item.active { background: rgba(91,106,240,.15); }
 .channel-dropdown-item .ch-name { flex: 1; }
 .ch-badge {

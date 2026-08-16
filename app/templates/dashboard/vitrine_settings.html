@@ -16,6 +16,7 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
 
     <style>
         .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
@@ -25,11 +26,11 @@
 
         .content { padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; display: flex; gap: 40px; }
 
-        .settings-panel { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px; box-shadow: var(--shadow-sm); }
+        .settings-panel { flex: 1; background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 16px; padding: 30px; box-shadow: var(--shadow-sm); }
         .preview-panel { width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; align-items: center; position: sticky; top: 100px; height: 600px; }
         
         .form-group { margin-bottom: 24px; }
-        .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
         .form-group input[type="color"] { width: 60px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; }
         .form-group input[type="file"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
         
@@ -43,7 +44,7 @@
         
         .preview-hero { width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; transition: background-color 0.3s; }
         .preview-body { padding: 20px; width: 100%; flex: 1; background: var(--bg); }
-        .preview-card { background: var(--card); border-radius: 12px; height: 80px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .preview-card { background: var(--surface-elevated); border-radius: 12px; height: 80px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .preview-btn { width: 100%; padding: 10px; border-radius: 100px; color: white; text-align: center; font-weight: 600; margin-top: 10px; transition: background-color 0.3s; border: none;}
 
         .public-link { display: flex; align-items: center; gap: 10px; padding: 15px; background: rgba(91,106,240,0.1); border-radius: 8px; margin-bottom: 24px; color: var(--text); border: 1px solid rgba(91,106,240,0.2); }
@@ -76,7 +77,7 @@
     <div class="content">
         <div class="settings-panel">
             <h2 style="margin-bottom: 10px; color: var(--text);">Apparence de votre site web</h2>
-            <p style="color: var(--muted); margin-bottom: 30px;">Personnalisez la vitrine que vos clients verront lorsqu'ils cliqueront sur le lien envoyé par le bot.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">Personnalisez la vitrine que vos clients verront lorsqu'ils cliqueront sur le lien envoyé par le bot.</p>
 
             <div class="public-link">
                 <i class="fas fa-link" style="color: var(--brand, #5b6af0);"></i>
@@ -92,7 +93,7 @@
                     <label>Couleur principale (Marque)</label>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <input type="color" name="vitrine_color" id="colorPicker" value="{{ business.vitrine_color or '#5b6af0' }}">
-                        <span id="colorHex" style="font-family: monospace; color: var(--muted);">{{ business.vitrine_color or '#5b6af0' }}</span>
+                        <span id="colorHex" style="font-family: monospace; color: var(--text-secondary);">{{ business.vitrine_color or '#5b6af0' }}</span>
                     </div>
                 </div>
 
@@ -104,7 +105,7 @@
                     </div>
                     {% endif %}
                     <input type="file" name="logo" id="logoInput" accept="image/*">
-                    <small style="color: var(--muted); display: block; margin-top: 5px;">Format recommandé: PNG transparent, max 2MB.</small>
+                    <small style="color: var(--text-secondary); display: block; margin-top: 5px;">Format recommandé: PNG transparent, max 2MB.</small>
                 </div>
 
                 <div class="form-group">
@@ -120,7 +121,7 @@
                     </div>
                     {% endif %}
                     <input type="file" name="cover" id="coverInput" accept="image/*" {% if plan != 'PREMIUM' %}disabled{% endif %}>
-                    <small style="color: var(--muted); display: block; margin-top: 5px;">Format recommandé: JPG/PNG, ratio 2:1 (ex: 800x400px).</small>
+                    <small style="color: var(--text-secondary); display: block; margin-top: 5px;">Format recommandé: JPG/PNG, ratio 2:1 (ex: 800x400px).</small>
                 </div>
 
                 <div class="form-group">

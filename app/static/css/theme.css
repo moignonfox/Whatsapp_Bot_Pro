@@ -1,109 +1,330 @@
-/* ══════════════════════════════════════════════
-   TOKENS — Dark (défaut)
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   VIRA DESIGN SYSTEM — theme.css
+   Source de vérité : vira-design-tokens.json v1.0.0
+   Police : Inter | Brand : Violet #7C3AED | Accent : Gold #FBBF24
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Google Font : Inter ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ══════════════════════════════════════════════════════════
+   TOKENS — Dark Mode (défaut)
+   ══════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-    --bg:           #0a0a0f;
-    --surface:      #12121a;
-    --card:         #1a1924;
-    --card-hover:   #222131;
-    --border:       #2a2938;
-    --border-light: #232230;
-    --brand:        #7C3AED;
-    --brand-soft:   rgba(124,58,237,0.15);
-    --green:        #25D366;
-    --green-dim:    #1aaa50;
-    --green-glow:   rgba(37,211,102,0.15);
-    --green-bg:     rgba(37,211,102,0.1);
-    --green-border: rgba(37,211,102,0.25);
-    --text:         #F0F6FC;
-    --muted:        #8B949E;
-    --muted2:       #4a5568;
-    --error:        #F85149;
-    --red:          #F85149;
-    --red-bg:       rgba(248,81,73,0.10);
-    --amber:        #f0b429;
-    --amber-bg:     rgba(240,180,41,0.10);
-    --blue:         #58a6ff;
-    --blue-bg:      rgba(88,166,255,0.10);
-    --purple:       #9D6BF8;
-    --purple-bg:    rgba(157,107,248,0.10);
-    --sidebar-w:    240px;
-    --shadow-sm:    0 2px 8px rgba(0,0,0,0.4);
-    --shadow:       0 12px 40px rgba(0,0,0,0.6);
-    --row-hover:    rgba(255,255,255,0.03);
-    --toggle-bg:    #2a2938;
-    --toggle-hover: #353447;
-    --placeholder:  #4a5568;
-    --blob1-opacity: 0.35;
-    --blob2-opacity: 0.35;
-    /* Chart.js colors */
-    --chart-grid:   rgba(42,41,56,0.7);
-    --chart-tick:   #8B949E;
-    --chart-tooltip-bg:     #1a1924;
-    --chart-tooltip-border: #2a2938;
-    --chart-tooltip-title:  #F0F6FC;
-    --chart-tooltip-body:   #8B949E;
-    --chart-point-border:   #1a1924;
+    /* ── Backgrounds ── */
+    --bg:                   #090A12;
+    --surface:              #111321;
+    --surface-elevated:     #171A2B;
+    --surface-hover:        #1D2033;
+    --surface-active:       #242840;
+
+    /* ── Borders ── */
+    --border:               #272A3D;
+    --border-strong:        #363A52;
+
+    /* ── Text ── */
+    --text:                 #F8FAFC;
+    --text-secondary:       #A6ABC0;
+    --text-tertiary:        #7D8298;
+    --text-disabled:        #686D82;
+
+    /* ── Brand : Violet (couleur principale VIRA) ── */
+    --primary:              #7C3AED;
+    --primary-hover:        #6D28D9;
+    --primary-active:       #5B21B6;
+    --primary-soft:         rgba(124, 58, 237, 0.18);
+    --primary-soft-border:  rgba(124, 58, 237, 0.28);
+    --primary-text:         #C4B5FD;
+
+    /* ── Accent : Gold (premium / CTA secondaires) ── */
+    --accent:               #FBBF24;
+    --accent-hover:         #F59E0B;
+    --accent-soft:          rgba(251, 191, 36, 0.14);
+    --accent-soft-border:   rgba(251, 191, 36, 0.25);
+    --accent-text:          #FDE68A;
+
+    /* ── Sémantique ── */
+    --success:              #22C55E;
+    --success-hover:        #16A34A;
+    --success-soft:         rgba(34, 197, 94, 0.12);
+    --success-soft-border:  rgba(34, 197, 94, 0.22);
+    --success-text:         #86EFAC;
+
+    --warning:              #F59E0B;
+    --warning-soft:         rgba(245, 158, 11, 0.12);
+    --warning-soft-border:  rgba(245, 158, 11, 0.22);
+    --warning-text:         #FDE68A;
+
+    --error:                #EF4444;
+    --error-hover:          #DC2626;
+    --error-soft:           rgba(239, 68, 68, 0.12);
+    --error-soft-border:    rgba(239, 68, 68, 0.22);
+    --error-text:           #FCA5A5;
+
+    --info:                 #3B82F6;
+    --info-soft:            rgba(59, 130, 246, 0.12);
+    --info-soft-border:     rgba(59, 130, 246, 0.22);
+    --info-text:            #93C5FD;
+
+    /* ── Couleurs canal (usage : identifier le canal uniquement) ── */
+    --channel-whatsapp:     #25D366;
+    --channel-instagram:    #E1306C;
+    --channel-messenger:    #0084FF;
+    --channel-telegram:     #229ED9;
+
+    /* ── Focus ── */
+    --focus-ring:           rgba(139, 92, 246, 0.45);
+
+    /* ── Overlay ── */
+    --overlay:              rgba(0, 0, 0, 0.60);
+
+    /* ── Gradients VIRA ── */
+    --gradient-vira:        linear-gradient(135deg, #7C3AED 0%, #A855F7 55%, #FBBF24 100%);
+    --gradient-purple:      linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%);
+    --gradient-gold:        linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+
+    /* ── Ombres ── */
+    --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.30);
+    --shadow-md:            0 8px 24px rgba(0, 0, 0, 0.32);
+    --shadow-lg:            0 20px 50px rgba(0, 0, 0, 0.42);
+    --shadow-purple:        0 0 32px rgba(124, 58, 237, 0.22);
+    --shadow-gold:          0 0 28px rgba(251, 191, 36, 0.18);
+
+    /* ── Composants ── */
+    --btn-height-sm:        36px;
+    --btn-height-md:        44px;
+    --btn-height-lg:        52px;
+    --btn-radius:           12px;
+    --input-height:         48px;
+    --input-radius:         12px;
+    --card-radius:          16px;
+    --card-padding:         24px;
+    --modal-radius:         24px;
+    --modal-padding:        32px;
+    --sidebar-w:            240px;
+    --topbar-h:             72px;
+
+    /* ── Radius ── */
+    --radius-sm:            8px;
+    --radius-md:            12px;
+    --radius-lg:            16px;
+    --radius-xl:            20px;
+    --radius-2xl:           24px;
+    --radius-pill:          9999px;
+
+    /* ── Animation ── */
+    --duration-fast:        120ms;
+    --duration-normal:      200ms;
+    --duration-slow:        300ms;
+    --easing:               cubic-bezier(0.2, 0, 0, 1);
+    --easing-bounce:        cubic-bezier(0.2, 0, 0, 1.2);
+
+    /* ── Rétrocompatibilité (anciens tokens) ── */
+    --card:                 #171A2B;
+    --card-hover:           #1D2033;
+    --border-light:         #272A3D;
+    --muted:                #A6ABC0;
+    --muted2:               #686D82;
+    --brand:                #7C3AED;
+    --brand-soft:           rgba(124, 58, 237, 0.18);
+    --green:                #22C55E;
+    --green-dim:            #16A34A;
+    --green-glow:           rgba(34, 197, 94, 0.15);
+    --green-bg:             rgba(34, 197, 94, 0.10);
+    --green-border:         rgba(34, 197, 94, 0.22);
+    --red:                  #EF4444;
+    --red-bg:               rgba(239, 68, 68, 0.12);
+    --amber:                #FBBF24;
+    --amber-bg:             rgba(251, 191, 36, 0.14);
+    --blue:                 #3B82F6;
+    --blue-bg:              rgba(59, 130, 246, 0.12);
+    --purple:               #A78BFA;
+    --purple-bg:            rgba(167, 139, 250, 0.12);
+    --row-hover:            rgba(255, 255, 255, 0.03);
+    --toggle-bg:            #272A3D;
+    --toggle-hover:         #1D2033;
+    --placeholder:          #7D8298;
+    --blob1-opacity:        0.35;
+    --blob2-opacity:        0.35;
+
+    /* ── Chart.js ── */
+    --chart-grid:           rgba(39, 42, 61, 0.7);
+    --chart-tick:           #7D8298;
+    --chart-tooltip-bg:     #171A2B;
+    --chart-tooltip-border: #272A3D;
+    --chart-tooltip-title:  #F8FAFC;
+    --chart-tooltip-body:   #A6ABC0;
+    --chart-point-border:   #111321;
 }
 
-/* ══════════════════════════════════════════════
-   TOKENS — Light
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   TOKENS — Light Mode
+   ══════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-    --bg:           #F0F4F8;
-    --surface:      #FFFFFF;
-    --card:         #FFFFFF;
-    --card-hover:   #F6F8FA;
-    --border:       #D1D9E0;
-    --border-light: #E2E8EF;
-    --green:        #1DA851;
-    --green-dim:    #178f44;
-    --green-glow:   rgba(29,168,81,0.18);
-    --green-bg:     rgba(29,168,81,0.08);
-    --green-border: rgba(29,168,81,0.28);
-    --text:         #0D1117;
-    --muted:        #57606A;
-    --muted2:       #A8B3BC;
-    --error:        #CF222E;
-    --red:          #CF222E;
-    --red-bg:       rgba(207,34,46,0.08);
-    --amber:        #B08800;
-    --amber-bg:     rgba(176,136,0,0.08);
-    --blue:         #0969DA;
-    --blue-bg:      rgba(9,105,218,0.08);
-    --sidebar-w:    240px;
-    --shadow-sm:    0 2px 8px rgba(0,0,0,0.08);
-    --shadow:       0 24px 80px rgba(0,0,0,0.12);
-    --row-hover:    rgba(0,0,0,0.025);
-    --toggle-bg:    #E6EBF0;
-    --toggle-hover: #D1D9E0;
-    --placeholder:  #A8B3BC;
-    --blob1-opacity: 0.18;
-    --blob2-opacity: 0.12;
-    /* Chart.js colors */
-    --chart-grid:   rgba(200,210,220,0.7);
-    --chart-tick:   #57606A;
+    /* ── Backgrounds ── */
+    --bg:                   #F7F7FC;
+    --surface:              #FFFFFF;
+    --surface-elevated:     #FFFFFF;
+    --surface-hover:        #F5F3FF;
+    --surface-active:       #EDE9FE;
+
+    /* ── Borders ── */
+    --border:               #E4E2EE;
+    --border-strong:        #D4D1E2;
+
+    /* ── Text ── */
+    --text:                 #17152A;
+    --text-secondary:       #68657A;
+    --text-tertiary:        #858197;
+    --text-disabled:        #9C99AC;
+
+    /* ── Brand : Violet ── */
+    --primary:              #7C3AED;
+    --primary-hover:        #6D28D9;
+    --primary-active:       #5B21B6;
+    --primary-soft:         rgba(124, 58, 237, 0.08);
+    --primary-soft-border:  rgba(124, 58, 237, 0.18);
+    --primary-text:         #6D28D9;
+
+    /* ── Accent : Gold ── */
+    --accent:               #F59E0B;
+    --accent-hover:         #D97706;
+    --accent-soft:          rgba(245, 158, 11, 0.10);
+    --accent-soft-border:   rgba(245, 158, 11, 0.20);
+    --accent-text:          #B45309;
+
+    /* ── Sémantique ── */
+    --success:              #16A34A;
+    --success-hover:        #15803D;
+    --success-soft:         rgba(22, 163, 74, 0.08);
+    --success-soft-border:  rgba(22, 163, 74, 0.18);
+    --success-text:         #15803D;
+
+    --warning:              #D97706;
+    --warning-soft:         rgba(217, 119, 6, 0.08);
+    --warning-soft-border:  rgba(217, 119, 6, 0.18);
+    --warning-text:         #B45309;
+
+    --error:                #DC2626;
+    --error-hover:          #B91C1C;
+    --error-soft:           rgba(220, 38, 38, 0.08);
+    --error-soft-border:    rgba(220, 38, 38, 0.18);
+    --error-text:           #B91C1C;
+
+    --info:                 #2563EB;
+    --info-soft:            rgba(37, 99, 235, 0.08);
+    --info-soft-border:     rgba(37, 99, 235, 0.18);
+    --info-text:            #1D4ED8;
+
+    /* ── Couleurs canal ── */
+    --channel-whatsapp:     #25D366;
+    --channel-instagram:    #E1306C;
+    --channel-messenger:    #0084FF;
+    --channel-telegram:     #229ED9;
+
+    /* ── Focus ── */
+    --focus-ring:           rgba(124, 58, 237, 0.25);
+
+    /* ── Overlay ── */
+    --overlay:              rgba(23, 21, 42, 0.40);
+
+    /* ── Gradients ── */
+    --gradient-vira:        linear-gradient(135deg, #7C3AED 0%, #A855F7 55%, #FBBF24 100%);
+    --gradient-purple:      linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%);
+    --gradient-gold:        linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+
+    /* ── Ombres ── */
+    --shadow-sm:            0 1px 3px rgba(23, 21, 42, 0.08);
+    --shadow-md:            0 8px 24px rgba(23, 21, 42, 0.10);
+    --shadow-lg:            0 20px 50px rgba(23, 21, 42, 0.14);
+    --shadow-purple:        0 0 32px rgba(124, 58, 237, 0.14);
+    --shadow-gold:          0 0 28px rgba(251, 191, 36, 0.12);
+
+    /* ── Composants ── */
+    --btn-height-sm:        36px;
+    --btn-height-md:        44px;
+    --btn-height-lg:        52px;
+    --btn-radius:           12px;
+    --input-height:         48px;
+    --input-radius:         12px;
+    --card-radius:          16px;
+    --card-padding:         24px;
+    --modal-radius:         24px;
+    --modal-padding:        32px;
+    --sidebar-w:            240px;
+    --topbar-h:             72px;
+
+    /* ── Radius ── */
+    --radius-sm:            8px;
+    --radius-md:            12px;
+    --radius-lg:            16px;
+    --radius-xl:            20px;
+    --radius-2xl:           24px;
+    --radius-pill:          9999px;
+
+    /* ── Animation ── */
+    --duration-fast:        120ms;
+    --duration-normal:      200ms;
+    --duration-slow:        300ms;
+    --easing:               cubic-bezier(0.2, 0, 0, 1);
+    --easing-bounce:        cubic-bezier(0.2, 0, 0, 1.2);
+
+    /* ── Rétrocompatibilité ── */
+    --card:                 #FFFFFF;
+    --card-hover:           #F5F3FF;
+    --border-light:         #E4E2EE;
+    --muted:                #68657A;
+    --muted2:               #9C99AC;
+    --brand:                #7C3AED;
+    --brand-soft:           rgba(124, 58, 237, 0.08);
+    --green:                #16A34A;
+    --green-dim:            #15803D;
+    --green-glow:           rgba(22, 163, 74, 0.15);
+    --green-bg:             rgba(22, 163, 74, 0.08);
+    --green-border:         rgba(22, 163, 74, 0.18);
+    --red:                  #DC2626;
+    --red-bg:               rgba(220, 38, 38, 0.08);
+    --amber:                #F59E0B;
+    --amber-bg:             rgba(245, 158, 11, 0.08);
+    --blue:                 #2563EB;
+    --blue-bg:              rgba(37, 99, 235, 0.08);
+    --purple:               #7C3AED;
+    --purple-bg:            rgba(124, 58, 237, 0.08);
+    --row-hover:            rgba(23, 21, 42, 0.03);
+    --toggle-bg:            #EDE9FE;
+    --toggle-hover:         #DDD6FE;
+    --placeholder:          #9C99AC;
+    --blob1-opacity:        0.18;
+    --blob2-opacity:        0.12;
+
+    /* ── Chart.js ── */
+    --chart-grid:           rgba(228, 226, 238, 0.7);
+    --chart-tick:           #68657A;
     --chart-tooltip-bg:     #FFFFFF;
-    --chart-tooltip-border: #D1D9E0;
-    --chart-tooltip-title:  #0D1117;
-    --chart-tooltip-body:   #57606A;
+    --chart-tooltip-border: #E4E2EE;
+    --chart-tooltip-title:  #17152A;
+    --chart-tooltip-body:   #68657A;
     --chart-point-border:   #FFFFFF;
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════
    Base & Transitions
-══════════════════════════════════════════════ */
-body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
+   ══════════════════════════════════════════════════════════ */
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
+
+body {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 15px;
+    line-height: 1.5;
+    transition: background-color var(--duration-slow) var(--easing), color var(--duration-slow) var(--easing);
+}
+

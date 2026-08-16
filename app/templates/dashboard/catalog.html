@@ -16,6 +16,7 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
 
     <style>
         .main {
@@ -87,7 +88,7 @@
             border-bottom: 2px solid var(--border);
             padding-bottom: 8px;
         }
-        .category-title i { color: var(--muted); }
+        .category-title i { color: var(--text-secondary); }
 
         /* Grid of Cards */
         .product-grid {
@@ -97,7 +98,7 @@
         }
 
         .product-card {
-            background: var(--card);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 24px;
@@ -109,7 +110,7 @@
         .product-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-color: var(--border-light);
+            border-color: var(--border);
         }
 
         .product-card.inactive {
@@ -148,7 +149,7 @@
 
         .product-desc {
             font-size: 13px;
-            color: var(--muted);
+            color: var(--text-secondary);
             margin-bottom: 20px;
             flex-grow: 1;
             line-height: 1.5;
@@ -249,7 +250,7 @@
             justify-content: center;
         }
         .modal-content {
-            background: var(--card);
+            background: var(--surface-elevated);
             width: 450px;
             padding: 24px;
             border-radius: 14px;
@@ -257,7 +258,7 @@
         }
         .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
         .form-group input, .form-group textarea {
             width: 100%; padding: 10px; border-radius: 8px;
             border: 1px solid var(--border); background: var(--bg); color: var(--text);
@@ -268,8 +269,8 @@
         .btn-submit { padding: 10px 16px; border-radius: 8px; background: var(--green); color: #fff; border: none; font-weight: 600; cursor: pointer; }
         
         .empty-state {
-            text-align: center; padding: 60px 20px; color: var(--muted);
-            background: var(--card); border: 1px dashed var(--border); border-radius: 12px;
+            text-align: center; padding: 60px 20px; color: var(--text-secondary);
+            background: var(--surface-elevated); border: 1px dashed var(--border); border-radius: 12px;
         }
 
         /* ── MOBILE CSS ── */
@@ -310,7 +311,7 @@
         <div class="crm-header">
             <div>
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">Produits & Services</h2>
-                <p style="color: var(--muted); font-size: 14px; margin: 0;">Organisez le cerveau de votre IA par catégories.</p>
+                <p style="color: var(--text-secondary); font-size: 14px; margin: 0;">Organisez le cerveau de votre IA par catégories.</p>
             </div>
             <button class="add-btn" onclick="document.getElementById('addModal').style.display='flex'">
                 <i class="fas fa-plus"></i> Ajouter au catalogue
@@ -322,7 +323,7 @@
             <div class="category-section">
                 <div class="category-title">
                     <i class="fas fa-tag"></i> {{ categorie }}
-                    <span style="font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 8px; background: var(--surface); padding: 2px 8px; border-radius: 10px;">{{ items|length }}</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-left: 8px; background: var(--surface); padding: 2px 8px; border-radius: 10px;">{{ items|length }}</span>
                 </div>
                 
                 <div class="product-grid">
@@ -338,7 +339,7 @@
                             <div class="product-price" style="flex-shrink: 0;">{{ "{:,.0f}".format(product.prix).replace(',', ' ') }} F</div>
                         </div>
                         <div class="product-desc">
-                            <p style="margin-bottom: 5px;"><i class="fas fa-clock" style="color:var(--muted); font-size:12px;"></i> <span style="font-size:12px; color:var(--muted);">{{ product.duree_minutes }} min</span></p>
+                            <p style="margin-bottom: 5px;"><i class="fas fa-clock" style="color:var(--text-secondary); font-size:12px;"></i> <span style="font-size:12px; color:var(--text-secondary);">{{ product.duree_minutes }} min</span></p>
                             {{ product.description if product.description else "Aucune description fournie pour l'IA." }}
                         </div>
                         

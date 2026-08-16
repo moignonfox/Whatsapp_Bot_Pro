@@ -19,6 +19,7 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <style>
         /* ══════════════════════════════════════════════
            Transitions globales
@@ -60,18 +61,18 @@
             color: var(--text);
             letter-spacing: -0.3px;
         }
-        .topbar-left p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .topbar-left p { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
 
         .topbar-right { display: flex; align-items: center; gap: 12px; }
 
         .refresh-badge {
             display: flex; align-items: center; gap: 6px;
-            background: var(--card);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
-            color: var(--muted);
+            color: var(--text-secondary);
         }
         .refresh-dot {
             width: 6px; height: 6px;
@@ -83,16 +84,16 @@
 
         .topbar-btn {
             width: 36px; height: 36px;
-            background: var(--card);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
             border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            color: var(--muted);
+            color: var(--text-secondary);
             text-decoration: none;
             font-size: 15px;
             transition: color 0.2s, background 0.2s;
         }
-        .topbar-btn:hover { color: var(--text); background: var(--card-hover); }
+        .topbar-btn:hover { color: var(--text); background: var(--surface-hover); }
 
         /* ────────────────── CONTENT ────────────────── */
         .content { padding: 28px; flex: 1; }
@@ -105,7 +106,7 @@
             margin-bottom: 24px;
         }
         .stat-card {
-            background: var(--card);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 20px 22px;
@@ -129,7 +130,7 @@
         .stat-header { display: flex; align-items: center; justify-content: space-between; }
         .stat-label {
             font-size: 12px; font-weight: 600;
-            color: var(--muted);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -148,11 +149,11 @@
             letter-spacing: -1px;
             line-height: 1;
         }
-        .stat-sub { font-size: 12px; color: var(--muted); }
+        .stat-sub { font-size: 12px; color: var(--text-secondary); }
 
         /* ────────────────── CARDS SECTIONS ────────────────── */
         .section-card {
-            background: var(--card);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
             border-radius: 14px;
             overflow: hidden;
@@ -185,14 +186,14 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.6px;
-            color: var(--muted);
+            color: var(--text-secondary);
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             transition: background-color 0.3s, color 0.3s;
         }
         tbody td {
             padding: 16px 20px;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border);
             font-size: 13.5px;
             vertical-align: middle;
             transition: background-color 0.2s;
@@ -257,15 +258,15 @@
         .btn-cancel:hover  { background: var(--red); color: #fff; }
         .btn-ready   { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(88,166,255,0.25); }
         .btn-ready:hover   { background: var(--blue); color: #fff; }
-        .status-text { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+        .status-text { font-size: 12.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
 
         /* Empty state */
         .empty-state {
             text-align: center;
             padding: 48px 24px;
-            color: var(--muted);
+            color: var(--text-secondary);
         }
-        .empty-state i { font-size: 36px; margin-bottom: 12px; color: var(--muted2); }
+        .empty-state i { font-size: 36px; margin-bottom: 12px; color: var(--text-disabled); }
         .empty-state p { font-size: 14px; line-height: 1.6; }
 
         /* ────────────────── RESPONSIVE ────────────────── */
@@ -319,11 +320,11 @@
         <style>
             .period-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; justify-content: flex-end; }
             .period-filter-btn {
-                background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+                background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border);
                 padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
                 transition: all 0.2s; text-decoration: none;
             }
-            .period-filter-btn:hover { background: var(--card-hover); color: var(--text); }
+            .period-filter-btn:hover { background: var(--surface-hover); color: var(--text); }
             .period-filter-btn.active {
                 background: var(--brand); color: #fff; border-color: var(--brand);
             }
@@ -353,7 +354,7 @@
                 margin-bottom: 24px;
             }
             .stat-card {
-                background: var(--card);
+                background: var(--surface-elevated);
                 border: 1px solid var(--border);
                 border-radius: 14px;
                 padding: 24px;
@@ -391,7 +392,7 @@
                 margin-top: 8px;
             }
             .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-            .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+            .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
             .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
             
             .order-action-form { display: inline; }
@@ -403,7 +404,7 @@
         </style>
 
         <!-- Ligne 1: Base (Free+) -->
-        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Trafic & Base</h3>
+        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Trafic & Base</h3>
         <div class="stat-grid-advanced">
             <div class="stat-card">
                 <div class="stat-header"><span class="stat-label">Conversations</span></div>
@@ -420,14 +421,14 @@
         </div>
 
         <!-- Ligne 2: Ventes (Discovery+) -->
-        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Ventes (Discovery+)</h3>
+        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Ventes (Discovery+)</h3>
         <div class="stat-grid-advanced">
             <div class="stat-card {% if plan_level < 1 %}locked{% endif %}">
                 <div class="stat-header"><span class="stat-label">Commandes</span></div>
                 <div class="stat-value">{{ stats.commandes | default(0) }}</div>
                 {% if plan_level < 1 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn">Passer à Discovery</a>
                 </div>
                 {% endif %}
@@ -437,7 +438,7 @@
                 <div class="stat-value">{{ "{:,}".format(stats.ca | default(0)) }} <span style="font-size: 14px;">FCFA</span></div>
                 {% if plan_level < 1 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn">Passer à Discovery</a>
                 </div>
                 {% endif %}
@@ -452,13 +453,13 @@
                         -
                     {% endif %}
                 </div>
-                <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
                     <span style="color: var(--green);">{{ stats.commandes_acceptees|default(0) }} acceptées</span> / 
                     <span style="color: var(--red);">{{ stats.commandes_refusees|default(0) }} refusées</span>
                 </div>
                 {% if plan_level < 1 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn">Passer à Discovery</a>
                 </div>
                 {% endif %}
@@ -466,7 +467,7 @@
         </div>
         
         <!-- Ligne 3: Avancé (Growth+ & Scale+) -->
-        <h3 style="font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performances (Growth+ & Scale+)</h3>
+        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Performances (Growth+ & Scale+)</h3>
         <div class="stat-grid-advanced">
             <!-- Panier Moyen (Growth) -->
             <div class="stat-card {% if plan_level < 2 %}locked{% endif %}">
@@ -474,7 +475,7 @@
                 <div class="stat-value">{{ "{:,}".format(stats.panier_moyen | default(0)) }} <span style="font-size: 14px;">FCFA</span></div>
                 {% if plan_level < 2 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn">Passer à Growth</a>
                 </div>
                 {% endif %}
@@ -486,7 +487,7 @@
                 <div class="stat-value">{{ stats.taux_conversion | default(0) }}%</div>
                 {% if plan_level < 2 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn">Passer à Growth</a>
                 </div>
                 {% endif %}
@@ -498,7 +499,7 @@
                 <div class="stat-value">{{ stats.temps_reponse | default('-') }}</div>
                 {% if plan_level < 3 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn" style="background: #000;">Passer à Scale</a>
                 </div>
                 {% endif %}
@@ -510,7 +511,7 @@
                 <div class="stat-value">{{ stats.taux_retention | default(0) }}%</div>
                 {% if plan_level < 3 %}
                 <div class="locked-content">
-                    <i class="fas fa-lock" style="font-size: 20px; color: var(--muted); margin-bottom: 4px;"></i><br>
+                    <i class="fas fa-lock" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 4px;"></i><br>
                     <a href="#" class="locked-btn" style="background: #000;">Passer à Scale</a>
                 </div>
                 {% endif %}
@@ -537,12 +538,12 @@
                 <div class="section-body" style="padding: 0;">
                     {% if recent_convs %}
                         {% for conv in recent_convs %}
-                        <div onclick="window.location.href='{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ conv.wa_id }}'" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='transparent'">
+                        <div onclick="window.location.href='{{ url_for('dashboard.chat_inbox', biz_id=biz_id) }}?wa_id={{ conv.wa_id }}'" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <img src="https://ui-avatars.com/api/?name={{ (conv.client_name or conv.wa_id) | urlencode }}&background=random" style="width: 40px; height: 40px; border-radius: 50%;">
                                 <div style="display: flex; flex-direction: column; gap: 2px;">
                                     <div style="font-size: 14px; font-weight: 600; color: var(--text);">{{ conv.client_name or conv.wa_id }}</div>
-                                    <div style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
                                         {% if conv.last_role == 'assistant' %}<i class="fas fa-robot" style="font-size: 10px; margin-right: 4px;"></i>{% endif %}
                                         {{ conv.last_message or "Aucun message" }}
                                     </div>
@@ -567,7 +568,7 @@
                 <div class="section-body" style="padding: 0;">
                     {% if recent_orders %}
                         {% for order in recent_orders %}
-                        <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-light);">
+                        <div style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
                                 <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">
                                     {{ order.client_name|default('Client') }}
@@ -575,7 +576,7 @@
                                         <span style="font-size: 10px; background: var(--orange-bg); color: var(--orange); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Nouveau</span>
                                     {% endif %}
                                 </div>
-                                <div style="font-size: 12px; color: var(--muted);">{{ order.details[:25] }}{% if order.details|length > 25 %}...{% endif %}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">{{ order.details[:25] }}{% if order.details|length > 25 %}...{% endif %}</div>
                             </div>
                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
                                 <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ order.montant }} FCFA</div>
@@ -610,24 +611,24 @@
                 <div class="section-body" style="display: flex; flex-direction: column; align-items: center; padding: 30px 24px;">
                     <div style="position: relative; width: 150px; height: 150px; margin-bottom: 30px;">
                         <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                            <path stroke="var(--border-light)" stroke-width="3" fill="none"
+                            <path stroke="var(--border)" stroke-width="3" fill="none"
                                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path stroke="var(--brand)" stroke-width="3" stroke-dasharray="{{ ai_usage_percent | default(0) }}, 100" fill="none" stroke-linecap="round"
                                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                             <span style="font-size: 32px; font-weight: 700; color: var(--text);">{{ ai_usage_percent | default(0) }}%</span>
-                            <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Utilisé</span>
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Utilisé</span>
                         </div>
                     </div>
                     <div style="font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px;">{{ ai_words_used | default(0) }} / {{ ai_words_limit | default(100000) }} mots</div>
-                    <div style="font-size: 13px; color: var(--muted);">Quota se renouvelle à la fin de la période</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Quota se renouvelle à la fin de la période</div>
                 </div>
             </div>
         </div>
         
         <!-- Top Produits (Growth+) -->
-        <h3 style="font-size: 14px; color: var(--muted); margin-top: 24px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Produits (Growth+)</h3>
+        <h3 style="font-size: 14px; color: var(--text-secondary); margin-top: 24px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Produits (Growth+)</h3>
         <div class="section-card" style="position: relative; overflow: hidden; margin-bottom: 30px;">
             <div class="section-header" style="border-bottom: none; padding-bottom: 12px;">
                 <span class="section-title">Top 5 Produits Vendus</span>
@@ -635,7 +636,7 @@
             <div class="section-body" style="padding: 0 24px 24px 24px;">
                 {% if plan_level < 2 %}
                 <div class="locked-content" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
-                    <i class="fas fa-lock" style="font-size: 24px; color: var(--muted); margin-bottom: 8px;"></i>
+                    <i class="fas fa-lock" style="font-size: 24px; color: var(--text-secondary); margin-bottom: 8px;"></i>
                     <a href="#" class="locked-btn">Passer à Growth</a>
                 </div>
                 {% endif %}
@@ -643,14 +644,14 @@
                 {% if top_produits %}
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                     {% for prod, count in top_produits %}
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-light);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
                             <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">{{ prod }}</div>
                             <div style="font-size: 13px; font-weight: 700; color: var(--brand); background: var(--purple-bg); padding: 4px 10px; border-radius: 12px;">{{ count }} ventes</div>
                         </div>
                     {% endfor %}
                     </div>
                 {% else %}
-                    <p style="color: var(--muted); font-size: 13px;">Aucune donnée produit disponible.</p>
+                    <p style="color: var(--text-secondary); font-size: 13px;">Aucune donnée produit disponible.</p>
                 {% endif %}
             </div>
         </div>

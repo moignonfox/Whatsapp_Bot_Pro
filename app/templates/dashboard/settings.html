@@ -189,6 +189,7 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     
     <style>
         body {
@@ -222,7 +223,7 @@
             letter-spacing: -0.5px;
         }
         .settings-title-area p {
-            color: var(--muted);
+            color: var(--text-secondary);
             margin: 0;
             font-size: 14px;
         }
@@ -239,7 +240,7 @@
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--muted);
+            color: var(--text-secondary);
             font-size: 14px;
         }
         .search-box input {
@@ -317,12 +318,12 @@
             width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px;
         }
         .settings-nav-title {
-            font-size: 11px; text-transform: uppercase; color: var(--muted);
+            font-size: 11px; text-transform: uppercase; color: var(--text-secondary);
             margin-bottom: 12px; letter-spacing: 0.5px; font-weight: 600; padding-left: 12px;
         }
         .nav-item {
             display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-            border-radius: 12px; color: var(--muted); text-decoration: none;
+            border-radius: 12px; color: var(--text-secondary); text-decoration: none;
             transition: background 0.2s, color 0.2s; border: 1px solid transparent; cursor: pointer;
         }
         .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
@@ -334,10 +335,10 @@
             display: flex; align-items: center; justify-content: center; font-size: 14px;
         }
         .nav-item.active .nav-icon { background: transparent; color: var(--brand); }
-        .nav-item:not(.active) .nav-icon { color: var(--muted); }
+        .nav-item:not(.active) .nav-icon { color: var(--text-secondary); }
         .nav-text { display: flex; flex-direction: column; }
         .nav-title { font-size: 14px; font-weight: 500; }
-        .nav-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .nav-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
 
         /* ── Colonne 2: Formulaire ── */
         .settings-content {
@@ -368,7 +369,7 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
         .field { margin-bottom: 20px; }
-        .field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+        .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
         .field input, .field select, .field textarea {
             width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.02);
             border: 1px solid var(--border); border-radius: 8px; color: var(--text);
@@ -401,7 +402,7 @@
         .sidebar-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
         .sidebar-card h3 { font-size: 15px; font-weight: 600; margin: 0 0 20px 0; color: var(--text); }
         .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-        .status-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+        .status-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
         .status-val { font-size: 13px; font-weight: 500; color: var(--text); }
         .status-active { color: #4CAF50; }
         .status-active::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4CAF50; margin-right: 6px; }
@@ -411,7 +412,7 @@
         .security-tip { display: flex; flex-direction: column; gap: 12px; }
         .security-tip-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(124, 58, 237, 0.15); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 14px; }
         .security-tip h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
-        .security-tip p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+        .security-tip p { margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 
         .support-box { background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
         .schedule-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -537,7 +538,7 @@
                         <div class="icon-box"><i class="fas fa-store"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Entreprise</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Modifiez les informations principales de votre entreprise.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Modifiez les informations principales de votre entreprise.</p>
                         </div>
                     </div>
 
@@ -583,7 +584,7 @@
                                     {% endif %}
                                     </div>
                                     <button type="button" class="btn-cancel" style="padding: 6px 12px;"><i class="fas fa-upload"></i> Modifier le logo</button>
-                                    <span style="font-size: 10px; color: var(--muted);">PNG, JPG ou SVG. Max 2MB</span>
+                                    <span style="font-size: 10px; color: var(--text-secondary);">PNG, JPG ou SVG. Max 2MB</span>
                                 </div>
                             </div>
                         </div>
@@ -591,7 +592,7 @@
 
                     <div class="settings-card">
                         <h3>Préférences générales</h3>
-                        <p style="font-size: 13px; color: var(--muted); margin: -16px 0 20px 0;">Définissez les paramètres par défaut pour votre entreprise.</p>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin: -16px 0 20px 0;">Définissez les paramètres par défaut pour votre entreprise.</p>
                         
                         <div class="grid-2">
                             <div class="field">
@@ -634,7 +635,7 @@
                         <div class="icon-box"><i class="fas fa-robot"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Assistant IA</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Personnalisez le comportement et les réponses de votre intelligence artificielle.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Personnalisez le comportement et les réponses de votre intelligence artificielle.</p>
                         </div>
                     </div>
 
@@ -643,7 +644,7 @@
                         <div class="field">
                             <label>Prompt principal de l'IA</label>
                             <textarea name="prompt" placeholder="Décrivez ici la personnalité et le rôle de votre bot…">{{ business.prompt }}</textarea>
-                            <small style="color: var(--muted); font-size: 11px;">Ces instructions dictent la façon dont l'IA interagit avec vos clients.</small>
+                            <small style="color: var(--text-secondary); font-size: 11px;">Ces instructions dictent la façon dont l'IA interagit avec vos clients.</small>
                         </div>
                     </div>
 
@@ -676,7 +677,7 @@
                         <div class="icon-box"><i class="far fa-calendar-alt"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Agenda & Horaires</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Définissez vos horaires d'ouverture et règles de réservation.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Définissez vos horaires d'ouverture et règles de réservation.</p>
                         </div>
                     </div>
 
@@ -710,7 +711,7 @@
                         <div class="icon-box"><i class="far fa-bell"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Notifications</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez les alertes sonores et visuelles de l'application.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez les alertes sonores et visuelles de l'application.</p>
                         </div>
                     </div>
 
@@ -751,7 +752,7 @@
                         <div class="icon-box"><i class="fas fa-lock"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Sécurité</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos accès et la sécurité de votre compte.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez vos accès et la sécurité de votre compte.</p>
                         </div>
                     </div>
 
@@ -770,7 +771,7 @@
                         <div class="icon-box" style="background: #FFB020;"><i class="fas fa-credit-card"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Abonnement</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez votre formule et consultez vos dates d'abonnement.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez votre formule et consultez vos dates d'abonnement.</p>
                         </div>
                     </div>
                     
@@ -779,25 +780,25 @@
                         <h3 style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Détails de l'abonnement actuel</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
                             <div>
-                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Forfait Actuel</label>
+                                <label style="display:block; font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Forfait Actuel</label>
                                 <div style="font-size:18px; font-weight:700; color:var(--brand);">
                                     {{ (business.plan_abonnement|upper) if business.plan_abonnement else 'FREE' }}
                                 </div>
                             </div>
                             <div>
-                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de début</label>
+                                <label style="display:block; font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de début</label>
                                 <div style="font-size:15px; font-weight:600; color:var(--text);">
                                     {{ business.date_debut_abonnement.split(' ')[0] if business.date_debut_abonnement else 'N/A' }}
                                 </div>
                             </div>
                             <div>
-                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de fin</label>
+                                <label style="display:block; font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date de fin</label>
                                 <div style="font-size:15px; font-weight:600; color:var(--text);">
                                     {{ business.date_fin_abonnement.split(' ')[0] if business.date_fin_abonnement else 'Renouvellement auto.' }}
                                 </div>
                             </div>
                             <div>
-                                <label style="display:block; font-size:12px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Statut</label>
+                                <label style="display:block; font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Statut</label>
                                 <div>
                                     <span style="background:var(--green-bg); color:var(--green); font-size:12px; font-weight:700; padding:4px 8px; border-radius:4px; border:1px solid rgba(37,211,102,0.2);">Actif</span>
                                 </div>
@@ -808,15 +809,15 @@
                     <!-- Upgrade / Changer de plan -->
                     <div class="settings-card">
                         <h3 style="margin-bottom: 8px;">Passer à une autre formule</h3>
-                        <p style="color: var(--muted); font-size: 13px; margin-bottom: 24px;">Sélectionnez le forfait qui correspond le mieux à l'évolution de votre activité pour débloquer de nouvelles capacités.</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Sélectionnez le forfait qui correspond le mieux à l'évolution de votre activité pour débloquer de nouvelles capacités.</p>
                         
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                             
                             <!-- FREE -->
                             <div style="border: 2px solid {% if business.plan_abonnement == 'FREE' %}var(--brand){% else %}var(--border){% endif %}; border-radius: 12px; padding: 20px; position: relative;">
                                 {% if business.plan_abonnement == 'FREE' %}<div style="position: absolute; top: -10px; right: 10px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">ACTUEL</div>{% endif %}
-                                <div style="font-size: 14px; font-weight: 700; color: var(--muted); margin-bottom: 8px;">FREE</div>
-                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Test<span style="font-size: 12px; color: var(--muted); font-weight: 400;">/14 jours</span></div>
+                                <div style="font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">FREE</div>
+                                <div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Test<span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;">/14 jours</span></div>
                                 <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; font-size: 13px; color: var(--text);">
                                     <li style="margin-bottom: 8px;">✓ 50 msgs IA/mois</li>
                                     <li style="margin-bottom: 8px;">✓ Catalogue web</li>
@@ -878,7 +879,7 @@
                         <div class="icon-box" style="background: #25D366;"><i class="fab fa-whatsapp"></i></div>
                         <div>
                             <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Intégration WhatsApp</h2>
-                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez l'état de votre connexion WhatsApp Business API.</p>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez l'état de votre connexion WhatsApp Business API.</p>
                         </div>
                     </div>
                     
@@ -909,27 +910,27 @@
                                     
                                     <div style="display: grid; gap: 12px;">
                                         <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
-                                            <i class="fas fa-phone-alt" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <i class="fas fa-phone-alt" style="color: var(--text-secondary); width: 16px; text-align: center;"></i>
                                             <span style="font-size: 14px; font-weight: 500;">{{ business.requested_bot_phone if business.requested_bot_phone else 'Numéro masqué' }}</span>
                                         </div>
                                         
                                         {% if business.adresse %}
                                         <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
-                                            <i class="fas fa-map-marker-alt" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <i class="fas fa-map-marker-alt" style="color: var(--text-secondary); width: 16px; text-align: center;"></i>
                                             <span style="font-size: 14px;">{{ business.adresse }}</span>
                                         </div>
                                         {% endif %}
                                         
                                         {% if business.email %}
                                         <div style="display: flex; align-items: center; gap: 12px; color: var(--text);">
-                                            <i class="fas fa-envelope" style="color: var(--muted); width: 16px; text-align: center;"></i>
+                                            <i class="fas fa-envelope" style="color: var(--text-secondary); width: 16px; text-align: center;"></i>
                                             <span style="font-size: 14px;">{{ business.email }}</span>
                                         </div>
                                         {% endif %}
                                         
                                         <div style="display: flex; align-items: flex-start; gap: 12px; color: var(--text); margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--border);">
-                                            <i class="fas fa-info-circle" style="color: var(--muted); width: 16px; text-align: center; margin-top: 2px;"></i>
-                                            <span style="font-size: 13px; color: var(--muted); line-height: 1.5;">{{ business.vitrine_description if business.vitrine_description else "Compte Business officiel propulsé par Vira." }}</span>
+                                            <i class="fas fa-info-circle" style="color: var(--text-secondary); width: 16px; text-align: center; margin-top: 2px;"></i>
+                                            <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">{{ business.vitrine_description if business.vitrine_description else "Compte Business officiel propulsé par Vira." }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -941,7 +942,7 @@
                             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
                                 <div style="flex-grow: 1;">
                                     <h3 style="margin-bottom: 8px;">Connecter un numéro WhatsApp</h3>
-                                    <p style="color: var(--muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5;">Pour déployer votre assistant IA, vous devez associer un numéro de téléphone qui sera utilisé exclusivement pour l'API WhatsApp Business. Entrez le numéro ci-dessous pour soumettre votre demande.</p>
+                                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; line-height: 1.5;">Pour déployer votre assistant IA, vous devez associer un numéro de téléphone qui sera utilisé exclusivement pour l'API WhatsApp Business. Entrez le numéro ci-dessous pour soumettre votre demande.</p>
                                     
                                     <div class="field" style="position: relative; max-width: 400px;">
                                         <label>Numéro WhatsApp dédié</label>
@@ -952,7 +953,7 @@
                                         {% else %}
                                             <input type="tel" id="requested_bot_phone" value="">
                                         {% endif %}
-                                        <p style="font-size: 11px; color: var(--muted); margin-top: 6px;"><i class="fas fa-exclamation-triangle" style="color: #FF9800;"></i> Ce numéro ne doit pas être actif sur l'application WhatsApp standard ou WhatsApp Business mobile.</p>
+                                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;"><i class="fas fa-exclamation-triangle" style="color: #FF9800;"></i> Ce numéro ne doit pas être actif sur l'application WhatsApp standard ou WhatsApp Business mobile.</p>
                                     </div>
                                     
                                     {% if business.requested_bot_phone %}
@@ -960,7 +961,7 @@
                                         <div style="display: flex; align-items: center; gap: 8px; color: #FF9800; font-weight: 500; font-size: 14px; margin-bottom: 4px;">
                                             <i class="fas fa-hourglass-half"></i> Demande en cours de traitement
                                         </div>
-                                        <p style="margin: 0; font-size: 12px; color: var(--muted);">L'équipe technique configure actuellement votre numéro avec l'API Meta. Vous recevrez une notification dès que l'intégration sera opérationnelle.</p>
+                                        <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">L'équipe technique configure actuellement votre numéro avec l'API Meta. Vous recevrez une notification dès que l'intégration sera opérationnelle.</p>
                                     </div>
                                     {% endif %}
                                     
@@ -992,7 +993,7 @@
                     <div class="icon-box" style="background: var(--brand);"><i class="fas fa-users-cog"></i></div>
                     <div style="flex:1;">
                         <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Équipe et Horaires</h2>
-                        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos employés et leurs disponibilités.</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez vos employés et leurs disponibilités.</p>
                     </div>
                     <button class="btn-save" onclick="openEmployeeModal()" style="display:flex; align-items:center; gap:8px;">
                         <i class="fas fa-plus"></i> Ajouter un employé
@@ -1002,9 +1003,9 @@
                 <div class="settings-card" style="padding: 0; overflow: hidden; background: transparent; border: none;">
                     {% if not employees %}
                         <div style="padding: 40px; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;">
-                            <i class="fas fa-users" style="font-size: 40px; color: var(--muted); margin-bottom: 16px;"></i>
+                            <i class="fas fa-users" style="font-size: 40px; color: var(--text-secondary); margin-bottom: 16px;"></i>
                             <h3 style="margin: 0 0 8px 0; color: var(--text);">Aucun employé</h3>
-                            <p style="color: var(--muted); font-size: 14px; margin: 0 0 16px 0;">Ajoutez des employés pour gérer leurs horaires et réservations.</p>
+                            <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 16px 0;">Ajoutez des employés pour gérer leurs horaires et réservations.</p>
                         </div>
                     {% else %}
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
@@ -1035,7 +1036,7 @@
                                     </div>
                                 </div>
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Horaires (JSON)</span>
+                                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Horaires (JSON)</span>
                                     <pre style="margin: 8px 0 0 0; font-size: 11px; color: var(--text); overflow-x: auto;">{{ emp.horaires_json or '{}' }}</pre>
                                 </div>
                             </div>
@@ -1051,14 +1052,14 @@
                     <div class="icon-box" style="background: #25D366;"><i class="fas fa-headset"></i></div>
                     <div style="flex:1;">
                         <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">Équipe IA</h2>
-                        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">Gérez vos agents virtuels, leurs rôles et leurs permissions.</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin: 4px 0 0 0;">Gérez vos agents virtuels, leurs rôles et leurs permissions.</p>
                     </div>
                     {% if business.plan_abonnement == 'SCALE' %}
                         <button class="btn-save" onclick="openAgentModal()" style="display:flex; align-items:center; gap:8px;">
                             <i class="fas fa-plus"></i> Nouvel Agent
                         </button>
                     {% else %}
-                        <button class="btn-save" disabled style="background: var(--surface-hover); color: var(--muted); cursor: not-allowed; display:flex; align-items:center; gap:8px;" title="Réservé au plan Scale">
+                        <button class="btn-save" disabled style="background: var(--surface-hover); color: var(--text-secondary); cursor: not-allowed; display:flex; align-items:center; gap:8px;" title="Réservé au plan Scale">
                             <i class="fas fa-lock"></i> Nouvel Agent
                         </button>
                     {% endif %}
@@ -1070,7 +1071,7 @@
                             <i class="fas fa-lock" style="font-size: 24px; color: #FFB020;"></i>
                             <div>
                                 <h4 style="margin: 0 0 4px 0; color: var(--text); font-size: 15px;">Fonctionnalité Premium</h4>
-                                <p style="margin: 0; color: var(--muted); font-size: 13px;">Le routage intelligent (multi-agents) est réservé au plan SCALE.</p>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 13px;">Le routage intelligent (multi-agents) est réservé au plan SCALE.</p>
                             </div>
                         </div>
                         <button onclick="document.querySelector('[data-tab=tab-abonnement]').click()" class="btn-save" style="background: #FFB020; color: #000;">Mettre à niveau</button>
@@ -1080,9 +1081,9 @@
                 <div class="settings-card" style="padding: 0; overflow: hidden; background: transparent; border: none;">
                     {% if not agents %}
                         <div style="padding: 40px; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;">
-                            <i class="fas fa-robot" style="font-size: 40px; color: var(--muted); margin-bottom: 16px;"></i>
+                            <i class="fas fa-robot" style="font-size: 40px; color: var(--text-secondary); margin-bottom: 16px;"></i>
                             <h3 style="margin: 0 0 8px 0; color: var(--text);">Aucun Agent IA secondaire</h3>
-                            <p style="color: var(--muted); font-size: 14px; margin: 0 0 16px 0;">Créez des agents spécialisés (SAV, Vente, Support) pour router les conversations.</p>
+                            <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 16px 0;">Créez des agents spécialisés (SAV, Vente, Support) pour router les conversations.</p>
                         </div>
                     {% else %}
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;">
@@ -1095,7 +1096,7 @@
                                         </div>
                                         <div>
                                             <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text);">{{ agent.name }}</h3>
-                                            <span style="font-size: 12px; background: var(--bg); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted);">{{ agent.role }}</span>
+                                            <span style="font-size: 12px; background: var(--bg); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--text-secondary);">{{ agent.role }}</span>
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
@@ -1123,20 +1124,20 @@
                                 </div>
                                 
                                 <div style="margin-bottom: 16px;">
-                                    <p style="margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    <p style="margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                         {{ agent.system_prompt }}
                                     </p>
                                 </div>
                                 
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 16px;">
-                                    <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600;">Mots-clés de Routage</span>
+                                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Mots-clés de Routage</span>
                                     <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
                                         {% if agent.intent_keywords %}
                                             {% for kw in agent.intent_keywords.split(',') %}
                                                 <span style="background: rgba(124, 58, 237, 0.1); color: var(--brand); border: 1px solid rgba(124, 58, 237, 0.2); font-size: 11px; padding: 2px 8px; border-radius: 12px;">{{ kw.strip() }}</span>
                                             {% endfor %}
                                         {% else %}
-                                            <span style="font-size: 12px; color: var(--muted);">Aucun mot-clé</span>
+                                            <span style="font-size: 12px; color: var(--text-secondary);">Aucun mot-clé</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -1168,7 +1169,7 @@
                     </div>
                     <div>
                         <h4 style="margin: 0; font-size: 14px; color: var(--text);">Des questions sur les paramètres ?</h4>
-                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">Consultez notre centre d'aide ou contactez le support.</p>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Consultez notre centre d'aide ou contactez le support.</p>
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px;">
@@ -1379,7 +1380,7 @@
                     </label>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="time" id="start_${j.id}" value="09:00" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px;">
-                        <span style="color: var(--muted); font-size:12px;">à</span>
+                        <span style="color: var(--text-secondary); font-size:12px;">à</span>
                         <input type="time" id="end_${j.id}" value="18:00" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px;">
                     </div>
                 `;
@@ -1455,7 +1456,7 @@
                     </div>`;
                 });
             } else {
-                listContainer.innerHTML = '<span style="font-size: 13px; color: var(--muted);">Aucun canal configuré</span>';
+                listContainer.innerHTML = '<span style="font-size: 13px; color: var(--text-secondary);">Aucun canal configuré</span>';
             }
         } catch (e) {}
     }
@@ -1504,7 +1505,7 @@ function upgradePlan(plan) {
                             <span style="font-size: 13px; color: var(--text);">{{ day }}</span>
                         </label>
                         <input type="time" class="time-start" value="09:00" style="padding: 4px 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); font-size: 13px;">
-                        <span style="color: var(--muted);">à</span>
+                        <span style="color: var(--text-secondary);">à</span>
                         <input type="time" class="time-end" value="18:00" style="padding: 4px 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); font-size: 13px;">
                     </div>
                     {% endfor %}
@@ -1542,7 +1543,7 @@ function upgradePlan(plan) {
             <div class="field">
                 <label>Mots-clés de déclenchement (Intent Keywords)</label>
                 <input type="text" name="intent_keywords" id="agent-keywords" placeholder="ex: panne, casse, problème technique, erreur">
-                <small style="color: var(--muted); font-size: 11px;">Séparés par des virgules. Le routeur utilisera ces mots pour rediriger la conversation vers cet agent.</small>
+                <small style="color: var(--text-secondary); font-size: 11px;">Séparés par des virgules. Le routeur utilisera ces mots pour rediriger la conversation vers cet agent.</small>
             </div>
             
             <div class="field">

@@ -15,10 +15,11 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <style>
         .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
         .topbar {
-            background: var(--surface); border-bottom: 1px solid var(--border);
+            background: var(--surface-elevated); border-bottom: 1px solid var(--border);
             padding: 0 28px; height: 60px; display: flex; align-items: center;
             justify-content: space-between; position: sticky; top: 0; z-index: 100;
         }
@@ -35,7 +36,7 @@
         .content { padding: 28px; flex: 1; }
 
         .plan-hero {
-            background: #0f1015;
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 16px;
             padding: 24px 32px;
@@ -57,12 +58,12 @@
             flex-shrink: 0;
             background: radial-gradient(circle, rgba(123, 97, 255, 0.2) 0%, transparent 70%);
         }
-        .plan-hero h2 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .plan-hero p { font-size: 13px; color: #8b949e; line-height: 1.5; max-width: 600px;}
+        .plan-hero h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .plan-hero p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; max-width: 600px;}
         .btn-outline-light {
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #fff;
+            border: 1px solid var(--border);
+            color: var(--text);
             padding: 10px 16px;
             border-radius: 8px;
             font-size: 13px;
@@ -73,7 +74,7 @@
             gap: 8px;
             transition: background 0.2s;
         }
-        .btn-outline-light:hover { background: rgba(255,255,255,0.05); }
+        .btn-outline-light:hover { background: var(--surface-hover); border-color: var(--primary); color: var(--primary); }
 
         .features-grid {
             display: grid;
@@ -108,7 +109,7 @@
         .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; min-height: 54px; }
         .feature-badge {
             font-size: 11px; font-weight: 500;
-            color: #25D366;
+            color: var(--channel-whatsapp);
             background: rgba(37,211,102,0.1);
             padding: 4px 10px;
             border-radius: 4px;
@@ -198,7 +199,7 @@
             padding: 3px 8px; border-radius: 4px;
             display: inline-block;
         }
-        .status-terminee { background: rgba(37,211,102,0.1); color: #25D366; border: 1px solid rgba(37,211,102,0.2); }
+        .status-terminee { background: rgba(37,211,102,0.1); color: var(--channel-whatsapp); border: 1px solid rgba(37,211,102,0.2); }
         .status-planifiee { background: rgba(88,166,255,0.1); color: #58A6FF; border: 1px solid rgba(88,166,255,0.2); }
 
         .ci-stats {
@@ -253,7 +254,7 @@
         }
         .gauge-val { font-size: 24px; font-weight: 700; color: var(--text); }
         .gauge-label { font-size: 11px; color: var(--muted); margin-top: 2px;}
-        .gauge-trend { font-size: 11px; color: #25D366; margin-top: 4px; font-weight: 600;}
+        .gauge-trend { font-size: 11px; color: var(--channel-whatsapp); margin-top: 4px; font-weight: 600;}
 
         .stats-list {
             display: flex;
@@ -282,7 +283,7 @@
         }
         .stat-card-title { font-size: 15px; font-weight: 600; color: var(--text); }
         .stat-card-label { font-size: 11px; color: var(--muted); margin-top: 2px;}
-        .stat-card-trend { font-size: 11px; font-weight: 600; color: #25D366; }
+        .stat-card-trend { font-size: 11px; font-weight: 600; color: var(--channel-whatsapp); }
 
         /* Modal Styles */
         .modal-overlay {
@@ -321,7 +322,7 @@
         .delay-notice i { color: var(--green); margin-top: 2px; }
         .btn-campaign {
             width: 100%; padding: 14px;
-            background: #7b61ff; color: #fff;
+            background: #7b61ff; color: var(--text);
             border: none; border-radius: 10px; font-weight: 600; cursor: pointer;
             transition: background 0.2s; margin-top: 10px;
         }
@@ -370,7 +371,7 @@
                 </div>
             </div>
             <div>
-                <a href="#" class="btn-outline-light">Voir les limites de mon plan <i class="fas fa-arrow-right"></i></a>
+                <a href="{{ url_for('dashboard.business_settings', biz_id=biz_id) }}?tab=tab-abonnement" class="btn-outline-light">Gérer mon abonnement <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
 
@@ -378,7 +379,7 @@
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon-wrapper">
-                    <div class="feature-icon" style="background:rgba(37,211,102,0.1); color:#25D366;"><i class="fas fa-users"></i></div>
+                    <div class="feature-icon" style="background:rgba(37,211,102,0.1); color:var(--channel-whatsapp);"><i class="fas fa-users"></i></div>
                     <i class="fas fa-arrow-right feature-arrow"></i>
                 </div>
                 <div class="feature-title">Campagne de masse</div>
@@ -396,7 +397,7 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon-wrapper">
-                    <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;"><i class="fas fa-shield-alt"></i></div>
+                    <div class="feature-icon" style="background:rgba(240,180,41,0.1); color:var(--warning);"><i class="fas fa-shield-alt"></i></div>
                     <i class="fas fa-arrow-right feature-arrow"></i>
                 </div>
                 <div class="feature-title">Délais anti-spam</div>
@@ -428,7 +429,7 @@
                         {% for campaign in campaigns %}
                         <div class="campaign-item">
                             <div class="ci-left">
-                                <div class="ci-icon" style="background:rgba(37,211,102,0.1); color:#25D366;"><i class="fas fa-gift"></i></div>
+                                <div class="ci-icon" style="background:rgba(37,211,102,0.1); color:var(--channel-whatsapp);"><i class="fas fa-gift"></i></div>
                                 <div>
                                     <div class="ci-title">{{ campaign.title }}</div>
                                     <div class="ci-date">
@@ -524,7 +525,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-left">
-                                <div class="stat-card-icon" style="background:rgba(240,180,41,0.1); color:#F0B429;"><i class="fas fa-comment-dots"></i></div>
+                                <div class="stat-card-icon" style="background:rgba(240,180,41,0.1); color:var(--warning);"><i class="fas fa-comment-dots"></i></div>
                                 <div>
                                     <div class="stat-card-title">0</div>
                                     <div class="stat-card-label">Réponses</div>
