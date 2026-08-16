@@ -370,101 +370,56 @@
                     <div class="side-card">
                         <div class="side-card-header">
                             <h3>Prochains rendez-vous</h3>
-                            <a href="#">Voir tout</a>
                         </div>
                         <div class="upcoming-list">
-                            <div class="upcoming-date-label">Aujourd'hui • Jeudi 28 Mai</div>
-                            
-                            <div class="upcoming-item">
-                                <div class="upcoming-time">09:30</div>
-                                <div class="upcoming-details">
-                                    <h4>Consultation</h4>
-                                    <p>Jean Dupont</p>
+                            {% set current_date = None %}
+                            {% for rdv in upcoming_appointments %}
+                                {% if rdv.date_str != current_date %}
+                                    {% set current_date = rdv.date_str %}
+                                    <div class="upcoming-date-label"{% if not loop.first %} style="margin-top:12px;"{% endif %}>{{ rdv.date_str }}</div>
+                                {% endif %}
+                                <div class="upcoming-item">
+                                    <div class="upcoming-time">{{ rdv.time_str }}</div>
+                                    <div class="upcoming-details">
+                                        <h4>{{ rdv.details }}</h4>
+                                        <p>{{ rdv.client_name if rdv.client_name else 'Inconnu' }}</p>
+                                    </div>
+                                    <div class="upcoming-actions">
+                                        {% if rdv.statut == 'Confirmé' %}
+                                            <span class="badge-status confirmed">Confirmé</span>
+                                        {% elif rdv.statut == 'En attente' %}
+                                            <span class="badge-status waiting">En attente</span>
+                                        {% elif rdv.statut == 'Planifié' %}
+                                            <span class="badge-status" style="background: rgba(124, 58, 237, 0.1); color: #7C3AED;">Planifié</span>
+                                        {% else %}
+                                            <span class="badge-status" style="background:#f3f4f6; color:#374151;">{{ rdv.statut }}</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <div class="upcoming-actions">
-                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
-                                    <span class="badge-status confirmed">Confirmé</span>
-                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
-                                </div>
-                            </div>
-
-                            <div class="upcoming-item">
-                                <div class="upcoming-time">10:30</div>
-                                <div class="upcoming-details">
-                                    <h4>Consultation</h4>
-                                    <p>Sophie L.</p>
-                                </div>
-                                <div class="upcoming-actions">
-                                    <i class="fab fa-instagram" style="color: #E1306C; font-size: 14px;"></i>
-                                    <span class="badge-status confirmed">Confirmé</span>
-                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
-                                </div>
-                            </div>
-
-                            <div class="upcoming-item">
-                                <div class="upcoming-time">11:00</div>
-                                <div class="upcoming-details">
-                                    <h4>Réservation</h4>
-                                    <p>Marie K.</p>
-                                </div>
-                                <div class="upcoming-actions">
-                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
-                                    <span class="badge-status confirmed">Confirmé</span>
-                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
-                                </div>
-                            </div>
-
-                            <div class="upcoming-date-label" style="margin-top:12px;">Demain • Vendredi 29 Mai</div>
-
-                            <div class="upcoming-item">
-                                <div class="upcoming-time">09:00</div>
-                                <div class="upcoming-details">
-                                    <h4>Suivi projet</h4>
-                                    <p>David T.</p>
-                                </div>
-                                <div class="upcoming-actions">
-                                    <i class="fab fa-telegram-plane" style="color: #0088cc; font-size: 14px;"></i>
-                                    <span class="badge-status waiting">En attente</span>
-                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
-                                </div>
-                            </div>
-
-                            <div class="upcoming-item">
-                                <div class="upcoming-time">15:30</div>
-                                <div class="upcoming-details">
-                                    <h4>Présentation offre</h4>
-                                    <p>Sarah B.</p>
-                                </div>
-                                <div class="upcoming-actions">
-                                    <i class="fab fa-whatsapp" style="color: #25d366; font-size: 14px;"></i>
-                                    <span class="badge-status confirmed">Confirmé</span>
-                                    <i class="fas fa-ellipsis-v" style="color: var(--text-secondary); cursor:pointer; padding:4px;"></i>
-                                </div>
-                            </div>
-
+                            {% else %}
+                                <div style="font-size: 13px; color: var(--text-secondary); padding: 10px 0;">Aucun rendez-vous à venir.</div>
+                            {% endfor %}
                         </div>
-                        <button class="btn btn-secondary" style="width: 100%; margin-top: 24px; justify-content:center;">Voir l'agenda complet <i class="fas fa-arrow-right"></i></button>
                     </div>
 
                     <!-- Statistiques -->
                     <div class="side-card">
                         <div class="side-card-header">
                             <h3>Statistiques cette semaine</h3>
-                            <a href="#">Voir détails</a>
                         </div>
                         <div class="side-stats-grid">
                             <div class="side-stat-item">
                                 <div class="side-stat-label">Taux de présence</div>
-                                <div class="side-stat-val">92% <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 8%</span></div>
+                                <div class="side-stat-val">{{ agenda_stats.taux_presence }}% </div>
                             </div>
                             <div class="side-stat-item">
                                 <div class="side-stat-label">Rendez-vous créés</div>
-                                <div class="side-stat-val">32 <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 12%</span></div>
+                                <div class="side-stat-val">{{ agenda_stats.rdv_crees }}</div>
                             </div>
                         </div>
                         <div class="side-stat-item" style="border:none; padding-left:0; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
                             <div class="side-stat-label">Rappels envoyés</div>
-                            <div class="side-stat-val">64 <span class="side-stat-trend"><i class="fas fa-arrow-up"></i> 15%</span></div>
+                            <div class="side-stat-val">{{ agenda_stats.rappels_envoyes }}</div>
                         </div>
                     </div>
 
@@ -491,11 +446,20 @@
                 <button class="modal-close" onclick="document.getElementById('modal-new-appointment').classList.remove('open')" style="align-self: flex-start; margin-top: 4px;"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div class="field" style="margin-bottom: 20px;">
-                    <label>Nom du client</label>
-                    <div style="position:relative;">
-                        <i class="far fa-user" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
-                        <input type="text" id="new-client-name" class="input-vira" placeholder="Ex: Jean Dupont" style="padding-left: 40px;">
+                <div style="display:flex; gap:16px; margin-bottom: 20px;">
+                    <div class="field" style="flex:1;">
+                        <label>Nom du client</label>
+                        <div style="position:relative;">
+                            <i class="far fa-user" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <input type="text" id="new-client-name" class="input-vira" placeholder="Ex: Jean Dupont" style="padding-left: 40px;">
+                        </div>
+                    </div>
+                    <div class="field" style="flex:1;">
+                        <label>Téléphone (Optionnel)</label>
+                        <div style="position:relative;">
+                            <i class="fas fa-phone-alt" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none;"></i>
+                            <input type="text" id="new-phone" class="input-vira" placeholder="+22501020304" style="padding-left: 40px;">
+                        </div>
                     </div>
                 </div>
                 
@@ -559,6 +523,7 @@
 <script>
     function submitNewAppointment() {
         const clientName = document.getElementById('new-client-name').value;
+        const phone = document.getElementById('new-phone').value;
         const date = document.getElementById('new-date').value;
         const time = document.getElementById('new-time').value;
         const type = document.getElementById('new-type').value;
@@ -572,10 +537,12 @@
         fetch(`/api/agenda/create/{{ biz_id }}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 client_name: clientName,
+                phone: phone,
                 date: date,
                 time: time,
                 details: type,
@@ -586,10 +553,12 @@
         .then(data => {
             if (data.success) {
                 document.getElementById('modal-new-appointment').classList.remove('open');
-                // Optionnel : on pourrait recharger l'agenda ici `window.location.reload();`
-                // Mais comme l'agenda utilise mockEvents pour l'instant, on se contente de l'alerte
                 alert("Rendez-vous créé avec succès !");
-                window.location.reload();
+                if (window.calendar) {
+                    window.calendar.refetchEvents();
+                } else {
+                    window.location.reload();
+                }
             } else {
                 alert("Erreur: " + data.error);
             }
@@ -608,19 +577,8 @@
         var firstAgentName = "{% if agents|length > 0 %}{{ agents[0].name }}{% else %}Agent IA 1{% endif %}";
         var secondAgentName = "{% if agents|length > 1 %}{{ agents[1].name }}{% else %}Agent IA 2{% endif %}";
 
-        // Mock data to match mockup visual
-        var mockEvents = [
-            { title: 'Consultation', start: '2026-05-28T09:30:00', end: '2026-05-28T10:30:00', extendedProps: { client: 'Jean Dupont', channel: 'whatsapp', color: 'purple', agent: firstAgentName } },
-            { title: 'Consultation', start: '2026-05-28T10:30:00', end: '2026-05-28T11:30:00', extendedProps: { client: 'Sophie L.', channel: 'instagram', color: 'purple', agent: secondAgentName } },
-            { title: 'Réservation', start: '2026-05-27T11:00:00', end: '2026-05-27T12:00:00', extendedProps: { client: 'Marie K.', channel: 'whatsapp', color: 'green', agent: firstAgentName } },
-            { title: 'Suivi projet', start: '2026-05-29T09:00:00', end: '2026-05-29T10:00:00', extendedProps: { client: 'David T.', channel: 'telegram', color: 'orange', agent: secondAgentName } },
-            { title: 'RDV commercial', start: '2026-05-28T14:30:00', end: '2026-05-28T15:30:00', extendedProps: { client: 'Pierre A.', channel: 'messenger', color: 'blue', agent: firstAgentName } },
-            { title: 'Présentation offre', start: '2026-05-29T15:30:00', end: '2026-05-29T16:30:00', extendedProps: { client: 'Sarah B.', channel: 'whatsapp', color: 'green', agent: secondAgentName } }
-        ];
-
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
-            initialDate: '2026-05-28', // Fixed to match mockup
             headerToolbar: {
                 left: 'dayGridMonth,timeGridWeek,timeGridDay',
                 center: 'prev,next title',
@@ -638,7 +596,16 @@
                 dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1) + '.';
                 return { html: '<span class="header-day-name">' + dayName + '</span><span class="header-day-date">' + dayDate + '</span>' };
             },
-            events: mockEvents,
+            events: function(info, successCallback, failureCallback) {
+                var agent = document.getElementById('filter-agent') ? document.getElementById('filter-agent').value : 'all';
+                var type = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'all';
+                var url = `/api/agenda/events/{{ biz_id }}?agent=${agent}&type=${type}`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => successCallback(data))
+                    .catch(error => failureCallback(error));
+            },
             eventContent: function(arg) {
                 var props = arg.event.extendedProps;
                 var colorMap = {
@@ -663,6 +630,7 @@
             }
         });
         calendar.render();
+        window.calendar = calendar; // Export for global access
         
         // Link Aujourd'hui button
         document.getElementById('btn-today').addEventListener('click', function() {
@@ -676,7 +644,7 @@
                 <div class="legend-item"><div class="legend-dot" style="background:#7C3AED;"></div> Planifié</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> En attente</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Annulé</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#6b7280;"></div> Terminé</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> Terminé</div>
             </div>
         `;
         document.querySelector('.fc-view-harness').insertAdjacentHTML('afterend', legendHtml);
@@ -698,7 +666,7 @@
                         <select id="filter-agent" class="btn btn-secondary" style="padding:6px 28px 6px 12px; font-size:12px; appearance:none; outline:none; cursor:pointer;">
                             <option value="all">Tous les agents</option>
                             {% for agent in agents %}
-                            <option value="{{ agent.name }}">{{ agent.name }}</option>
+                            <option value="{{ agent.id }}">{{ agent.name }}</option>
                             {% endfor %}
                         </select>
                         <i class="fas fa-chevron-down" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; pointer-events:none; color:var(--text-secondary);"></i>
@@ -714,22 +682,11 @@
                         </select>
                         <i class="fas fa-chevron-down" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; pointer-events:none; color:var(--text-secondary);"></i>
                     </div>
-                    <button class="btn btn-secondary" style="padding:6px 10px;"><i class="fas fa-filter"></i></button>
                 </div>
             `;
             
             function applyFilters() {
-                var agentVal = document.getElementById('filter-agent').value;
-                var typeVal = document.getElementById('filter-type').value;
-                
-                var filtered = mockEvents.filter(function(ev) {
-                    var matchAgent = (agentVal === 'all') || (ev.extendedProps.agent === agentVal);
-                    var matchType = (typeVal === 'all') || (ev.title === typeVal);
-                    return matchAgent && matchType;
-                });
-                
-                calendar.removeAllEventSources();
-                calendar.addEventSource(filtered);
+                calendar.refetchEvents();
             }
             
             document.getElementById('filter-agent').addEventListener('change', applyFilters);

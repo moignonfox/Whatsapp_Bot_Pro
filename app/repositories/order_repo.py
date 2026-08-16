@@ -33,16 +33,18 @@ def save_reservation(
     priorite: str,
     montant: int = 0,
     date_heure_debut: str = None,
-    employee_id: int = None
+    employee_id: int = None,
+    client_name_manual: str = None,
+    statut: str = 'En attente'
 ) -> int:
-    """Crée une nouvelle réservation avec le statut 'En attente'. Retourne l'ID créé."""
+    """Crée une nouvelle réservation. Retourne l'ID créé."""
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute(
         """INSERT INTO reservations
-           (business_id, wa_id, details, priorite, statut, montant, created_at, date_heure_debut, employee_id)
-           VALUES (?, ?, ?, ?, 'En attente', ?, CURRENT_TIMESTAMP, ?, ?)""",
-        (biz_id, wa_id, details, priorite, montant, date_heure_debut, employee_id),
+           (business_id, wa_id, details, priorite, statut, montant, created_at, date_heure_debut, employee_id, client_name_manual)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)""",
+        (biz_id, wa_id, details, priorite, statut, montant, date_heure_debut, employee_id, client_name_manual),
     )
     new_id = cursor.lastrowid
     conn.commit()
@@ -127,7 +129,7 @@ def get_by_business(biz_id: str, period: str = 'today') -> List[sqlite3.Row]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        f'''SELECT r.*, c.nom as client_name 
+        f'''SELECT r.*, COALESCE(c.nom, r.client_name_manual) as client_name 
            FROM reservations r 
            LEFT JOIN clients c ON r.wa_id = c.wa_id AND r.business_id = c.business_id
            WHERE r.business_id = ? AND {get_date_condition(period)}
@@ -137,6 +139,69 @@ def get_by_business(biz_id: str, period: str = 'today') -> List[sqlite3.Row]:
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def get_upcoming_appointments(biz_id: str, limit: int = 5) -> List[sqlite3.Row]:
+    """Renvoie les prochains rendez-vous à venir pour l'agenda, limités à `limit`."""
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        f'''SELECT r.*, COALESCE(c.nom, r.client_name_manual) as client_name 
+           FROM reservations r 
+           LEFT JOIN clients c ON r.wa_id = c.wa_id AND r.business_id = c.business_id
+           WHERE r.business_id = ? AND r.date_heure_debut >= datetime('now', 'localtime')
+           ORDER BY r.date_heure_debut ASC
+           LIMIT ?''',
+        (biz_id, limit),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def get_agenda_stats(biz_id: str) -> Dict[str, Any]:
+    """Calcule les statistiques hebdomadaires pour la sidebar de l'agenda."""
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    
+    # Rendez-vous créés cette semaine (lundi à dimanche)
+    cursor.execute("""
+        SELECT COUNT(*) FROM reservations 
+        WHERE business_id = ? 
+        AND date_heure_debut >= date('now', 'weekday 1', '-7 days')
+    """, (biz_id,))
+    rdv_crees = cursor.fetchone()[0] or 0
+    
+    # Rappels envoyés cette semaine
+    cursor.execute("""
+        SELECT COUNT(*) FROM reservations 
+        WHERE business_id = ? 
+        AND rappel_envoye = 1
+        AND date_heure_debut >= date('now', 'weekday 1', '-7 days')
+    """, (biz_id,))
+    rappels = cursor.fetchone()[0] or 0
+    
+    # Taux de présence (Terminé vs (Terminé + Annulé)) sur les 30 derniers jours
+    cursor.execute("""
+        SELECT statut, COUNT(*) FROM reservations 
+        WHERE business_id = ? 
+        AND (statut = 'Terminé' OR statut = 'Annulé')
+        AND date_heure_debut >= date('now', '-30 days')
+        GROUP BY statut
+    """, (biz_id,))
+    presence_data = dict(cursor.fetchall())
+    termines = presence_data.get('Terminé', 0)
+    annules = presence_data.get('Annulé', 0)
+    total_clos = termines + annules
+    taux_presence = int((termines / total_clos * 100)) if total_clos > 0 else 100
+    
+    conn.close()
+    return {
+        "taux_presence": taux_presence,
+        "rdv_crees": rdv_crees,
+        "rappels_envoyes": rappels
+    }
 
 
 def get_stats(biz_id: str, period: str = 'today') -> Dict[str, Any]:

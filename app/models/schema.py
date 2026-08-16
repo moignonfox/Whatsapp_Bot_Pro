@@ -113,6 +113,9 @@ def init_db() -> None:
             statut      TEXT DEFAULT 'En attente',
             priorite    TEXT DEFAULT 'Normale',
             montant     INTEGER DEFAULT 0,
+            date_heure_debut TEXT,
+            employee_id INTEGER,
+            client_name_manual TEXT,
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
             timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (business_id) REFERENCES businesses (id)

@@ -1271,7 +1271,7 @@ def business_employees(biz_id):
 # ==========================================
 @dashboard_bp.route('/admin/<biz_id>/agenda')
 def business_agenda(biz_id):
-    """Affiche l'agenda visuel des rÃ©servations."""
+    """Affiche l'agenda visuel des réservations."""
     if 'user_id' not in session or session['user_id'] != biz_id:
         return redirect(url_for('dashboard.login'))
 
@@ -1280,12 +1280,36 @@ def business_agenda(biz_id):
     employees = employee_repo.get_by_business(biz_id)
     agents = agent_repo.get_all_by_business(biz_id)
     
+    from datetime import datetime
+    upcoming_appointments = []
+    raw_upcoming = order_repo.get_upcoming_appointments(biz_id, limit=5)
+    
+    # Mois en français pour un bel affichage
+    mois_fr = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+    jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    
+    for rdv in raw_upcoming:
+        rdv_dict = dict(rdv)
+        if rdv_dict['date_heure_debut']:
+            try:
+                dt = datetime.strptime(rdv_dict['date_heure_debut'][:16], '%Y-%m-%d %H:%M')
+                rdv_dict['date_str'] = f"{jours_fr[dt.weekday()]} {dt.day} {mois_fr[dt.month-1]}"
+                rdv_dict['time_str'] = dt.strftime('%H:%M')
+            except Exception:
+                rdv_dict['date_str'] = rdv_dict['date_heure_debut'][:10]
+                rdv_dict['time_str'] = rdv_dict['date_heure_debut'][11:16]
+        upcoming_appointments.append(rdv_dict)
+        
+    agenda_stats = order_repo.get_agenda_stats(biz_id)
+    
     return render_template('dashboard/agenda.html',
                            biz_id=biz_id,
                            business=business,
                            plan=plan,
                            employees=employees,
                            agents=agents,
+                           upcoming_appointments=upcoming_appointments,
+                           agenda_stats=agenda_stats,
                            active_page='agenda')
 
 @dashboard_bp.route('/api/agenda/events/<biz_id>')
@@ -1294,24 +1318,113 @@ def api_agenda_events(biz_id):
     if 'user_id' not in session or session['user_id'] != biz_id:
         return jsonify([])
 
-    orders = order_repo.get_by_business(biz_id)
+    agent_filter = request.args.get('agent', 'all')
+    type_filter = request.args.get('type', 'all')
+
+    orders = order_repo.get_by_business(biz_id, period='all')
     events = []
     for order in orders:
+        # Apply filters
+        order_dict = dict(order)
+        if agent_filter != 'all' and str(order_dict.get('employee_id')) != agent_filter:
+            continue
+        if type_filter != 'all' and order_dict.get('details') != type_filter:
+            continue
+
         if order['date_heure_debut']:
-            title_name = order['client_name'] if order['client_name'] else f"+{order['wa_id']}"
+            title_name = order['client_name'] if order['client_name'] else (f"+{order['wa_id']}" if order['wa_id'] else "Inconnu")
             # Replace space with T to make it ISO 8601 compliant (fixes iOS Safari bug where events don't show)
             start_iso = order['date_heure_debut'].replace(' ', 'T')
+            
+            # Map statut to color for FullCalendar
+            statut = order['statut']
+            color = 'purple' # default
+            if statut == 'Confirmé':
+                color = 'green'
+            elif statut == 'En attente':
+                color = 'orange'
+            elif statut == 'Terminé' or statut.startswith('Prêt') or statut.startswith('Livré'):
+                color = 'blue'
+            elif statut == 'Annulé':
+                color = 'red'
+
             events.append({
                 "id": order['id'],
-                "title": f"{title_name} ({order['details']})",
+                "title": f"{order['details']}",
                 "start": start_iso,
                 # "end": sera calculÃ© si nÃ©cessaire (date_heure_debut + duree)
                 "extendedProps": {
-                    "statut": order['statut'],
-                    "employee_id": order['employee_id']
+                    "client": title_name,
+                    "statut": statut,
+                    "employee_id": order['employee_id'],
+                    "color": color,
+                    "agent": "Agent" # Can be mapped if needed
                 }
             })
     return jsonify(events)
+
+@dashboard_bp.route('/api/agenda/create/<biz_id>', methods=['POST'])
+def api_agenda_create(biz_id):
+    """Création manuelle d'une réservation depuis l'agenda."""
+    if 'user_id' not in session or session['user_id'] != biz_id:
+        return jsonify({"success": False, "error": "Non autorisé"}), 403
+        
+    data = request.json
+    if not data:
+        return jsonify({"success": False, "error": "Données manquantes"}), 400
+        
+    client_name = data.get('client_name')
+    phone = data.get('phone', '').strip()
+    date = data.get('date')
+    time = data.get('time')
+    details = data.get('details')
+    agent_id = data.get('agent_id')
+    
+    if not client_name or not date or not time:
+        return jsonify({"success": False, "error": "Veuillez remplir le nom, la date et l'heure."}), 400
+        
+    date_heure_debut = f"{date} {time}"
+    
+    wa_id = None
+    if phone:
+        # Nettoyer le numéro pour en faire un wa_id valide (que des chiffres)
+        wa_id = ''.join(filter(str.isdigit, phone))
+        if not wa_id:
+            wa_id = None
+            
+    try:
+        # Si on a un vrai numéro, on peut créer le client proprement
+        if wa_id:
+            from app.repositories import client_repo
+            import sqlite3
+            from app.models.schema import get_db_path
+            
+            client = client_repo.get_or_create(biz_id, wa_id)
+            if client['nom'] != client_name:
+                # Mettre à jour le nom si c'est un nouveau ou s'il a changé (simplifié)
+                conn = sqlite3.connect(get_db_path())
+                c = conn.cursor()
+                c.execute("UPDATE clients SET nom = ? WHERE business_id = ? AND wa_id = ?", (client_name, biz_id, wa_id))
+                conn.commit()
+                conn.close()
+
+        # Create order
+        order_repo.save_reservation(
+            biz_id=biz_id,
+            wa_id=wa_id,
+            details=details,
+            priorite='Normale',
+            montant=0,
+            date_heure_debut=date_heure_debut,
+            employee_id=agent_id,
+            client_name_manual=client_name if not wa_id else None,
+            statut='Planifié'
+        )
+        return jsonify({"success": True})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ==========================================
 # GESTION DES AGENTS IA (PREMIUM)
