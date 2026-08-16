@@ -277,6 +277,33 @@ def init_db() -> None:
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_channels_business_type ON channels (business_id, type)"
     )
 
+    # --- Table business_terminology (Terminologie par business — Option B : nullable + cascade) ---
+    # Toutes les colonnes sont nullable : NULL = pas d'override, le fallback cascade
+    # vers le vocab du secteur, puis vers les hardcoded_defaults en code.
+    # Ne jamais stocker les labels par défaut figés ici — uniquement les overrides explicites.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS business_terminology (
+            business_id             TEXT PRIMARY KEY,
+            -- Entités transactionnelles
+            order_label_singular    TEXT,
+            order_label_plural      TEXT,
+            booking_label_singular  TEXT,
+            booking_label_plural    TEXT,
+            -- Statuts internes (SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW)
+            status_scheduled_label  TEXT,
+            status_confirmed_label  TEXT,
+            status_inprogress_label TEXT,
+            status_completed_label  TEXT,
+            status_cancelled_label  TEXT,
+            status_noshow_label     TEXT,
+            -- Activation des entités par business (NULL = suivre le défaut du secteur)
+            orders_enabled          INTEGER,
+            bookings_enabled        INTEGER,
+            updated_at              DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -741,6 +768,30 @@ def update_schema() -> None:
             migrated_count += 1
     if migrated_count > 0:
         print(f"Migration V11: {migrated_count} compte(s) WhatsApp migrés vers la table 'channels'.")
+
+    # --- Migration V12 : Table business_terminology (Option B — nullable + cascade) ---
+    # Colonnes nullable : NULL = pas d'override → fallback vers vocab du secteur → hardcoded_defaults.
+    # Aucun backfill nécessaire : l'absence de ligne est traitée nativement comme "aucun override".
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS business_terminology (
+            business_id             TEXT PRIMARY KEY,
+            order_label_singular    TEXT,
+            order_label_plural      TEXT,
+            booking_label_singular  TEXT,
+            booking_label_plural    TEXT,
+            status_scheduled_label  TEXT,
+            status_confirmed_label  TEXT,
+            status_inprogress_label TEXT,
+            status_completed_label  TEXT,
+            status_cancelled_label  TEXT,
+            status_noshow_label     TEXT,
+            orders_enabled          INTEGER,
+            bookings_enabled        INTEGER,
+            updated_at              DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (business_id) REFERENCES businesses(id)
+        )
+    """)
+    print("Migration V12: Table 'business_terminology' vérifiée/créée.")
 
     conn.commit()
     conn.close()

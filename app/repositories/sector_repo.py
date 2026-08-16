@@ -65,3 +65,33 @@ def add_or_update(sector_id: str, name: str, vocab: dict) -> None:
         )
     conn.commit()
     conn.close()
+
+
+def get_vocab_for_business(business_id: str) -> Dict:
+    """
+    Renvoie le dict vocab du secteur associé à un business.
+    Utilisé par terminology_repo pour le niveau 2 du fallback cascade.
+    Retourne {} si le business ou le secteur est introuvable.
+    """
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT business_type FROM businesses WHERE id = ?", (business_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return {}
+    sector_id = row["business_type"]
+
+    cursor.execute("SELECT vocab FROM sectors WHERE id = ?", (sector_id,))
+    sector_row = cursor.fetchone()
+    conn.close()
+
+    if not sector_row or not sector_row["vocab"]:
+        return {}
+    try:
+        return json.loads(sector_row["vocab"])
+    except Exception:
+        return {}
+

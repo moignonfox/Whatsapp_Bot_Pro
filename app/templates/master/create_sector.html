@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -17,129 +17,53 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            position: relative;
-        }
-        .content {
-            padding: 40px 24px;
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            position: relative;
-            z-index: 1;
-            overflow-x: hidden;
-        }
-        
-        .topbar {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 0 28px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+        .content { padding: 40px 24px; flex: 1; display: flex; justify-content: center; overflow-x: hidden; }
+        .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
         .topbar-left { display: flex; align-items: center; gap: 14px; }
-        .topbar-left h1 { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
         .topbar-right { display: flex; align-items: center; gap: 12px; }
-        .btn-back-top {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
+        .btn-back-top { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; text-decoration: none; transition: color 0.2s; }
         .btn-back-top:hover { color: var(--text); }
-
-        .page { width: 100%; max-width: 720px; position: relative; z-index: 1; }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 40px 44px;
-            box-shadow: var(--shadow);
-            transition: background 0.3s ease, border-color 0.3s ease;
-        }
-
-        .master-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(248,81,73,0.10);
-            border: 1px solid rgba(248,81,73,0.28);
-            color: #F85149;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            letter-spacing: 0.3px;
-        }
-        [data-theme="light"] .master-badge {
-            background: rgba(207,34,46,0.08);
-            border-color: rgba(207,34,46,0.25);
-            color: #CF222E;
-        }
-
+        .master-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(248,81,73,.10); border: 1px solid rgba(248,81,73,.28); color: #F85149; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
+        [data-theme="light"] .master-badge { background: rgba(207,34,46,.08); border-color: rgba(207,34,46,.25); color: #CF222E; }
+        .page { width: 100%; max-width: 760px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 44px; box-shadow: var(--shadow); }
         .card-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
         .card-subtitle { font-size: 13.5px; color: var(--muted); margin-bottom: 32px; }
-
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
         .full { grid-column: span 2; }
-
-        .section-label {
-            grid-column: span 2;
-            font-size: 11px; font-weight: 600; color: var(--green); text-transform: uppercase;
-            letter-spacing: 0.8px; margin-top: 12px; display: flex; align-items: center; gap: 8px;
-        }
+        .section-label { grid-column: span 2; font-size: 11px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 12px; display: flex; align-items: center; gap: 8px; }
         .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
+        .section-hint { grid-column: span 2; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; line-height: 1.5; }
         .field { display: flex; flex-direction: column; }
         .field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 7px; }
-        .field input {
-            width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
-            border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px;
-            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-        }
+        .field input { width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
         .field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
-
-        .btn-submit {
-            width: 100%; padding: 14px; background: var(--green); color: #fff; font-size: 14.5px;
-            font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin-top: 12px;
-            grid-column: span 2; transition: filter 0.2s;
-        }
+        .field input::placeholder { color: var(--muted); opacity: .6; }
+        .toggle-row { grid-column: span 2; display: flex; gap: 16px; }
+        .toggle-card { flex: 1; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; gap: 12px; }
+        .toggle-info { display: flex; flex-direction: column; gap: 2px; }
+        .toggle-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+        .toggle-desc  { font-size: 11.5px; color: var(--muted); }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 24px; transition: background .25s; }
+        .slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform .25s; }
+        .switch input:checked + .slider { background: var(--green); }
+        .switch input:checked + .slider:before { transform: translateX(20px); }
+        .btn-submit { width: 100%; padding: 14px; background: var(--green); color: #fff; font-size: 14.5px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin-top: 12px; grid-column: span 2; transition: filter .2s; }
         .btn-submit:hover { filter: brightness(1.1); }
-        
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .main { margin-left: 0; }
-            .content { padding: 16px; }
-        }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main { margin-left: 0; } .content { padding: 16px; } .card { padding: 24px 20px; } .toggle-row { flex-direction: column; } }
     </style>
 </head>
 <body>
-
     {% set active_page = 'create_sector' %}
     {% include 'master/_sidebar.html' %}
 
     <div class="main">
         <header class="topbar">
             <div class="topbar-left">
-                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;"><i class="fas fa-bars"></i></button>
                 <a href="{{ url_for('master.master_dashboard') }}" class="btn-back-top"><i class="fas fa-arrow-left"></i> Retour au Dashboard</a>
             </div>
             <div class="topbar-right">
@@ -151,46 +75,123 @@
             <div class="page">
                 <div class="card">
                     <h1 class="card-title">{% if sector %}✏️ Modifier le Secteur{% else %}🔧 Nouveau Secteur{% endif %}</h1>
-                    <p class="card-subtitle">Définissez le vocabulaire dynamique appliqué au dashboard pour ce type de business.</p>
+                    <p class="card-subtitle">Définissez le vocabulaire dynamique appliqué au dashboard pour ce type de business. Ces valeurs servent de <strong>préremplissage par défaut</strong> — chaque gérant peut ensuite les personnaliser librement.</p>
 
                     <form action="/master/save-sector" method="POST" class="grid">
-
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        {# ── 1. Général ─────────────────────────────────────── #}
                         <div class="section-label">Général</div>
                         <div class="field">
                             <label>Identifiant (ID)</label>
-                            <input type="text" name="id" placeholder="ex: clinique" value="{{ sector.id if sector else '' }}" {% if sector %}readonly style="opacity:0.6; cursor:not-allowed;"{% endif %} required>
+                            <input type="text" name="id" placeholder="ex: clinique" value="{{ sector.id if sector else '' }}" {% if sector %}readonly style="opacity:.6;cursor:not-allowed;"{% endif %} required>
                         </div>
                         <div class="field">
                             <label>Nom d'affichage</label>
                             <input type="text" name="name" placeholder="ex: 🏥 Clinique / Cabinet" value="{{ sector.name if sector else '' }}" required>
                         </div>
 
+                        {# ── 2. Vocabulaire Dashboard (champs existants) ─────── #}
                         <div class="section-label">Vocabulaire Dashboard</div>
-                        
                         <div class="field full">
                             <label>Titre de la page principale (title_dashboard)</label>
                             <input type="text" name="title_dashboard" placeholder="ex: Suivi des Consultations" value="{{ sector.vocab.title_dashboard if sector else '' }}" required>
                         </div>
-                        
                         <div class="field">
                             <label>Lien du menu latéral (nav_orders)</label>
                             <input type="text" name="nav_orders" placeholder="ex: Consultations" value="{{ sector.vocab.nav_orders if sector else '' }}" required>
                         </div>
-                        
                         <div class="field">
                             <label>Colonne des détails (col_details)</label>
-                            <input type="text" name="col_details" placeholder="ex: Symptômes & Demande" value="{{ sector.vocab.col_details if sector else '' }}" required>
+                            <input type="text" name="col_details" placeholder="ex: Symptômes &amp; Demande" value="{{ sector.vocab.col_details if sector else '' }}" required>
                         </div>
-
                         <div class="field">
-                            <label>Statut 'Terminé' (status_ready)</label>
+                            <label>Statut Terminé (status_ready)</label>
                             <input type="text" name="status_ready" placeholder="ex: Clôturé" value="{{ sector.vocab.status_ready if sector else '' }}" required>
                         </div>
-                        
                         <div class="field">
                             <label>Bouton d'action (btn_ready)</label>
                             <input type="text" name="btn_ready" placeholder="ex: Terminer ✅" value="{{ sector.vocab.btn_ready if sector else '' }}" required>
+                        </div>
+
+                        {# ── 3. Labels des entités transactionnelles ─────────── #}
+                        <div class="section-label">Labels des Entités Transactionnelles</div>
+                        <div class="section-hint">
+                            <strong>Commandes</strong> = achats de produits/services (pizzas, coupes…) &nbsp;·&nbsp; <strong>Réservations</strong> = créneaux horaires (table, RDV, consultation…). Ces labels remplacent les mots génériques dans le dashboard gérant.
+                        </div>
+                        <div class="field">
+                            <label>Commande — singulier</label>
+                            <input type="text" name="order_label_singular" placeholder="Commande" value="{{ sector.vocab.order_label_singular if sector and sector.vocab.order_label_singular else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>Commande — pluriel</label>
+                            <input type="text" name="order_label_plural" placeholder="Commandes" value="{{ sector.vocab.order_label_plural if sector and sector.vocab.order_label_plural else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>Réservation — singulier</label>
+                            <input type="text" name="booking_label_singular" placeholder="Réservation" value="{{ sector.vocab.booking_label_singular if sector and sector.vocab.booking_label_singular else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>Réservation — pluriel</label>
+                            <input type="text" name="booking_label_plural" placeholder="Réservations" value="{{ sector.vocab.booking_label_plural if sector and sector.vocab.booking_label_plural else '' }}">
+                        </div>
+
+                        {# ── 4. Labels des statuts internes ──────────────────── #}
+                        <div class="section-label">Labels des Statuts (Réservations / RDV)</div>
+                        <div class="section-hint">
+                            Les codes internes <code>SCHEDULED · CONFIRMED · IN_PROGRESS · COMPLETED · CANCELLED · NO_SHOW</code> ne changent jamais (logique métier). Vous définissez ici uniquement ce que le gérant voit dans son interface.
+                        </div>
+                        <div class="field">
+                            <label>SCHEDULED — Planifié</label>
+                            <input type="text" name="status_scheduled_label" placeholder="Planifié · À venir · En attente" value="{{ sector.vocab.status_scheduled_label if sector and sector.vocab.status_scheduled_label else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>CONFIRMED — Confirmé</label>
+                            <input type="text" name="status_confirmed_label" placeholder="Confirmé · Validé" value="{{ sector.vocab.status_confirmed_label if sector and sector.vocab.status_confirmed_label else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>IN_PROGRESS — En cours</label>
+                            <input type="text" name="status_inprogress_label" placeholder="En cours · En consultation" value="{{ sector.vocab.status_inprogress_label if sector and sector.vocab.status_inprogress_label else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>COMPLETED — Terminé</label>
+                            <input type="text" name="status_completed_label" placeholder="Terminé · Clôturé · Honoré" value="{{ sector.vocab.status_completed_label if sector and sector.vocab.status_completed_label else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>CANCELLED — Annulé</label>
+                            <input type="text" name="status_cancelled_label" placeholder="Annulé" value="{{ sector.vocab.status_cancelled_label if sector and sector.vocab.status_cancelled_label else '' }}">
+                        </div>
+                        <div class="field">
+                            <label>NO_SHOW — Absent</label>
+                            <input type="text" name="status_noshow_label" placeholder="Absent · Non présenté" value="{{ sector.vocab.status_noshow_label if sector and sector.vocab.status_noshow_label else '' }}">
+                        </div>
+
+                        {# ── 5. Activation des entités ───────────────────────── #}
+                        <div class="section-label">Activation des Entités par Défaut</div>
+                        <div class="section-hint">
+                            Définissez quelles entités sont disponibles par défaut pour ce secteur. Chaque gérant peut surcharger ce réglage individuellement depuis ses paramètres.
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-card">
+                                <div class="toggle-info">
+                                    <span class="toggle-label">🛒 Commandes</span>
+                                    <span class="toggle-desc">Achats de produits ou services</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="orders_enabled" value="1" {% if not sector or sector.vocab.get('orders_enabled', True) %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-card">
+                                <div class="toggle-info">
+                                    <span class="toggle-label">📅 Réservations / RDV</span>
+                                    <span class="toggle-desc">Créneaux horaires sur une ressource</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="bookings_enabled" value="1" {% if not sector or sector.vocab.get('bookings_enabled', True) %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-submit">{% if sector %}Mettre à jour le secteur{% else %}Créer le secteur{% endif %}</button>

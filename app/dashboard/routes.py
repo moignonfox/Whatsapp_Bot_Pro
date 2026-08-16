@@ -35,6 +35,14 @@ def inject_dashboard_context():
         ctx['global_unread_count'] = conversation_repo.get_unread_message_count_for_business(user_id)
     return ctx
 
+@dashboard_bp.route('/')
+def index():
+    """Redirige la racine vers la page de login ou le dashboard si dÃ©jÃ  connectÃ©."""
+    user_id = session.get('user_id')
+    if user_id:
+        return redirect(url_for('dashboard.admin_dashboard', biz_id=user_id))
+    return redirect(url_for('dashboard.login'))
+
 @dashboard_bp.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")  # M-1 : max 10 tentatives/minute/IP
 def login():

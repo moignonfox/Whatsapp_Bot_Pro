@@ -229,12 +229,28 @@ def save_sector():
     sector_id = request.form.get('id')
     name = request.form.get('name')
     
+    # ── Champs historiques ──────────────────────────────────────────────────
     vocab = {
         'title_dashboard': request.form.get('title_dashboard'),
-        'nav_orders': request.form.get('nav_orders'),
-        'col_details': request.form.get('col_details'),
-        'status_ready': request.form.get('status_ready'),
-        'btn_ready': request.form.get('btn_ready')
+        'nav_orders':      request.form.get('nav_orders'),
+        'col_details':     request.form.get('col_details'),
+        'status_ready':    request.form.get('status_ready'),
+        'btn_ready':       request.form.get('btn_ready'),
+        # ── Labels des entités transactionnelles (Niveau 2 terminologie) ───
+        'order_label_singular':    request.form.get('order_label_singular') or None,
+        'order_label_plural':      request.form.get('order_label_plural') or None,
+        'booking_label_singular':  request.form.get('booking_label_singular') or None,
+        'booking_label_plural':    request.form.get('booking_label_plural') or None,
+        # ── Labels des statuts internes ──────────────────────────────────
+        'status_scheduled_label':  request.form.get('status_scheduled_label') or None,
+        'status_confirmed_label':  request.form.get('status_confirmed_label') or None,
+        'status_inprogress_label': request.form.get('status_inprogress_label') or None,
+        'status_completed_label':  request.form.get('status_completed_label') or None,
+        'status_cancelled_label':  request.form.get('status_cancelled_label') or None,
+        'status_noshow_label':     request.form.get('status_noshow_label') or None,
+        # ── Activation des entités (checkbox → 1 si coché, absent si non coché)
+        'orders_enabled':   request.form.get('orders_enabled') == '1',
+        'bookings_enabled': request.form.get('bookings_enabled') == '1',
     }
 
     if not sector_id or not name:
@@ -243,6 +259,7 @@ def save_sector():
     sector_repo.add_or_update(sector_id, name, vocab)
 
     return redirect(url_for('master.master_dashboard'))
+
 
 
 @master_bp.route('/toggle-business/<biz_id>', methods=['POST'])
